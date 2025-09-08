@@ -1,0 +1,21 @@
+export type RootStackParamList = {
+  AuthStack: undefined;
+  MainTabs: undefined;
+};
+
+export type AuthStackParamList = {
+  Login: undefined;
+  Signup: undefined;
+};
+
+export type MainTabParamList = {
+  Home: undefined;
+  Social: undefined;
+  Profile: undefined;
+};
+
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
+}
