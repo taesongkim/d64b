@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '@/navigation/types';
 
@@ -12,59 +12,23 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
-      <Text style={styles.subtitle}>Welcome back to D64B</Text>
+    <View className="flex-1 justify-center items-center p-5 bg-white">
+      <Text className="text-2xl font-bold mb-2 text-gray-900">Login</Text>
+      <Text className="text-base text-gray-600 mb-10">Welcome back to D64B</Text>
       
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login (Mock)</Text>
+      <TouchableOpacity 
+        className="bg-primary px-10 py-3 rounded-lg mb-5 shadow-sm"
+        onPress={handleLogin}
+      >
+        <Text className="text-white text-base font-semibold">Login (Mock)</Text>
       </TouchableOpacity>
       
       <TouchableOpacity 
-        style={styles.linkButton}
+        className="p-2"
         onPress={() => navigation.navigate('Signup')}
       >
-        <Text style={styles.linkText}>Don't have an account? Sign up</Text>
+        <Text className="text-primary text-sm">Don't have an account? Sign up</Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 40,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  linkButton: {
-    padding: 8,
-  },
-  linkText: {
-    color: '#007AFF',
-    fontSize: 14,
-  },
-});

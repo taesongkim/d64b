@@ -1,42 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text } from 'react-native';
 
 export default function DashboardScreen(): React.JSX.Element {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.subtitle}>Habit tracking will go here</Text>
-      <Text style={styles.description}>
-        This is where users will see their habit grid,
-        mark habits as complete, and view their streaks.
+    <View className="flex-1 justify-center items-center p-5 bg-gray-50">
+      <Text className="text-3xl font-bold mb-2 text-gray-900">Dashboard</Text>
+      <Text className="text-lg text-gray-600 mb-5 text-center">
+        Habit tracking will go here
+      </Text>
+      <Text className="text-sm text-gray-500 text-center px-4 leading-5">
+        This is where users will see their habit grid, mark habits as complete, and view their streaks.
       </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#666',
-    marginBottom: 20,
-  },
-  description: {
-    fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});

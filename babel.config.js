@@ -3,7 +3,8 @@ module.exports = function (api) {
   return {
     presets: ['babel-preset-expo'],
     plugins: [
-      // Reanimated plugin will be added when we install it in Task 2
+      'nativewind/babel',
+      // Reanimated plugin will be added when we install it in future task
     ],
   };
 };
