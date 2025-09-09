@@ -1,70 +1,348 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  ScrollView,
+  Alert
+} from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
 export default function SignupScreen({ navigation }: Props): React.JSX.Element {
-  const handleSignup = (): void => {
-    // TODO: Implement actual auth logic
-    navigation.getParent()?.navigate('MainTabs');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  const handleSignup = async (): Promise<void> => {
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Missing Fields', 'Please fill in all fields');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      Alert.alert('Password Mismatch', 'Passwords do not match');
+      return;
+    }
+    
+    if (password.length < 8) {
+      Alert.alert('Weak Password', 'Password must be at least 8 characters');
+      return;
+    }
+    
+    if (!acceptedTerms) {
+      Alert.alert('Terms Required', 'Please accept the terms and conditions');
+      return;
+    }
+    
+    setLoading(true);
+    // Simulate signup delay
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert(
+        'Success!', 
+        'Your account has been created. Please check your email to verify.',
+        [
+          { text: 'OK', onPress: () => navigation.navigate('Login') }
+        ]
+      );
+    }, 1500);
+  };
+
+  const handleSocialSignup = (provider: string): void => {
+    console.log(`Signup with ${provider}`);
+    // TODO: Implement social signup
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sign Up</Text>
-      <Text style={styles.subtitle}>Join D64B today</Text>
-      
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>Sign Up (Mock)</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.linkButton}
-        onPress={() => navigation.navigate('Login')}
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.linkText}>Already have an account? Login</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.logo}>D64B</Text>
+            <Text style={styles.tagline}>Create your account</Text>
+          </View>
+
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              placeholderTextColor="#9CA3AF"
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              editable={!loading}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#9CA3AF"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              editable={!loading}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Password (8+ characters)"
+              placeholderTextColor="#9CA3AF"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              editable={!loading}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              placeholderTextColor="#9CA3AF"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              editable={!loading}
+            />
+
+            <TouchableOpacity 
+              style={styles.termsContainer}
+              onPress={() => setAcceptedTerms(!acceptedTerms)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.checkbox, acceptedTerms && styles.checkboxChecked]}>
+                {acceptedTerms && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.termsText}>
+                I agree to the Terms of Service and Privacy Policy
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.signupButton, loading && styles.signupButtonDisabled]}
+              onPress={handleSignup}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.signupButtonText}>Create Account</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.socialButtons}>
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialSignup('Google')}
+              >
+                <Text style={styles.socialButtonText}>Continue with Google</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialSignup('Apple')}
+              >
+                <Text style={styles.socialButtonText}>Continue with Apple</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.loginLink}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.loginLinkText}>
+              Already have an account? <Text style={styles.loginLinkBold}>Sign in</Text>
+            </Text>
+          </TouchableOpacity>
+
+          {/* Dev Mode Bypass - Remove in production */}
+          {__DEV__ && (
+            <TouchableOpacity 
+              style={styles.devBypassButton}
+              onPress={() => {
+                setName('Test User');
+                setEmail('test@example.com');
+                setPassword('password123');
+                setConfirmPassword('password123');
+                setAcceptedTerms(true);
+              }}
+            >
+              <Text style={styles.devBypassText}>👨‍💻 Dev Mode: Auto-fill Form</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#FAFAFA',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 40,
+  },
+  header: {
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
+    marginBottom: 32,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
+  logo: {
+    fontSize: 42,
+    fontWeight: '800',
+    color: '#111827',
+    letterSpacing: -1,
   },
-  subtitle: {
+  tagline: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 40,
+    color: '#6B7280',
+    marginTop: 8,
   },
-  button: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 40,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 20,
+  form: {
+    marginBottom: 24,
   },
-  buttonText: {
-    color: '#fff',
+  input: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#111827',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  checkmark: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  termsText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  signupButton: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  signupButtonDisabled: {
+    opacity: 0.5,
+  },
+  signupButtonText: {
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
-  linkButton: {
-    padding: 8,
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
   },
-  linkText: {
-    color: '#007AFF',
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    paddingHorizontal: 12,
     fontSize: 14,
+    color: '#9CA3AF',
+  },
+  socialButtons: {
+    gap: 12,
+  },
+  socialButton: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+  },
+  socialButtonText: {
+    fontSize: 16,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  loginLink: {
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  loginLinkText: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  loginLinkBold: {
+    fontWeight: '600',
+    color: '#111827',
+  },
+  devBypassButton: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  devBypassText: {
+    color: '#92400E',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
