@@ -111,6 +111,16 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
             New here? <Text style={styles.signupLinkBold}>Create account</Text>
           </Text>
         </TouchableOpacity>
+
+        {/* Dev Mode Bypass - Remove in production */}
+        {__DEV__ && (
+          <TouchableOpacity 
+            style={styles.devBypassButton}
+            onPress={() => navigation.getParent()?.navigate('MainTabs')}
+          >
+            <Text style={styles.devBypassText}>👨‍💻 Dev Mode: Skip Login</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -213,5 +223,20 @@ const styles = StyleSheet.create({
   signupLinkBold: {
     fontWeight: '600',
     color: '#111827',
+  },
+  devBypassButton: {
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  devBypassText: {
+    color: '#92400E',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
