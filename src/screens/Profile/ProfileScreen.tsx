@@ -18,21 +18,14 @@ interface UserStats {
   completionRate: number;
 }
 
-interface SettingItem {
-  id: string;
-  label: string;
-  type: 'toggle' | 'link' | 'action';
-  value?: boolean;
-  onPress?: () => void;
-}
-
 export default function ProfileScreen(): React.JSX.Element {
   const navigation = useNavigation();
   
   // Mock user data
-  const [userName] = useState('Alex Johnson');
-  const [userEmail] = useState('alex.johnson@example.com');
+  const [userName] = useState('Taesong Kim');
+  const [userEmail] = useState('taesong.kim@example.com');
   const [memberSince] = useState('October 2024');
+  const [showSettings, setShowSettings] = useState(false);
   
   // Mock stats
   const stats: UserStats = {
@@ -79,6 +72,19 @@ export default function ProfileScreen(): React.JSX.Element {
     );
   };
 
+  const handleChangePhoto = (): void => {
+    Alert.alert(
+      'Change Profile Photo',
+      'Choose an option',
+      [
+        { text: 'Take Photo', onPress: () => console.log('Open camera') },
+        { text: 'Choose from Library', onPress: () => console.log('Open gallery') },
+        { text: 'Remove Photo', style: 'destructive', onPress: () => console.log('Remove photo') },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
   const renderStatCard = (label: string, value: string | number, unit?: string) => (
     <View style={styles.statCard}>
       <Text style={styles.statValue}>
@@ -89,152 +95,238 @@ export default function ProfileScreen(): React.JSX.Element {
     </View>
   );
 
+  const renderProfileView = () => (
+    <>
+      {/* Stats Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Your Progress</Text>
+        <View style={styles.statsGrid}>
+          {renderStatCard('Total Habits', stats.totalHabits)}
+          {renderStatCard('Current Streak', stats.currentStreak, ' days')}
+          {renderStatCard('Best Streak', stats.longestStreak, ' days')}
+          {renderStatCard('Completion', stats.completionRate, '%')}
+        </View>
+      </View>
+
+      {/* Quick Actions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={styles.actionButton}>
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>📊</Text>
+            </View>
+            <Text style={styles.actionLabel}>Stats</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>🏆</Text>
+            </View>
+            <Text style={styles.actionLabel}>Achievements</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>📤</Text>
+            </View>
+            <Text style={styles.actionLabel}>Export</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <View style={styles.actionIcon}>
+              <Text style={styles.actionIconText}>👥</Text>
+            </View>
+            <Text style={styles.actionLabel}>Friends</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Recent Activity */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        <View style={styles.activityList}>
+          <View style={styles.activityItem}>
+            <Text style={styles.activityText}>✅ Completed "Morning Meditation"</Text>
+            <Text style={styles.activityTime}>2 hours ago</Text>
+          </View>
+          <View style={styles.activityItem}>
+            <Text style={styles.activityText}>🔥 7 day streak on "Exercise"</Text>
+            <Text style={styles.activityTime}>Yesterday</Text>
+          </View>
+          <View style={styles.activityItem}>
+            <Text style={styles.activityText}>🎯 Added new habit "Read 30 mins"</Text>
+            <Text style={styles.activityTime}>2 days ago</Text>
+          </View>
+        </View>
+      </View>
+    </>
+  );
+
+  const renderSettingsView = () => (
+    <>
+      {/* Notifications Settings */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Notifications</Text>
+        <View style={styles.settingsList}>
+          <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Push Notifications</Text>
+            <Switch
+              value={notifications}
+              onValueChange={setNotifications}
+              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              thumbColor="white"
+            />
+          </View>
+          <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Daily Reminders</Text>
+            <Switch
+              value={reminders}
+              onValueChange={setReminders}
+              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              thumbColor="white"
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Appearance Settings */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.settingsList}>
+          <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Dark Mode</Text>
+            <Switch
+              value={darkMode}
+              onValueChange={setDarkMode}
+              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              thumbColor="white"
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Privacy Settings */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Privacy</Text>
+        <View style={styles.settingsList}>
+          <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Public Profile</Text>
+            <Switch
+              value={publicProfile}
+              onValueChange={setPublicProfile}
+              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              thumbColor="white"
+            />
+          </View>
+          <View style={styles.settingItem}>
+            <Text style={styles.settingLabel}>Share Progress with Friends</Text>
+            <Switch
+              value={shareProgress}
+              onValueChange={setShareProgress}
+              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              thumbColor="white"
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Support Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Support</Text>
+        <View style={styles.settingsList}>
+          <TouchableOpacity style={styles.linkItem}>
+            <Text style={styles.linkText}>Help Center</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.linkItem}>
+            <Text style={styles.linkText}>Privacy Policy</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.linkItem}>
+            <Text style={styles.linkText}>Terms of Service</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.linkItem}>
+            <Text style={styles.linkText}>Contact Us</Text>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* About Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>About</Text>
+        <View style={styles.aboutContent}>
+          <Text style={styles.appVersion}>D64B Version 1.0.0</Text>
+          <Text style={styles.aboutText}>
+            Build better habits, one day at a time.
+          </Text>
+        </View>
+      </View>
+
+      {/* Account Actions */}
+      <View style={styles.section}>
+        <TouchableOpacity 
+          style={styles.signOutButton}
+          onPress={handleLogout}
+        >
+          <Text style={styles.signOutText}>Sign Out</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.deleteButton}
+          onPress={handleDeleteAccount}
+        >
+          <Text style={styles.deleteText}>Delete Account</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.profileInfo}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {userName.split(' ').map(n => n[0]).join('')}
-              </Text>
-            </View>
+            <TouchableOpacity onPress={handleChangePhoto} style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {userName.split(' ').map(n => n[0]).join('')}
+                </Text>
+              </View>
+              <View style={styles.cameraIcon}>
+                <Text style={styles.cameraIconText}>📷</Text>
+              </View>
+            </TouchableOpacity>
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{userName}</Text>
               <Text style={styles.userEmail}>{userEmail}</Text>
               <Text style={styles.memberSince}>Member since {memberSince}</Text>
             </View>
           </View>
-        </View>
-
-        {/* Stats Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Progress</Text>
-          <View style={styles.statsGrid}>
-            {renderStatCard('Total Habits', stats.totalHabits)}
-            {renderStatCard('Current Streak', stats.currentStreak, ' days')}
-            {renderStatCard('Best Streak', stats.longestStreak, ' days')}
-            {renderStatCard('Completion', stats.completionRate, '%')}
-          </View>
-        </View>
-
-        {/* Notifications Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Push Notifications</Text>
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor="white"
-              />
-            </View>
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Daily Reminders</Text>
-              <Switch
-                value={reminders}
-                onValueChange={setReminders}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor="white"
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Appearance Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Appearance</Text>
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Dark Mode</Text>
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor="white"
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Privacy Settings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Privacy</Text>
-          <View style={styles.settingsList}>
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Public Profile</Text>
-              <Switch
-                value={publicProfile}
-                onValueChange={setPublicProfile}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor="white"
-              />
-            </View>
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>Share Progress with Friends</Text>
-              <Switch
-                value={shareProgress}
-                onValueChange={setShareProgress}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor="white"
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Support Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.settingsList}>
-            <TouchableOpacity style={styles.linkItem}>
-              <Text style={styles.linkText}>Help Center</Text>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.linkItem}>
-              <Text style={styles.linkText}>Privacy Policy</Text>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.linkItem}>
-              <Text style={styles.linkText}>Terms of Service</Text>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.linkItem}>
-              <Text style={styles.linkText}>Contact Us</Text>
-              <Text style={styles.chevron}>›</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* About Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.aboutContent}>
-            <Text style={styles.appVersion}>D64B Version 1.0.0</Text>
-            <Text style={styles.aboutText}>
-              Build better habits, one day at a time.
-            </Text>
-          </View>
-        </View>
-
-        {/* Account Actions */}
-        <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.signOutButton}
-            onPress={handleLogout}
-          >
-            <Text style={styles.signOutText}>Sign Out</Text>
-          </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={styles.deleteButton}
-            onPress={handleDeleteAccount}
-          >
-            <Text style={styles.deleteText}>Delete Account</Text>
-          </TouchableOpacity>
+          {/* Toggle between Profile and Settings */}
+          <View style={styles.toggleContainer}>
+            <TouchableOpacity 
+              style={[styles.toggleButton, !showSettings && styles.toggleButtonActive]}
+              onPress={() => setShowSettings(false)}
+            >
+              <Text style={[styles.toggleText, !showSettings && styles.toggleTextActive]}>
+                Profile
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.toggleButton, showSettings && styles.toggleButtonActive]}
+              onPress={() => setShowSettings(true)}
+            >
+              <Text style={[styles.toggleText, showSettings && styles.toggleTextActive]}>
+                Settings
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Content based on toggle */}
+        {showSettings ? renderSettingsView() : renderProfileView()}
 
         {/* Dev Mode Info - Remove in production */}
         {__DEV__ && (
@@ -263,6 +355,11 @@ const styles = StyleSheet.create({
   profileInfo: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 16,
   },
   avatar: {
     width: 72,
@@ -271,12 +368,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
   },
   avatarText: {
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  cameraIcon: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+  },
+  cameraIconText: {
+    fontSize: 12,
   },
   userDetails: {
     flex: 1,
@@ -295,6 +407,30 @@ const styles = StyleSheet.create({
   memberSince: {
     fontSize: 12,
     color: '#9CA3AF',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 2,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: 'center',
+    borderRadius: 6,
+  },
+  toggleButtonActive: {
+    backgroundColor: 'white',
+  },
+  toggleText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  toggleTextActive: {
+    color: '#111827',
+    fontWeight: '600',
   },
   section: {
     marginTop: 24,
@@ -330,6 +466,52 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
+  },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  actionIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  actionIconText: {
+    fontSize: 24,
+  },
+  actionLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  activityList: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  activityItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  activityText: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 4,
+  },
+  activityTime: {
+    fontSize: 12,
+    color: '#9CA3AF',
   },
   settingsList: {
     backgroundColor: 'white',
