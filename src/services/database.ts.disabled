@@ -1,0 +1,278 @@
+import { openDatabaseSync } from 'expo-sqlite';
+import { Commitment } from '@/store/slices/commitmentsSlice';
+import { DayRecord } from '@/store/slices/recordsSlice';
+
+const db = openDatabaseSync('habittracker.db');
+
+export class DatabaseService {
+  static async initializeDatabase(): Promise<void> {
+    try {
+      // Create commitments table
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS commitments (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT,
+          color TEXT NOT NULL,
+          type TEXT NOT NULL,
+          target INTEGER,
+          unit TEXT,
+          streak INTEGER DEFAULT 0,
+          best_streak INTEGER DEFAULT 0,
+          is_active BOOLEAN DEFAULT 1,
+          is_private BOOLEAN DEFAULT 0,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          synced BOOLEAN DEFAULT 0
+        );
+      `);
+
+      // Create records table
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS records (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          commitment_id TEXT NOT NULL,
+          date TEXT NOT NULL,
+          completed BOOLEAN NOT NULL,
+          value INTEGER,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          synced BOOLEAN DEFAULT 0,
+          UNIQUE(commitment_id, date)
+        );
+      `);
+
+      // Create sync queue table
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS sync_queue (
+          id TEXT PRIMARY KEY,
+          type TEXT NOT NULL,
+          entity TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          data TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          retry_count INTEGER DEFAULT 0
+        );
+      `);
+
+      // Create indexes
+      await db.execAsync('CREATE INDEX IF NOT EXISTS idx_commitments_user_id ON commitments(user_id);');
+      await db.execAsync('CREATE INDEX IF NOT EXISTS idx_records_commitment_date ON records(commitment_id, date);');
+      await db.execAsync('CREATE INDEX IF NOT EXISTS idx_records_user_date ON records(user_id, date);');
+    } catch (error) {
+      console.error('Database initialization error:', error);
+      throw error;
+    }
+  }
+
+  // Commitments CRUD
+  static async saveCommitment(commitment: Commitment): Promise<void> {
+    try {
+      await db.runAsync(
+        `INSERT OR REPLACE INTO commitments 
+         (id, user_id, title, description, color, type, target, unit, streak, best_streak, is_active, is_private, created_at, updated_at, synced)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          commitment.id,
+          commitment.userId,
+          commitment.title,
+          commitment.description || null,
+          commitment.color,
+          commitment.type,
+          commitment.target || null,
+          commitment.unit || null,
+          commitment.streak,
+          commitment.bestStreak,
+          commitment.isActive ? 1 : 0,
+          commitment.isPrivate ? 1 : 0,
+          commitment.createdAt,
+          commitment.updatedAt,
+          0 // Not synced initially
+        ]
+      );
+    } catch (error) {
+      console.error('Save commitment error:', error);
+      throw error;
+    }
+  }
+
+  static async getCommitments(userId: string): Promise<Commitment[]> {
+    try {
+      const result = await db.getAllAsync(
+        'SELECT * FROM commitments WHERE user_id = ? AND is_active = 1 ORDER BY created_at DESC',
+        [userId]
+      );
+      
+      return result.map((row: any) => ({
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        description: row.description,
+        color: row.color,
+        type: row.type,
+        target: row.target,
+        unit: row.unit,
+        streak: row.streak,
+        bestStreak: row.best_streak,
+        isActive: row.is_active === 1,
+        isPrivate: row.is_private === 1,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+    } catch (error) {
+      console.error('Get commitments error:', error);
+      throw error;
+    }
+  }
+
+  static async deleteCommitment(commitmentId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'UPDATE commitments SET is_active = 0, updated_at = ?, synced = 0 WHERE id = ?',
+          [new Date().toISOString(), commitmentId]
+        );
+      }, reject, resolve);
+    });
+  }
+
+  // Records CRUD
+  static async saveRecord(record: DayRecord): Promise<void> {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          `INSERT OR REPLACE INTO records 
+           (id, user_id, commitment_id, date, completed, value, notes, created_at, updated_at, synced)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            record.id,
+            record.userId,
+            record.commitmentId,
+            record.date,
+            record.completed ? 1 : 0,
+            record.value || null,
+            record.notes || null,
+            record.createdAt,
+            record.updatedAt,
+            0 // Not synced initially
+          ]
+        );
+      }, reject, resolve);
+    });
+  }
+
+  static async getRecords(userId: string, startDate?: string, endDate?: string): Promise<DayRecord[]> {
+    return new Promise((resolve, reject) => {
+      let query = 'SELECT * FROM records WHERE user_id = ?';
+      const params: string[] = [userId];
+
+      if (startDate && endDate) {
+        query += ' AND date BETWEEN ? AND ?';
+        params.push(startDate, endDate);
+      }
+
+      query += ' ORDER BY date DESC';
+
+      db.transaction((tx) => {
+        tx.executeSql(
+          query,
+          params,
+          (_, { rows }) => {
+            const records: DayRecord[] = [];
+            for (let i = 0; i < rows.length; i++) {
+              const row = rows.item(i);
+              records.push({
+                id: row.id,
+                userId: row.user_id,
+                commitmentId: row.commitment_id,
+                date: row.date,
+                completed: row.completed === 1,
+                value: row.value,
+                notes: row.notes,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at,
+              });
+            }
+            resolve(records);
+          }
+        );
+      }, reject);
+    });
+  }
+
+  static async deleteRecord(recordId: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'DELETE FROM records WHERE id = ?',
+          [recordId]
+        );
+      }, reject, resolve);
+    });
+  }
+
+  // Sync queue operations
+  static async addToSyncQueue(type: string, entity: string, entityId: string, data: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const id = `sync_${Date.now()}_${Math.random()}`;
+      db.transaction((tx) => {
+        tx.executeSql(
+          'INSERT INTO sync_queue (id, type, entity, entity_id, data, timestamp, retry_count) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [id, type, entity, entityId, JSON.stringify(data), new Date().toISOString(), 0]
+        );
+      }, reject, resolve);
+    });
+  }
+
+  static async getSyncQueue(): Promise<any[]> {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'SELECT * FROM sync_queue ORDER BY timestamp ASC',
+          [],
+          (_, { rows }) => {
+            const queue = [];
+            for (let i = 0; i < rows.length; i++) {
+              const row = rows.item(i);
+              queue.push({
+                id: row.id,
+                type: row.type,
+                entity: row.entity,
+                entityId: row.entity_id,
+                data: JSON.parse(row.data),
+                timestamp: row.timestamp,
+                retryCount: row.retry_count,
+              });
+            }
+            resolve(queue);
+          }
+        );
+      }, reject);
+    });
+  }
+
+  static async removeFromSyncQueue(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'DELETE FROM sync_queue WHERE id = ?',
+          [id]
+        );
+      }, reject, resolve);
+    });
+  }
+
+  static async incrementSyncRetryCount(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'UPDATE sync_queue SET retry_count = retry_count + 1 WHERE id = ?',
+          [id]
+        );
+      }, reject, resolve);
+    });
+  }
+}

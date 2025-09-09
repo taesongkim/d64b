@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -11,82 +11,144 @@ import {
   Alert
 } from 'react-native';
 import CommitmentGrid from '@/components/CommitmentGrid';
-
-interface Commitment {
-  id: string;
-  title: string;
-  color: string;
-  type: 'binary' | 'counter' | 'timer';
-  streak: number;
-}
-
-interface DayRecord {
-  date: string;
-  commitmentId: string;
-  completed: boolean;
-  value?: number;
-}
+import AddCommitmentModal from '@/components/AddCommitmentModal';
+import NetworkStatusBanner from '@/components/NetworkStatusBanner';
+import CompletionAnimation from '@/components/CompletionAnimation';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { addCommitment, type Commitment } from '@/store/slices/commitmentsSlice';
+import { toggleRecord, type DayRecord } from '@/store/slices/recordsSlice';
+import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
+import { HapticService } from '@/services/hapticService';
 
 export default function DashboardScreen(): React.JSX.Element {
-  // Mock data - will be replaced with Redux state
-  const [commitments, setCommitments] = useState<Commitment[]>([
-    { id: '1', title: 'Morning Meditation', color: '#3B82F6', type: 'binary', streak: 3 },
-    { id: '2', title: 'Exercise', color: '#3B82F6', type: 'binary', streak: 7 },
-    { id: '3', title: 'Read 30 mins', color: '#8B5CF6', type: 'binary', streak: 1 },
-    { id: '4', title: 'No Social Media', color: '#EF4444', type: 'binary', streak: 2 },
-    { id: '5', title: 'Water (8 glasses)', color: '#06B6D4', type: 'counter', streak: 5 },
-  ]);
+  const dispatch = useAppDispatch();
+  const commitments = useAppSelector(state => state.commitments.commitments);
+  const records = useAppSelector(state => state.records.records);
   
-  const [records, setRecords] = useState<DayRecord[]>([
-    // Some sample completed records
-    { date: new Date().toISOString().split('T')[0], commitmentId: '1', completed: true },
-    { date: new Date().toISOString().split('T')[0], commitmentId: '2', completed: true },
-    { date: new Date(Date.now() - 86400000).toISOString().split('T')[0], commitmentId: '1', completed: true },
-    { date: new Date(Date.now() - 86400000).toISOString().split('T')[0], commitmentId: '2', completed: true },
-    { date: new Date(Date.now() - 86400000).toISOString().split('T')[0], commitmentId: '5', completed: true },
-  ]);
+  // Load data from database on mount
+  useEffect(() => {
+    loadInitialDataFromDatabase(dispatch);
+  }, [dispatch]);
+
+  // Initialize with sample data if empty (only after database load)
+  useEffect(() => {
+    // Add a small delay to ensure database has been checked first
+    const timer = setTimeout(() => {
+      if (commitments.length === 0) {
+        const sampleCommitments: Commitment[] = [
+          { 
+            id: '1', 
+            userId: 'current_user',
+            title: 'Morning Meditation', 
+            color: '#3B82F6', 
+            type: 'binary', 
+            streak: 3,
+            bestStreak: 3,
+            isActive: true,
+            isPrivate: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          { 
+            id: '2', 
+            userId: 'current_user',
+            title: 'Exercise', 
+            color: '#3B82F6', 
+            type: 'binary', 
+            streak: 7,
+            bestStreak: 7,
+            isActive: true,
+            isPrivate: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          { 
+            id: '3', 
+            userId: 'current_user',
+            title: 'Read 30 mins', 
+            color: '#8B5CF6', 
+            type: 'binary', 
+            streak: 1,
+            bestStreak: 5,
+            isActive: true,
+            isPrivate: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          { 
+            id: '4', 
+            userId: 'current_user',
+            title: 'No Social Media', 
+            color: '#EF4444', 
+            type: 'binary', 
+            streak: 2,
+            bestStreak: 10,
+            isActive: true,
+            isPrivate: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          { 
+            id: '5', 
+            userId: 'current_user',
+            title: 'Water (8 glasses)', 
+            color: '#06B6D4', 
+            type: 'counter', 
+            target: 8,
+            unit: 'glasses',
+            streak: 5,
+            bestStreak: 12,
+            isActive: true,
+            isPrivate: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+        ];
+        
+        sampleCommitments.forEach(commitment => {
+          dispatch(addCommitment(commitment));
+        });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [commitments.length, dispatch]);
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newCommitmentTitle, setNewCommitmentTitle] = useState('');
+  const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   
   const handleCellPress = (commitmentId: string, date: string) => {
+    // Check if record currently exists to determine which haptic feedback to use
     const existingRecord = records.find(
       r => r.commitmentId === commitmentId && r.date === date
     );
     
     if (existingRecord) {
-      // Remove the record (uncheck)
-      setRecords(records.filter(
-        r => !(r.commitmentId === commitmentId && r.date === date)
-      ));
+      HapticService.light(); // Light feedback for unchecking
     } else {
-      // Add a new record (check)
-      setRecords([...records, {
-        date,
-        commitmentId,
-        completed: true,
-      }]);
+      HapticService.success(); // Success feedback for completing
+      // Show completion animation for new completions
+      setShowCompletionAnimation(true);
     }
+    
+    dispatch(toggleRecord({ commitmentId, date }));
   };
 
-  const handleAddCommitment = () => {
-    if (newCommitmentTitle.trim()) {
-      const colors = ['#3B82F6', '#6366F1', '#8B5CF6', '#EF4444', '#F59E0B', '#06B6D4'];
-      const newCommitment: Commitment = {
-        id: Date.now().toString(),
-        title: newCommitmentTitle,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        type: 'binary',
-        streak: 0,
-      };
-      setCommitments([...commitments, newCommitment]);
-      setNewCommitmentTitle('');
-      setShowAddModal(false);
-    }
+  const handleAddCommitment = (commitmentData: Omit<Commitment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    HapticService.success(); // Success feedback for adding commitment
+    const newCommitment: Commitment = {
+      ...commitmentData,
+      id: Date.now().toString(),
+      userId: 'current_user',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    dispatch(addCommitment(newCommitment));
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <NetworkStatusBanner />
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Good morning!</Text>
@@ -144,44 +206,16 @@ export default function DashboardScreen(): React.JSX.Element {
         )}
       </View>
 
-      {/* Add Commitment Modal */}
-      <Modal
+      <AddCommitmentModal
         visible={showAddModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowAddModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>New Commitment</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Enter habit name"
-              placeholderTextColor="#9CA3AF"
-              value={newCommitmentTitle}
-              onChangeText={setNewCommitmentTitle}
-              autoFocus
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  setShowAddModal(false);
-                  setNewCommitmentTitle('');
-                }}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.modalAddButton}
-                onPress={handleAddCommitment}
-              >
-                <Text style={styles.modalAddText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddCommitment}
+      />
+      
+      <CompletionAnimation
+        visible={showCompletionAnimation}
+        onComplete={() => setShowCompletionAnimation(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -276,63 +310,6 @@ const styles = StyleSheet.create({
   emptyStateButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
-    width: '85%',
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#111827',
-    marginBottom: 16,
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: '#111827',
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  modalCancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: '#6B7280',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  modalAddButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-  },
-  modalAddText: {
-    color: 'white',
-    fontSize: 16,
     fontWeight: '600',
   },
 });
