@@ -2,8 +2,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from './types';
 import DashboardScreen from '@/screens/Dashboard/DashboardScreen';
+import AnalyticsScreen from '@/screens/Analytics/AnalyticsScreen';
 import FriendsListScreen from '@/screens/Social/FriendsListScreen';
 import ProfileScreen from '@/screens/Profile/ProfileScreen';
+import SettingsScreen from '@/screens/Settings/SettingsScreen';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -37,6 +39,15 @@ export default function MainTabs(): React.JSX.Element {
         }}
       />
       <Tab.Screen 
+        name="Analytics" 
+        component={AnalyticsScreen}
+        options={{
+          title: 'Analytics',
+          tabBarLabel: 'Analytics',
+          tabBarIcon: () => null, // TODO: Add icons in future task
+        }}
+      />
+      <Tab.Screen 
         name="Social" 
         component={FriendsListScreen}
         options={{
@@ -51,6 +62,15 @@ export default function MainTabs(): React.JSX.Element {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
+          tabBarIcon: () => null, // TODO: Add icons in future task
+        }}
+      />
+      <Tab.Screen 
+        name="Settings" 
+        component={SettingsScreen}
+        options={{
+          title: 'Settings',
+          tabBarLabel: 'Settings',
           tabBarIcon: () => null, // TODO: Add icons in future task
         }}
       />

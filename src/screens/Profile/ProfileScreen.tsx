@@ -213,7 +213,7 @@ export default function ProfileScreen(): React.JSX.Element {
             <Switch
               value={notifications}
               onValueChange={setNotifications}
-              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              trackColor={{ false: '#E5E7EB', true: '#111827' }}
               thumbColor="white"
             />
           </View>
@@ -222,7 +222,7 @@ export default function ProfileScreen(): React.JSX.Element {
             <Switch
               value={reminders}
               onValueChange={setReminders}
-              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              trackColor={{ false: '#E5E7EB', true: '#111827' }}
               thumbColor="white"
             />
           </View>
@@ -238,7 +238,7 @@ export default function ProfileScreen(): React.JSX.Element {
             <Switch
               value={darkMode}
               onValueChange={setDarkMode}
-              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              trackColor={{ false: '#E5E7EB', true: '#111827' }}
               thumbColor="white"
             />
           </View>
@@ -254,7 +254,7 @@ export default function ProfileScreen(): React.JSX.Element {
             <Switch
               value={publicProfile}
               onValueChange={setPublicProfile}
-              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              trackColor={{ false: '#E5E7EB', true: '#111827' }}
               thumbColor="white"
             />
           </View>
@@ -263,7 +263,7 @@ export default function ProfileScreen(): React.JSX.Element {
             <Switch
               value={shareProgress}
               onValueChange={setShareProgress}
-              trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+              trackColor={{ false: '#E5E7EB', true: '#111827' }}
               thumbColor="white"
             />
           </View>

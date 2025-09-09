@@ -10,8 +10,10 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
+  Analytics: undefined;
   Social: undefined;
   Profile: undefined;
+  Settings: undefined;
 };
 
 declare global {
