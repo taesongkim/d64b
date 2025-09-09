@@ -258,8 +258,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
   },
   checkmark: {
     color: 'white',
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   signupButton: {
-    backgroundColor: '#111827',
+    backgroundColor: '#10B981',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   },
   loginLinkBold: {
     fontWeight: '600',
-    color: '#111827',
+    color: '#10B981',
   },
   devBypassButton: {
     backgroundColor: '#FEF3C7',
