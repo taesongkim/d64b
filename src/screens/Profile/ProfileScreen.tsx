@@ -7,9 +7,11 @@ import {
   ScrollView,
   SafeAreaView,
   Switch,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 
 interface UserStats {
   totalHabits: number;
@@ -26,6 +28,7 @@ export default function ProfileScreen(): React.JSX.Element {
   const [userEmail] = useState('taesong.kim@example.com');
   const [memberSince] = useState('October 2024');
   const [showSettings, setShowSettings] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   
   // Mock stats
   const stats: UserStats = {
@@ -72,14 +75,53 @@ export default function ProfileScreen(): React.JSX.Element {
     );
   };
 
+  const pickImageFromLibrary = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to change your photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setProfileImage(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Sorry, we need camera permissions to take a photo.');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setProfileImage(result.assets[0].uri);
+    }
+  };
+
   const handleChangePhoto = (): void => {
     Alert.alert(
       'Change Profile Photo',
       'Choose an option',
       [
-        { text: 'Take Photo', onPress: () => console.log('Open camera') },
-        { text: 'Choose from Library', onPress: () => console.log('Open gallery') },
-        { text: 'Remove Photo', style: 'destructive', onPress: () => console.log('Remove photo') },
+        { text: 'Take Photo', onPress: takePhoto },
+        { text: 'Choose from Library', onPress: pickImageFromLibrary },
+        { text: 'Remove Photo', style: 'destructive', onPress: () => setProfileImage(null) },
         { text: 'Cancel', style: 'cancel' }
       ]
     );
@@ -289,9 +331,13 @@ export default function ProfileScreen(): React.JSX.Element {
           <View style={styles.profileInfo}>
             <TouchableOpacity onPress={handleChangePhoto} style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {userName.split(' ').map(n => n[0]).join('')}
-                </Text>
+                {profileImage ? (
+                  <Image source={{ uri: profileImage }} style={styles.avatarImage} />
+                ) : (
+                  <Text style={styles.avatarText}>
+                    {userName.split(' ').map(n => n[0]).join('')}
+                  </Text>
+                )}
               </View>
               <View style={styles.cameraIcon}>
                 <Text style={styles.cameraIconText}>📷</Text>
@@ -373,6 +419,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
   cameraIcon: {
     position: 'absolute',
