@@ -31,7 +31,7 @@ export default function DashboardScreen(): React.JSX.Element {
   // Mock data - will be replaced with Redux state
   const [commitments, setCommitments] = useState<Commitment[]>([
     { id: '1', title: 'Morning Meditation', color: '#3B82F6', type: 'binary', streak: 3 },
-    { id: '2', title: 'Exercise', color: '#10B981', type: 'binary', streak: 7 },
+    { id: '2', title: 'Exercise', color: '#3B82F6', type: 'binary', streak: 7 },
     { id: '3', title: 'Read 30 mins', color: '#8B5CF6', type: 'binary', streak: 1 },
     { id: '4', title: 'No Social Media', color: '#EF4444', type: 'binary', streak: 2 },
     { id: '5', title: 'Water (8 glasses)', color: '#06B6D4', type: 'counter', streak: 5 },
@@ -71,7 +71,7 @@ export default function DashboardScreen(): React.JSX.Element {
 
   const handleAddCommitment = () => {
     if (newCommitmentTitle.trim()) {
-      const colors = ['#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#F59E0B', '#06B6D4'];
+      const colors = ['#3B82F6', '#6366F1', '#8B5CF6', '#EF4444', '#F59E0B', '#06B6D4'];
       const newCommitment: Commitment = {
         id: Date.now().toString(),
         title: newCommitmentTitle,

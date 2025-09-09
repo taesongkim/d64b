@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   loginButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#111827',
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   signupLinkBold: {
     fontWeight: '600',
-    color: '#10B981',
+    color: '#111827',
   },
   devBypassButton: {
     backgroundColor: '#FEF3C7',
