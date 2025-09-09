@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import devProfileImage from '../../assets/images/dev-profile.jpg';
 
 interface UserStats {
   totalHabits: number;
@@ -28,7 +29,7 @@ export default function ProfileScreen(): React.JSX.Element {
   const [userEmail] = useState('taesong.kim@example.com');
   const [memberSince] = useState('October 2024');
   const [showSettings, setShowSettings] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(devProfileImage);
   
   // Mock stats
   const stats: UserStats = {
