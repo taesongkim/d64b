@@ -1,19 +1,27 @@
 /// <reference types="nativewind/types" />
 
-declare module 'react-native' {
-  interface ViewProps {
-    className?: string;
-  }
-  interface TextProps {
-    className?: string;
-  }
-  interface TouchableOpacityProps {
-    className?: string;
-  }
-  interface ScrollViewProps {
-    className?: string;
-  }
-  interface SafeAreaViewProps {
-    className?: string;
-  }
+// Declare image file modules
+declare module '*.jpg' {
+  const value: any;
+  export default value;
+}
+
+declare module '*.jpeg' {
+  const value: any;
+  export default value;
+}
+
+declare module '*.png' {
+  const value: any;
+  export default value;
+}
+
+declare module '*.gif' {
+  const value: any;
+  export default value;
+}
+
+declare module '*.webp' {
+  const value: any;
+  export default value;
 }
