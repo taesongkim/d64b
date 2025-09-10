@@ -406,21 +406,17 @@ export default function CommitmentGrid({
                     // No aggregation - all cells represent individual days
                     const isWeekendDay = isWeekend(date);
                     return (
-                      <View
+                      <TouchableOpacity
                         key={`${c.id}-${date}`}
                         style={[
                           dynamicStyles.cell,
                           isWeekendDay && !completed && styles.weekendCell,
                           completed && { backgroundColor: '#3B82F6' },
                         ]}
+                        onPress={() => onCellPress(c.id, date)}
                       >
-                        <TouchableOpacity
-                          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-                          onPress={() => onCellPress(c.id, date)}
-                        >
-                          {completed && <Text style={styles.checkmark}>✓</Text>}
-                        </TouchableOpacity>
-                      </View>
+                        {completed && <Text style={styles.checkmark}>✓</Text>}
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
