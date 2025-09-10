@@ -7,13 +7,60 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  LayoutAnimation,
+  Platform,
+  UIManager,
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
-const CELL_SIZE = 28;
-const CELL_MARGIN = 2; // Horizontal spacing
-const LEFT_COL_WIDTH = 120;
-const ROW_SPACING = 4; // Match horizontal spacing
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
+
+// Dynamic sizing based on view mode (zoom out effect)
+const getCellSize = (mode: ViewMode) => {
+  switch (mode) {
+    case 'daily': return 28;
+    case 'weekly': return 18; // Smaller to fit 4-5 weeks (28-35 days)
+    default: return 28;
+  }
+};
+
+const getCellMargin = (mode: ViewMode) => {
+  switch (mode) {
+    case 'daily': return 2;
+    case 'weekly': return 1;
+    default: return 2;
+  }
+};
+
+const getLeftColWidth = (mode: ViewMode) => {
+  switch (mode) {
+    case 'daily': return 120;
+    case 'weekly': return 100;
+    default: return 120;
+  }
+};
+
+const getRowSpacing = (mode: ViewMode) => {
+  switch (mode) {
+    case 'daily': return 4;
+    case 'weekly': return 2;
+    default: return 4;
+  }
+};
+
+const getCellBorderRadius = (mode: ViewMode) => {
+  switch (mode) {
+    case 'daily': return 4; // 28px cell
+    case 'weekly': return 3; // 18px cell
+    default: return 4;
+  }
+};
 
 interface Commitment {
   id: string;
@@ -38,7 +85,7 @@ interface CommitmentGridProps {
   earliestDate?: string; // format YYYY-MM-DD
 }
 
-type ViewMode = 'daily' | 'weekly' | 'monthly';
+type ViewMode = 'daily' | 'weekly';
 
 export default function CommitmentGrid({ 
   commitments, 
@@ -48,6 +95,29 @@ export default function CommitmentGrid({
 }: CommitmentGridProps): React.JSX.Element {
   const scrollRef = useRef<FlatList>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  
+  // Function to animate view mode changes using LayoutAnimation
+  const animateToViewMode = (newMode: ViewMode) => {
+    // Configure LayoutAnimation for smooth transitions
+    LayoutAnimation.configureNext({
+      duration: 300,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.scaleXY,
+      },
+      delete: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+    });
+    
+    setViewMode(newMode);
+  };
+  
   const [dates, setDates] = useState<string[]>([]);
   const FUTURE_BUFFER_DAYS = 60; // how many future days to pre-render
   
@@ -68,31 +138,17 @@ export default function CommitmentGrid({
     const list: string[] = [];
     const today = new Date();
     
-    if (viewMode === 'daily') {
-      // Determine start at earliest known date (prop -> records -> today)
-      const startISO = earliestDate || minRecordDate || toISODate(today);
-      const start = new Date(startISO);
-      const end = new Date(today);
-      end.setDate(end.getDate() + FUTURE_BUFFER_DAYS);
-      
-      const cursor = new Date(start);
-      while (cursor <= end) {
-        list.push(toISODate(cursor));
-        cursor.setDate(cursor.getDate() + 1);
-      }
-    } else if (viewMode === 'weekly') {
-      // Show last 12 weeks
-      for (let i = 0; i < 12; i++) {
-        const weekStart = new Date(today);
-        weekStart.setDate(weekStart.getDate() - (weekStart.getDay() + 7 * i));
-        list.push(weekStart.toISOString().split('T')[0]);
-      }
-    } else {
-      // Show last 12 months
-      for (let i = 0; i < 12; i++) {
-        const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        list.push(monthStart.toISOString().split('T')[0]);
-      }
+    // All views show individual daily cells - just different sizes
+    // Determine start at earliest known date (prop -> records -> today)
+    const startISO = earliestDate || minRecordDate || toISODate(today);
+    const start = new Date(startISO);
+    const end = new Date(today);
+    end.setDate(end.getDate() + FUTURE_BUFFER_DAYS);
+    
+    const cursor = new Date(start);
+    while (cursor <= end) {
+      list.push(toISODate(cursor));
+      cursor.setDate(cursor.getDate() + 1);
     }
     
     return list;
@@ -111,7 +167,7 @@ export default function CommitmentGrid({
 
   // Extend future dates when reaching the end
   const appendFutureDates = () => {
-    if (viewMode !== 'daily' || dates.length === 0) return;
+    if (dates.length === 0) return;
     const last = new Date(dates[dates.length - 1]);
     const newDates: string[] = [];
     for (let i = 1; i <= FUTURE_BUFFER_DAYS; i++) {
@@ -123,75 +179,21 @@ export default function CommitmentGrid({
   };
   
   const isCompleted = (commitmentId: string, date: string): boolean => {
-    if (viewMode === 'daily') {
-      return records.some(
-        r => r.commitmentId === commitmentId && r.date === date && r.completed
-      );
-    } else if (viewMode === 'weekly') {
-      // Check if any day in the week is completed
-      const weekStart = new Date(date);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      
-      return records.some(r => {
-        if (r.commitmentId !== commitmentId || !r.completed) return false;
-        const recordDate = new Date(r.date);
-        return recordDate >= weekStart && recordDate <= weekEnd;
-      });
-    } else {
-      // Check if any day in the month is completed
-      const monthStart = new Date(date);
-      const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
-      
-      return records.some(r => {
-        if (r.commitmentId !== commitmentId || !r.completed) return false;
-        const recordDate = new Date(r.date);
-        return recordDate >= monthStart && recordDate <= monthEnd;
-      });
-    }
+    // All views show individual daily cells - check if this specific day is completed
+    return records.some(
+      r => r.commitmentId === commitmentId && r.date === date && r.completed
+    );
   };
   
-  const getCompletionCount = (commitmentId: string, date: string): number => {
-    if (viewMode === 'weekly') {
-      const weekStart = new Date(date);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-      
-      return records.filter(r => {
-        if (r.commitmentId !== commitmentId || !r.completed) return false;
-        const recordDate = new Date(r.date);
-        return recordDate >= weekStart && recordDate <= weekEnd;
-      }).length;
-    } else if (viewMode === 'monthly') {
-      const monthStart = new Date(date);
-      const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
-      
-      return records.filter(r => {
-        if (r.commitmentId !== commitmentId || !r.completed) return false;
-        const recordDate = new Date(r.date);
-        return recordDate >= monthStart && recordDate <= monthEnd;
-      }).length;
-    }
-    return 0;
-  };
+  // Removed getCompletionCount - no aggregation, all cells represent individual days
   
   const formatDateLabel = (date: string): string => {
     // Parse date string directly to avoid timezone issues
     const [year, month, day] = date.split('-').map(Number);
     const d = new Date(year, month - 1, day); // month is 0-indexed
     
-    if (viewMode === 'daily') {
-      // Show day of month
-      return d.getDate().toString();
-    } else if (viewMode === 'weekly') {
-      // Show week number of the month
-      const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
-      const weekOfMonth = Math.ceil((d.getDate() + firstDay.getDay()) / 7);
-      return `W${weekOfMonth}`;
-    } else {
-      // Show month abbreviation
-      return d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
-    }
+    // All views show individual daily cells - show day of month
+    return d.getDate().toString();
   };
 
   const isWeekend = (date: string): boolean => {
@@ -204,7 +206,7 @@ export default function CommitmentGrid({
   
   const renderCommitmentRow = ({ item: commitment }: { item: Commitment }) => (
     <View style={styles.row}>
-      <View style={styles.commitmentHeader}>
+      <View style={dynamicStyles.commitmentHeader}>
         <Text style={styles.commitmentTitle} numberOfLines={1}>
           {commitment.title}
         </Text>
@@ -220,22 +222,18 @@ export default function CommitmentGrid({
           {dates.map((date) => {
             const completed = isCompleted(commitment.id, date);
             const isToday = date === todayISO;
-            const count = viewMode !== 'daily' ? getCompletionCount(commitment.id, date) : 0;
+            // No aggregation - all cells represent individual days
             return (
               <TouchableOpacity
                 key={`${commitment.id}-${date}`}
                 style={[
-                  styles.cell,
+                  dynamicStyles.cell,
                           completed && { backgroundColor: '#3B82F6' },
-                  isToday && viewMode === 'daily' && styles.todayCell,
+                  isToday && styles.todayCell,
                 ]}
                 onPress={() => onCellPress(commitment.id, date)}
               >
-                {viewMode === 'daily' ? (
-                  completed && <Text style={styles.checkmark}>✓</Text>
-                ) : (
-                  count > 0 && <Text style={styles.countText}>{count}</Text>
-                )}
+                {completed && <Text style={styles.checkmark}>✓</Text>}
               </TouchableOpacity>
             );
           })}
@@ -247,14 +245,41 @@ export default function CommitmentGrid({
   const [scrollX, setScrollX] = useState(0);
   const gridScrollRef = useRef<ScrollView>(null);
 
-  const columnWidth = CELL_SIZE + CELL_MARGIN * 2;
+  // Calculate column width based on current view mode
+  const columnWidth = getCellSize(viewMode) + getCellMargin(viewMode) * 2;
+  
+  // Dynamic styles based on current view mode
+  const dynamicStyles = {
+    dateCell: {
+      width: getCellSize(viewMode),
+      height: 30,
+      marginHorizontal: getCellMargin(viewMode),
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+    },
+    cell: {
+      width: getCellSize(viewMode),
+      height: getCellSize(viewMode),
+      marginHorizontal: getCellMargin(viewMode),
+      borderRadius: getCellBorderRadius(viewMode),
+      backgroundColor: '#F3F4F6',
+      justifyContent: 'center' as const,
+      alignItems: 'center' as const,
+    },
+    commitmentHeader: {
+      width: getLeftColWidth(viewMode),
+      paddingRight: 12,
+      justifyContent: 'center' as const,
+      alignItems: 'flex-start' as const,
+    },
+  };
   const visibleRange = useMemo(() => {
-    const gridWidth = screenWidth - LEFT_COL_WIDTH;
+    const gridWidth = screenWidth - getLeftColWidth(viewMode);
     const first = Math.max(0, Math.floor(scrollX / columnWidth));
     const count = Math.max(1, Math.ceil(gridWidth / columnWidth));
     const last = Math.min(dates.length - 1, first + count - 1);
     return { first, last };
-  }, [scrollX, dates.length]);
+  }, [scrollX, dates.length, viewMode, columnWidth]);
 
   const formatRangeLabel = (startISO: string, endISO: string): string => {
     const s = new Date(startISO);
@@ -278,7 +303,7 @@ export default function CommitmentGrid({
           {dates.map((date) => {
             const isToday = date === todayISO;
             return (
-              <View key={`header-${date}`} style={styles.dateCell}>
+              <View key={`header-${date}`} style={dynamicStyles.dateCell}>
                 <Text style={styles.dateText}>
                   {formatDateLabel(date)}
                 </Text>
@@ -296,26 +321,18 @@ export default function CommitmentGrid({
       <View style={styles.viewModeContainer}>
         <TouchableOpacity
           style={[styles.viewModeButton, viewMode === 'daily' && styles.viewModeButtonActive]}
-          onPress={() => setViewMode('daily')}
+          onPress={() => animateToViewMode('daily')}
         >
           <Text style={[styles.viewModeText, viewMode === 'daily' && styles.viewModeTextActive]}>
-            Daily
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'weekly' && styles.viewModeButtonActive]}
-          onPress={() => setViewMode('weekly')}
-        >
-          <Text style={[styles.viewModeText, viewMode === 'weekly' && styles.viewModeTextActive]}>
             Weekly
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'monthly' && styles.viewModeButtonActive]}
-          onPress={() => setViewMode('monthly')}
+          style={[styles.viewModeButton, viewMode === 'weekly' && styles.viewModeButtonActive]}
+          onPress={() => animateToViewMode('weekly')}
         >
-          <Text style={[styles.viewModeText, viewMode === 'monthly' && styles.viewModeTextActive]}>
-            Monthly
+          <Text style={[styles.viewModeText, viewMode === 'weekly' && styles.viewModeTextActive]}>
+            Biweekly
           </Text>
         </TouchableOpacity>
       </View>
@@ -323,11 +340,11 @@ export default function CommitmentGrid({
       {/* Two-column layout: fixed labels left, synced header+grid right */}
       <View style={{ flexDirection: 'row' }}>
         {/* Left labels column (not horizontally scrollable) */}
-        <View style={{ width: LEFT_COL_WIDTH }}>
+        <View style={{ width: getLeftColWidth(viewMode) }}>
           {/* Spacer to align with date header height */}
           <View style={{ marginTop: 4, marginBottom: 4 }}>
             <View style={{ height: 30, justifyContent: 'center', alignItems: 'flex-start' }}>
-              {viewMode === 'daily' && dates.length > 0 && (
+              {dates.length > 0 && (
                 <Text style={styles.dateText}>
                   {formatRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
                 </Text>
@@ -335,7 +352,7 @@ export default function CommitmentGrid({
             </View>
           </View>
           {commitments.map((commitment) => (
-            <View key={`label-${commitment.id}`} style={[styles.commitmentHeader, { marginBottom: ROW_SPACING, height: CELL_SIZE, paddingTop: 0, paddingBottom: 0 }]}> 
+            <View key={`label-${commitment.id}`} style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}> 
               <Text style={styles.commitmentTitle} numberOfLines={1}>{commitment.title}</Text>
               {commitment.streak > 0 && (
                 <View style={styles.streakBadge}>
@@ -367,44 +384,43 @@ export default function CommitmentGrid({
           >
             <View style={{ position: 'relative' }}>
               {/* Today column highlight bar - positioned within the scrollable content */}
-              {viewMode === 'daily' && (
-                <View 
+              <View 
                   style={[
                     styles.todayColumnBar,
                     {
-                      left: (todayIndex * columnWidth) + (CELL_MARGIN / 4),
-                      width: CELL_SIZE + (CELL_MARGIN * 1.5),
+                      left: (todayIndex * (getCellSize(viewMode) + getCellMargin(viewMode) * 2)) + (getCellMargin(viewMode) / 4),
+                      width: getCellSize(viewMode) + (getCellMargin(viewMode) * 1.5),
+                      borderRadius: getCellBorderRadius(viewMode),
                     }
                   ]} 
                   pointerEvents="none"
                 />
-              )}
               
               {/* Date header */}
               {renderDateHeader()}
               {/* Grid rows */}
               {commitments.map((c) => (
-                <View key={c.id} style={{ flexDirection: 'row', marginBottom: ROW_SPACING }}>
+                <View key={c.id} style={{ flexDirection: 'row', marginBottom: getRowSpacing(viewMode) }}>
                   {dates.map((date) => {
                     const completed = isCompleted(c.id, date);
-                    const count = viewMode !== 'daily' ? getCompletionCount(c.id, date) : 0;
-                    const isWeekendDay = viewMode === 'daily' && isWeekend(date);
+                    // No aggregation - all cells represent individual days
+                    const isWeekendDay = isWeekend(date);
                     return (
-                      <TouchableOpacity
+                      <View
                         key={`${c.id}-${date}`}
                         style={[
-                          styles.cell,
+                          dynamicStyles.cell,
                           isWeekendDay && !completed && styles.weekendCell,
                           completed && { backgroundColor: '#3B82F6' },
                         ]}
-                        onPress={() => onCellPress(c.id, date)}
                       >
-                        {viewMode === 'daily' ? (
-                          completed && <Text style={styles.checkmark}>✓</Text>
-                        ) : (
-                          count > 0 && <Text style={styles.countText}>{count}</Text>
-                        )}
-                      </TouchableOpacity>
+                        <TouchableOpacity
+                          style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
+                          onPress={() => onCellPress(c.id, date)}
+                        >
+                          {completed && <Text style={styles.checkmark}>✓</Text>}
+                        </TouchableOpacity>
+                      </View>
                     );
                   })}
                 </View>
@@ -464,9 +480,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dateCell: {
-    width: CELL_SIZE,
     height: 30,
-    marginHorizontal: CELL_MARGIN,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -480,7 +494,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   commitmentHeader: {
-    width: 120,
     paddingRight: 12,
     justifyContent: 'center',
     alignItems: 'flex-start',
@@ -500,9 +513,6 @@ const styles = StyleSheet.create({
     color: '#DC2626',
   },
   cell: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
-    marginHorizontal: CELL_MARGIN,
     borderRadius: 8,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
@@ -516,7 +526,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
-    borderRadius: 8,
     zIndex: 0,
   },
   checkmark: {
