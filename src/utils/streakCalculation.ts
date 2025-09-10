@@ -18,7 +18,7 @@ export class StreakCalculator {
     daysToAnalyze: number = 30
   ): StreakData {
     const commitmentRecords = records
-      .filter(record => record.commitmentId === commitmentId && record.completed)
+      .filter(record => record.commitmentId === commitmentId && record.status === 'completed')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     if (commitmentRecords.length === 0) {
@@ -49,11 +49,23 @@ export class StreakCalculator {
 
     while (currentDate.getTime() >= new Date(today.getTime() - (365 * 24 * 60 * 60 * 1000))) {
       const dateStr = currentDate.toISOString().split('T')[0];
-      const record = commitmentRecords.find(r => r.date === dateStr);
+      const record = records.find(r => r.commitmentId === commitmentId && r.date === dateStr);
       
-      if (record && record.completed) {
-        currentStreak++;
+      if (record) {
+        if (record.status === 'completed') {
+          currentStreak++;
+        } else if (record.status === 'failed') {
+          // Failed days break the streak
+          break;
+        } else if (record.status === 'skipped') {
+          // Skipped days don't affect the streak, continue checking
+          // Don't increment streak, but don't break it either
+        } else {
+          // No record or 'none' status - break the streak
+          break;
+        }
       } else {
+        // No record for this date - break the streak
         break;
       }
       
@@ -159,7 +171,7 @@ export class StreakCalculator {
     const todayRecord = records.find(
       record => record.commitmentId === commitmentId && 
                record.date === today.toISOString().split('T')[0] &&
-               record.completed
+               record.status === 'completed'
     );
 
     const streakData = this.calculateStreakData(commitmentId, records);

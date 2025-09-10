@@ -16,7 +16,7 @@ import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, type Commitment } from '@/store/slices/commitmentsSlice';
-import { toggleRecord, type DayRecord } from '@/store/slices/recordsSlice';
+import { toggleRecord, setRecordStatus, type DayRecord, type RecordStatus } from '@/store/slices/recordsSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { HapticService } from '@/services/hapticService';
 
@@ -134,6 +134,22 @@ export default function DashboardScreen(): React.JSX.Element {
     dispatch(toggleRecord({ commitmentId, date }));
   };
 
+  const handleSetRecordStatus = (commitmentId: string, date: string, status: RecordStatus) => {
+    // Provide haptic feedback based on status
+    if (status === 'completed') {
+      HapticService.success();
+      setShowCompletionAnimation(true);
+    } else if (status === 'failed') {
+      HapticService.error();
+    } else if (status === 'skipped') {
+      HapticService.light();
+    } else {
+      HapticService.light(); // For 'none' status (removing record)
+    }
+    
+    dispatch(setRecordStatus({ commitmentId, date, status }));
+  };
+
   const handleAddCommitment = (commitmentData: Omit<Commitment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
     HapticService.success(); // Success feedback for adding commitment
     const newCommitment: Commitment = {
@@ -192,6 +208,7 @@ export default function DashboardScreen(): React.JSX.Element {
             commitments={commitments}
             records={records}
             onCellPress={handleCellPress}
+            onSetRecordStatus={handleSetRecordStatus}
           />
         ) : (
           <View style={styles.emptyState}>

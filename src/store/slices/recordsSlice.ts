@@ -1,11 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+export type RecordStatus = 'completed' | 'skipped' | 'failed' | 'none';
+
 export interface DayRecord {
   id: string;
   userId: string;
   commitmentId: string;
   date: string;
-  completed: boolean;
+  status: RecordStatus;
   value?: number;
   notes?: string;
   createdAt: string;
@@ -73,7 +75,36 @@ const recordsSlice = createSlice({
           userId: 'current_user',
           commitmentId,
           date,
-          completed: true,
+          status: 'completed',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        state.records.push(newRecord);
+      }
+    },
+    setRecordStatus: (state, action: PayloadAction<{ commitmentId: string; date: string; status: RecordStatus }>) => {
+      const { commitmentId, date, status } = action.payload;
+      const existingRecord = state.records.find(
+        r => r.commitmentId === commitmentId && r.date === date
+      );
+      
+      if (status === 'none') {
+        // Remove record if status is 'none'
+        state.records = state.records.filter(
+          r => !(r.commitmentId === commitmentId && r.date === date)
+        );
+      } else if (existingRecord) {
+        // Update existing record
+        existingRecord.status = status;
+        existingRecord.updatedAt = new Date().toISOString();
+      } else {
+        // Create new record
+        const newRecord: DayRecord = {
+          id: `temp_${Date.now()}`,
+          userId: 'current_user',
+          commitmentId,
+          date,
+          status,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
@@ -91,6 +122,7 @@ export const {
   updateRecord,
   deleteRecord,
   toggleRecord,
+  setRecordStatus,
 } = recordsSlice.actions;
 
 export default recordsSlice.reducer;

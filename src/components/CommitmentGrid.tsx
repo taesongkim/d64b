@@ -11,6 +11,10 @@ import {
   Platform,
   UIManager,
 } from 'react-native';
+import ReactionPopup from './ReactionPopup';
+import CustomXIcon from './CustomXIcon';
+import CustomSkipIcon from './CustomSkipIcon';
+import { RecordStatus } from '@/store/slices/recordsSlice';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -73,7 +77,7 @@ interface Commitment {
 interface DayRecord {
   date: string;
   commitmentId: string;
-  completed: boolean;
+  status: RecordStatus;
   value?: number;
 }
 
@@ -81,6 +85,7 @@ interface CommitmentGridProps {
   commitments: Commitment[];
   records: DayRecord[];
   onCellPress: (commitmentId: string, date: string) => void;
+  onSetRecordStatus: (commitmentId: string, date: string, status: RecordStatus) => void;
   // Optional hint for the earliest date to display (e.g., account creation date)
   earliestDate?: string; // format YYYY-MM-DD
 }
@@ -91,10 +96,16 @@ export default function CommitmentGrid({
   commitments, 
   records, 
   onCellPress,
+  onSetRecordStatus,
   earliestDate,
 }: CommitmentGridProps): React.JSX.Element {
   const scrollRef = useRef<FlatList>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  
+  // Reaction popup state
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [selectedCell, setSelectedCell] = useState<{ commitmentId: string; date: string } | null>(null);
   
   // Function to animate view mode changes using LayoutAnimation
   const animateToViewMode = (newMode: ViewMode) => {
@@ -178,12 +189,6 @@ export default function CommitmentGrid({
     setDates(prev => [...prev, ...newDates]);
   };
   
-  const isCompleted = (commitmentId: string, date: string): boolean => {
-    // All views show individual daily cells - check if this specific day is completed
-    return records.some(
-      r => r.commitmentId === commitmentId && r.date === date && r.completed
-    );
-  };
   
   // Removed getCompletionCount - no aggregation, all cells represent individual days
   
@@ -203,6 +208,25 @@ export default function CommitmentGrid({
     const dayOfWeek = d.getDay();
     return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
   };
+
+  // Popup handlers
+  const handleLongPress = (commitmentId: string, date: string, event: any) => {
+    const { pageX, pageY } = event.nativeEvent;
+    setSelectedCell({ commitmentId, date });
+    setPopupPosition({ x: pageX, y: pageY });
+    setPopupVisible(true);
+  };
+
+  const handlePopupSelect = (status: RecordStatus) => {
+    if (selectedCell) {
+      onSetRecordStatus(selectedCell.commitmentId, selectedCell.date, status);
+    }
+  };
+
+  const handlePopupDismiss = () => {
+    setPopupVisible(false);
+    setSelectedCell(null);
+  };
   
   const renderCommitmentRow = ({ item: commitment }: { item: Commitment }) => (
     <View style={styles.row}>
@@ -220,20 +244,41 @@ export default function CommitmentGrid({
         {/* Cells are rendered within the shared horizontal ScrollView, so here we just map */}
         <View style={{ flexDirection: 'row' }}>
           {dates.map((date) => {
-            const completed = isCompleted(commitment.id, date);
+            const record = records.find(r => r.commitmentId === commitment.id && r.date === date);
+            const status = record?.status || 'none';
             const isToday = date === todayISO;
-            // No aggregation - all cells represent individual days
+            const isWeekendDay = isWeekend(date);
+            
+            // Determine cell styling based on status
+            let cellStyle = [dynamicStyles.cell];
+            let cellContent = null;
+            
+            if (status === 'completed') {
+              cellStyle.push({ backgroundColor: '#3B82F6' });
+              cellContent = <Text style={styles.checkmark}>✓</Text>;
+            } else if (status === 'skipped') {
+              cellStyle.push({ backgroundColor: '#3B82F6' });
+              cellContent = <CustomSkipIcon size={12} color="white" />;
+            } else if (status === 'failed') {
+              cellStyle.push({ backgroundColor: '#EF4444' });
+              cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+            } else if (isWeekendDay) {
+              cellStyle.push(styles.weekendCell);
+            }
+            
+            if (isToday) {
+              cellStyle.push(styles.todayCell);
+            }
+            
             return (
               <TouchableOpacity
                 key={`${commitment.id}-${date}`}
-                style={[
-                  dynamicStyles.cell,
-                          completed && { backgroundColor: '#3B82F6' },
-                  isToday && styles.todayCell,
-                ]}
+                style={cellStyle}
                 onPress={() => onCellPress(commitment.id, date)}
+                onLongPress={(event) => handleLongPress(commitment.id, date, event)}
+                delayLongPress={500}
               >
-                {completed && <Text style={styles.checkmark}>✓</Text>}
+                {cellContent}
               </TouchableOpacity>
             );
           })}
@@ -402,20 +447,36 @@ export default function CommitmentGrid({
               {commitments.map((c) => (
                 <View key={c.id} style={{ flexDirection: 'row', marginBottom: getRowSpacing(viewMode) }}>
                   {dates.map((date) => {
-                    const completed = isCompleted(c.id, date);
-                    // No aggregation - all cells represent individual days
+                    const record = records.find(r => r.commitmentId === c.id && r.date === date);
+                    const status = record?.status || 'none';
                     const isWeekendDay = isWeekend(date);
+                    
+                    // Determine cell styling based on status
+                    let cellStyle = [dynamicStyles.cell];
+                    let cellContent = null;
+                    
+                    if (status === 'completed') {
+                      cellStyle.push({ backgroundColor: '#3B82F6' });
+                      cellContent = <Text style={styles.checkmark}>✓</Text>;
+                    } else if (status === 'skipped') {
+                      cellStyle.push({ backgroundColor: '#3B82F6' });
+                      cellContent = <CustomSkipIcon size={12} color="white" />;
+                    } else if (status === 'failed') {
+                      cellStyle.push({ backgroundColor: '#EF4444' });
+                      cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+                    } else if (isWeekendDay) {
+                      cellStyle.push(styles.weekendCell);
+                    }
+                    
                     return (
                       <TouchableOpacity
                         key={`${c.id}-${date}`}
-                        style={[
-                          dynamicStyles.cell,
-                          isWeekendDay && !completed && styles.weekendCell,
-                          completed && { backgroundColor: '#3B82F6' },
-                        ]}
+                        style={cellStyle}
                         onPress={() => onCellPress(c.id, date)}
+                        onLongPress={(event) => handleLongPress(c.id, date, event)}
+                        delayLongPress={500}
                       >
-                        {completed && <Text style={styles.checkmark}>✓</Text>}
+                        {cellContent}
                       </TouchableOpacity>
                     );
                   })}
@@ -425,6 +486,14 @@ export default function CommitmentGrid({
           </ScrollView>
         </View>
       </View>
+      
+      {/* Reaction Popup */}
+      <ReactionPopup
+        visible={popupVisible}
+        onSelect={handlePopupSelect}
+        onDismiss={handlePopupDismiss}
+        position={popupPosition}
+      />
     </View>
   );
 }
@@ -525,6 +594,16 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   checkmark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  skipMark: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  failMark: {
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
