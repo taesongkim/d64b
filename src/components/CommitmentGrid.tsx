@@ -226,7 +226,7 @@ export default function CommitmentGrid({
                 key={`${commitment.id}-${date}`}
                 style={[
                   styles.cell,
-                  completed && { backgroundColor: commitment.color },
+                          completed && { backgroundColor: '#3B82F6' },
                   isToday && viewMode === 'daily' && styles.todayCell,
                 ]}
                 onPress={() => onCellPress(commitment.id, date)}
@@ -395,7 +395,7 @@ export default function CommitmentGrid({
                         style={[
                           styles.cell,
                           isWeekendDay && !completed && styles.weekendCell,
-                          completed && { backgroundColor: c.color },
+                          completed && { backgroundColor: '#3B82F6' },
                         ]}
                         onPress={() => onCellPress(c.id, date)}
                       >

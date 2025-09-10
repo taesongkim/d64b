@@ -18,18 +18,7 @@ interface AddCommitmentModalProps {
   onAdd: (commitment: Omit<Commitment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
 }
 
-const COLORS = [
-  { name: 'Blue', value: '#3B82F6' },
-  { name: 'Indigo', value: '#6366F1' },
-  { name: 'Purple', value: '#8B5CF6' },
-  { name: 'Pink', value: '#EC4899' },
-  { name: 'Red', value: '#EF4444' },
-  { name: 'Orange', value: '#F59E0B' },
-  { name: 'Yellow', value: '#EAB308' },
-  { name: 'Green', value: '#22C55E' },
-  { name: 'Teal', value: '#06B6D4' },
-  { name: 'Cyan', value: '#0891B2' },
-];
+// Colors removed - using uniform blue style
 
 const COMMITMENT_TYPES = [
   { label: 'Yes/No', value: 'binary' as const, description: 'Simple completion tracking' },
@@ -40,7 +29,7 @@ const COMMITMENT_TYPES = [
 export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommitmentModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedColor, setSelectedColor] = useState(COLORS[0].value);
+  // Color selection removed - using uniform blue
   const [selectedType, setSelectedType] = useState<'binary' | 'counter' | 'timer'>('binary');
   const [target, setTarget] = useState('');
   const [unit, setUnit] = useState('');
@@ -49,7 +38,6 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setSelectedColor(COLORS[0].value);
     setSelectedType('binary');
     setTarget('');
     setUnit('');
@@ -67,7 +55,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
     const commitment = {
       title: title.trim(),
       description: description.trim() || undefined,
-      color: selectedColor,
+      color: '#3B82F6', // Uniform blue color
       type: selectedType,
       target: selectedType !== 'binary' && target ? parseInt(target) : undefined,
       unit: selectedType !== 'binary' && unit ? unit.trim() : undefined,
@@ -189,26 +177,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
               </View>
             )}
 
-            {/* Color Selection */}
-            <View style={styles.section}>
-              <Text style={styles.label}>Color</Text>
-              <View style={styles.colorContainer}>
-                {COLORS.map((color) => (
-                  <TouchableOpacity
-                    key={color.value}
-                    style={[
-                      styles.colorOption,
-                      { backgroundColor: color.value },
-                      selectedColor === color.value && styles.selectedColor,
-                    ]}
-                    onPress={() => {
-                      HapticService.selection();
-                      setSelectedColor(color.value);
-                    }}
-                  />
-                ))}
-              </View>
-            </View>
+            {/* Color selection removed - using uniform blue style */}
 
             {/* Privacy Toggle */}
             <View style={styles.section}>
