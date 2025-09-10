@@ -16,7 +16,7 @@ export default function AuthStack(): React.JSX.Element {
         },
         headerTintColor: '#333',
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontFamily: 'Manrope_700Bold',
         },
       }}
     >

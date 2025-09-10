@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   headerSubtitle: {
@@ -630,14 +630,14 @@ const styles = StyleSheet.create({
   exportButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
     marginHorizontal: 20,
     marginBottom: 8,
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
   },
   timeRangeText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
     color: '#374151',
   },
   selectedTimeRangeText: {
@@ -690,13 +690,13 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
     marginBottom: 4,
   },
   statTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
     color: '#374151',
     textAlign: 'center',
   },
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
     color: '#6B7280',
     marginBottom: 8,
   },
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
   },
   insightTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
     marginBottom: 8,
   },
@@ -783,12 +783,12 @@ const styles = StyleSheet.create({
   },
   weeklyCardTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
   weeklyCardRate: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
   },
   successRate: {
     color: '#22C55E',
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
   },
   weeklyStatValue: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
   heatmapContainer: {
@@ -842,7 +842,7 @@ const styles = StyleSheet.create({
   },
   heatmapCellText: {
     fontSize: 10,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   intensity0: {
     backgroundColor: '#F9FAFB',

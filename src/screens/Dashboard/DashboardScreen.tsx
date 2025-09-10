@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   date: {
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: 'white',
     fontSize: 24,
-    fontWeight: '400',
+    fontFamily: 'Manrope_400Regular',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   statLabel: {
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
     marginBottom: 16,
   },
@@ -310,6 +310,6 @@ const styles = StyleSheet.create({
   emptyStateButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });

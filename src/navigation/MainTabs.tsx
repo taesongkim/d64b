@@ -25,7 +25,7 @@ export default function MainTabs(): React.JSX.Element {
         },
         headerTintColor: '#333',
         headerTitleStyle: {
-          fontWeight: 'bold',
+          fontFamily: 'Manrope_700Bold',
         },
       }}
     >

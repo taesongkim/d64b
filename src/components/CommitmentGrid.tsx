@@ -452,11 +452,11 @@ const styles = StyleSheet.create({
   viewModeText: {
     fontSize: 14,
     color: '#6B7280',
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   viewModeTextActive: {
     color: '#111827',
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   monthHeader: {
     marginBottom: 4,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   monthText: {
     fontSize: 11,
     color: '#9CA3AF',
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     textTransform: 'uppercase',
   },
   dateHeader: {
@@ -496,7 +496,7 @@ const styles = StyleSheet.create({
   },
   commitmentTitle: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
     color: '#111827',
     lineHeight: 20,
     textAlignVertical: 'center',
@@ -532,6 +532,6 @@ const styles = StyleSheet.create({
   countText: {
     color: 'white',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
   },
 });

@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   headerButton: {
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   headerButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -377,11 +377,11 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     color: '#6B7280',
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   tabTextActive: {
     color: '#111827',
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
   },
   streakBadge: {
     position: 'absolute',
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   },
   friendName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
   friendUsername: {
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   statLabel: {
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#6B7280',
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
   emptyState: {
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
     marginBottom: 8,
   },
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   emptyStateButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   modalOverlay: {
     flex: 1,
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
     marginBottom: 8,
   },
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
   modalCancelText: {
     color: '#6B7280',
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   modalAddButton: {
     flex: 1,
@@ -663,6 +663,6 @@ const styles = StyleSheet.create({
   modalAddText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
 });

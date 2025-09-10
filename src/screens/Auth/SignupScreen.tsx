@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontSize: 42,
-    fontWeight: '800',
+    fontFamily: 'Manrope_800ExtraBold',
     color: '#111827',
     letterSpacing: -1,
   },
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   signupButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   divider: {
     flexDirection: 'row',
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
   socialButtonText: {
     fontSize: 16,
     color: '#374151',
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   loginLink: {
     alignItems: 'center',
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   loginLinkBold: {
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
   devBypassButton: {
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   devBypassText: {
     color: '#92400E',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     textAlign: 'center',
   },
 });

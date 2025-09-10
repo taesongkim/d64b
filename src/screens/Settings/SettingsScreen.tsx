@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
     marginHorizontal: 20,
     marginBottom: 12,
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: 'white',
   },
   profileInfo: {
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
     marginBottom: 4,
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
     color: '#374151',
   },
   settingsCard: {
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
   },
   settingTitle: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
     color: '#111827',
     marginBottom: 2,
   },
@@ -433,12 +433,12 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     color: '#3B82F6',
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   deleteText: {
     fontSize: 16,
     color: '#EF4444',
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   footer: {
     alignItems: 'center',

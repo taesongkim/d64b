@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: 'white',
     fontSize: 24,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
   },
   avatarImage: {
     width: 72,
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 20,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
     marginBottom: 2,
   },
@@ -477,11 +477,11 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 14,
     color: '#6B7280',
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
   toggleTextActive: {
     color: '#111827',
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
   },
   section: {
     marginTop: 24,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
     marginBottom: 16,
   },
@@ -505,12 +505,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   statUnit: {
     fontSize: 14,
-    fontWeight: 'normal',
+    fontFamily: 'Manrope_400Regular',
     color: '#6B7280',
   },
   statLabel: {
@@ -606,7 +606,7 @@ const styles = StyleSheet.create({
   },
   appVersion: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
     marginBottom: 4,
   },
@@ -625,7 +625,7 @@ const styles = StyleSheet.create({
   },
   signOutText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#374151',
   },
   deleteButton: {
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Manrope_600SemiBold',
     color: '#DC2626',
   },
   devInfo: {
@@ -652,6 +652,6 @@ const styles = StyleSheet.create({
   devText: {
     fontSize: 12,
     color: '#92400E',
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
 });

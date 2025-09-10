@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
     textAlign: 'center',
   },
   dotsContainer: {
@@ -160,6 +160,6 @@ const styles = StyleSheet.create({
   },
   dot: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: 'Manrope_500Medium',
   },
 });
