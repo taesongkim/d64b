@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
@@ -10,7 +11,9 @@ import {
 
 const { width: screenWidth } = Dimensions.get('window');
 const CELL_SIZE = 44;
-const CELL_MARGIN = 2;
+const CELL_MARGIN = 4; // Horizontal spacing
+const LEFT_COL_WIDTH = 120;
+const ROW_SPACING = 4; // Match horizontal spacing
 
 interface Commitment {
   id: string;
@@ -31,6 +34,8 @@ interface CommitmentGridProps {
   commitments: Commitment[];
   records: DayRecord[];
   onCellPress: (commitmentId: string, date: string) => void;
+  // Optional hint for the earliest date to display (e.g., account creation date)
+  earliestDate?: string; // format YYYY-MM-DD
 }
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
@@ -38,42 +43,84 @@ type ViewMode = 'daily' | 'weekly' | 'monthly';
 export default function CommitmentGrid({ 
   commitments, 
   records, 
-  onCellPress 
+  onCellPress,
+  earliestDate,
 }: CommitmentGridProps): React.JSX.Element {
   const scrollRef = useRef<FlatList>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const [dates, setDates] = useState<string[]>([]);
+  const FUTURE_BUFFER_DAYS = 60; // how many future days to pre-render
   
+  // Utility
+  const toISODate = (d: Date) => d.toISOString().split('T')[0];
+
+  const minRecordDate: string | null = useMemo(() => {
+    if (!records || records.length === 0) return null;
+    let min: string | null = null;
+    for (const r of records) {
+      if (!min || r.date < min) min = r.date;
+    }
+    return min;
+  }, [records]);
+
   // Generate dates based on view mode
-  const getDates = () => {
-    const dates = [];
+  const buildInitialDates = () => {
+    const list: string[] = [];
     const today = new Date();
     
     if (viewMode === 'daily') {
-      // Show last 30 days
-      for (let i = 0; i < 30; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        dates.push(date.toISOString().split('T')[0]);
+      // Determine start at earliest known date (prop -> records -> today)
+      const startISO = earliestDate || minRecordDate || toISODate(today);
+      const start = new Date(startISO);
+      const end = new Date(today);
+      end.setDate(end.getDate() + FUTURE_BUFFER_DAYS);
+      
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        list.push(toISODate(cursor));
+        cursor.setDate(cursor.getDate() + 1);
       }
     } else if (viewMode === 'weekly') {
       // Show last 12 weeks
       for (let i = 0; i < 12; i++) {
         const weekStart = new Date(today);
         weekStart.setDate(weekStart.getDate() - (weekStart.getDay() + 7 * i));
-        dates.push(weekStart.toISOString().split('T')[0]);
+        list.push(weekStart.toISOString().split('T')[0]);
       }
     } else {
       // Show last 12 months
       for (let i = 0; i < 12; i++) {
         const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1);
-        dates.push(monthStart.toISOString().split('T')[0]);
+        list.push(monthStart.toISOString().split('T')[0]);
       }
     }
     
-    return dates;
+    return list;
   };
-  
-  const dates = getDates();
+
+  useEffect(() => {
+    setDates(buildInitialDates());
+  }, [viewMode, earliestDate, minRecordDate, toISODate(new Date())]);
+
+  const todayISO = toISODate(new Date());
+  const todayIndex = useMemo(() => {
+    if (!dates || dates.length === 0) return 0;
+    const idx = dates.indexOf(todayISO);
+    return idx >= 0 ? idx : 0;
+  }, [dates, todayISO]);
+
+  // Extend future dates when reaching the end
+  const appendFutureDates = () => {
+    if (viewMode !== 'daily' || dates.length === 0) return;
+    const last = new Date(dates[dates.length - 1]);
+    const newDates: string[] = [];
+    for (let i = 1; i <= FUTURE_BUFFER_DAYS; i++) {
+      const d = new Date(last);
+      d.setDate(d.getDate() + i);
+      newDates.push(toISODate(d));
+    }
+    setDates(prev => [...prev, ...newDates]);
+  };
   
   const isCompleted = (commitmentId: string, date: string): boolean => {
     if (viewMode === 'daily') {
@@ -129,7 +176,9 @@ export default function CommitmentGrid({
   };
   
   const formatDateLabel = (date: string): string => {
-    const d = new Date(date);
+    // Parse date string directly to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    const d = new Date(year, month - 1, day); // month is 0-indexed
     
     if (viewMode === 'daily') {
       // Show day of month
@@ -144,6 +193,14 @@ export default function CommitmentGrid({
       return d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
     }
   };
+
+  const isWeekend = (date: string): boolean => {
+    // Parse date string directly to avoid timezone issues
+    const [year, month, day] = date.split('-').map(Number);
+    const d = new Date(year, month - 1, day); // month is 0-indexed
+    const dayOfWeek = d.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+  };
   
   const renderCommitmentRow = ({ item: commitment }: { item: Commitment }) => (
     <View style={styles.row}>
@@ -157,79 +214,77 @@ export default function CommitmentGrid({
           </View>
         )}
       </View>
-      
-      <FlatList
-        ref={scrollRef}
-        horizontal
-        data={dates}
-        showsHorizontalScrollIndicator={false}
-        getItemLayout={(data, index) => ({
-          length: CELL_SIZE + CELL_MARGIN * 2,
-          offset: (CELL_SIZE + CELL_MARGIN * 2) * index,
-          index,
-        })}
-        renderItem={({ item: date }) => {
-          const completed = isCompleted(commitment.id, date);
-          const isToday = date === new Date().toISOString().split('T')[0];
-          const count = viewMode !== 'daily' ? getCompletionCount(commitment.id, date) : 0;
-          
-          return (
-            <TouchableOpacity
-              style={[
-                styles.cell,
-                completed && { backgroundColor: commitment.color },
-                isToday && viewMode === 'daily' && styles.todayCell,
-              ]}
-              onPress={() => onCellPress(commitment.id, date)}
-            >
-              {viewMode === 'daily' ? (
-                completed && <Text style={styles.checkmark}>✓</Text>
-              ) : (
-                count > 0 && <Text style={styles.countText}>{count}</Text>
-              )}
-            </TouchableOpacity>
-          );
-        }}
-        keyExtractor={(date) => date}
-      />
+      <View style={{ flex: 1 }}>
+        {/* Cells are rendered within the shared horizontal ScrollView, so here we just map */}
+        <View style={{ flexDirection: 'row' }}>
+          {dates.map((date) => {
+            const completed = isCompleted(commitment.id, date);
+            const isToday = date === todayISO;
+            const count = viewMode !== 'daily' ? getCompletionCount(commitment.id, date) : 0;
+            return (
+              <TouchableOpacity
+                key={`${commitment.id}-${date}`}
+                style={[
+                  styles.cell,
+                  completed && { backgroundColor: commitment.color },
+                  isToday && viewMode === 'daily' && styles.todayCell,
+                ]}
+                onPress={() => onCellPress(commitment.id, date)}
+              >
+                {viewMode === 'daily' ? (
+                  completed && <Text style={styles.checkmark}>✓</Text>
+                ) : (
+                  count > 0 && <Text style={styles.countText}>{count}</Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
     </View>
   );
   
+  const [scrollX, setScrollX] = useState(0);
+  const gridScrollRef = useRef<ScrollView>(null);
+
+  const columnWidth = CELL_SIZE + CELL_MARGIN * 2;
+  const visibleRange = useMemo(() => {
+    const gridWidth = screenWidth - LEFT_COL_WIDTH;
+    const first = Math.max(0, Math.floor(scrollX / columnWidth));
+    const count = Math.max(1, Math.ceil(gridWidth / columnWidth));
+    const last = Math.min(dates.length - 1, first + count - 1);
+    return { first, last };
+  }, [scrollX, dates.length]);
+
+  const formatRangeLabel = (startISO: string, endISO: string): string => {
+    const s = new Date(startISO);
+    const e = new Date(endISO);
+    const sameYear = s.getFullYear() === e.getFullYear();
+    const sameMonth = sameYear && s.getMonth() === e.getMonth();
+    if (sameMonth) {
+      return `${s.toLocaleDateString('en-US', { month: 'short' })} ${s.getDate()}–${e.getDate()}, ${e.getFullYear()}`;
+    }
+    if (sameYear) {
+      return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${e.getFullYear()}`;
+    }
+    return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  };
+
   const renderDateHeader = () => {
-    const currentMonth = viewMode === 'daily' ? new Date(dates[0]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
-    
     return (
       <View>
-        {viewMode === 'daily' && (
-          <View style={styles.monthHeader}>
-            <View style={styles.commitmentHeader} />
-            <Text style={styles.monthText}>{currentMonth}</Text>
-          </View>
-        )}
-        <View style={styles.dateHeader}>
-          <View style={styles.commitmentHeader} />
-          <FlatList
-            horizontal
-            data={dates}
-            showsHorizontalScrollIndicator={false}
-            getItemLayout={(data, index) => ({
-              length: CELL_SIZE + CELL_MARGIN * 2,
-              offset: (CELL_SIZE + CELL_MARGIN * 2) * index,
-              index,
-            })}
-            renderItem={({ item: date }) => {
-              const isToday = date === new Date().toISOString().split('T')[0];
-              
-              return (
-                <View style={[styles.dateCell, isToday && viewMode === 'daily' && styles.todayDateCell]}>
-                  <Text style={[styles.dateText, isToday && viewMode === 'daily' && styles.todayDateText]}>
-                    {formatDateLabel(date)}
-                  </Text>
-                </View>
-              );
-            }}
-            keyExtractor={(date) => date}
-          />
+        <View style={{ marginBottom: 4 }} />
+        <View style={{ flexDirection: 'row' }}>
+          {dates.map((date) => {
+            const isToday = date === todayISO;
+            return (
+              <View key={`header-${date}`} style={styles.dateCell}>
+                <Text style={styles.dateText}>
+                  {formatDateLabel(date)}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </View>
     );
@@ -265,13 +320,98 @@ export default function CommitmentGrid({
         </TouchableOpacity>
       </View>
       
-      {renderDateHeader()}
-      <FlatList
-        data={commitments}
-        renderItem={renderCommitmentRow}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Two-column layout: fixed labels left, synced header+grid right */}
+      <View style={{ flexDirection: 'row' }}>
+        {/* Left labels column (not horizontally scrollable) */}
+        <View style={{ width: LEFT_COL_WIDTH }}>
+          {/* Spacer to align with date header height */}
+          <View style={{ height: 4 + 30 + 8, marginBottom: ROW_SPACING }}>
+            {/* This matches: top margin + dateHeader height + margins */}
+            {viewMode === 'daily' && dates.length > 0 && (
+              <Text style={[styles.dateText, { position: 'absolute', bottom: 15 }]}>
+                {formatRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
+              </Text>
+            )}
+          </View>
+          {commitments.map((commitment) => (
+            <View key={`label-${commitment.id}`} style={[styles.commitmentHeader, { marginBottom: ROW_SPACING, height: CELL_SIZE, paddingTop: 0, paddingBottom: 0 }]}> 
+              <Text style={styles.commitmentTitle} numberOfLines={1}>{commitment.title}</Text>
+              {commitment.streak > 0 && (
+                <View style={styles.streakBadge}>
+                  <Text style={styles.streakText}>🔥 {commitment.streak}</Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Right column: unified horizontal ScrollView with header + grid */}
+        <View style={{ flex: 1, position: 'relative' }}>
+          <ScrollView
+            ref={gridScrollRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentOffset={{ x: todayIndex * columnWidth, y: 0 }}
+            onScroll={(e) => {
+              const x = e.nativeEvent.contentOffset.x;
+              setScrollX(x);
+            }}
+            scrollEventThrottle={16}
+            onMomentumScrollEnd={(e) => {
+              const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+              if (contentOffset.x + layoutMeasurement.width >= contentSize.width - columnWidth * 2) {
+                appendFutureDates();
+              }
+            }}
+          >
+            <View style={{ position: 'relative' }}>
+              {/* Today column highlight bar - positioned within the scrollable content */}
+              {viewMode === 'daily' && (
+                <View 
+                  style={[
+                    styles.todayColumnBar,
+                    {
+                      left: (todayIndex * columnWidth) + (CELL_MARGIN / 4),
+                      width: CELL_SIZE + (CELL_MARGIN * 1.5),
+                    }
+                  ]} 
+                  pointerEvents="none"
+                />
+              )}
+              
+              {/* Date header */}
+              {renderDateHeader()}
+              {/* Grid rows */}
+              {commitments.map((c) => (
+                <View key={c.id} style={{ flexDirection: 'row', marginBottom: ROW_SPACING }}>
+                  {dates.map((date) => {
+                    const completed = isCompleted(c.id, date);
+                    const count = viewMode !== 'daily' ? getCompletionCount(c.id, date) : 0;
+                    const isWeekendDay = viewMode === 'daily' && isWeekend(date);
+                    return (
+                      <TouchableOpacity
+                        key={`${c.id}-${date}`}
+                        style={[
+                          styles.cell,
+                          isWeekendDay && !completed && styles.weekendCell,
+                          completed && { backgroundColor: c.color },
+                        ]}
+                        onPress={() => onCellPress(c.id, date)}
+                      >
+                        {viewMode === 'daily' ? (
+                          completed && <Text style={styles.checkmark}>✓</Text>
+                        ) : (
+                          count > 0 && <Text style={styles.countText}>{count}</Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+      </View>
     </View>
   );
 }
@@ -306,8 +446,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   monthHeader: {
-    flexDirection: 'row',
     marginBottom: 4,
+    paddingLeft: 0,
   },
   monthText: {
     fontSize: 11,
@@ -329,17 +469,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  todayDateCell: {
-    backgroundColor: '#FEF3C7',
-    borderRadius: 4,
-  },
   dateText: {
     fontSize: 12,
     color: '#6B7280',
-  },
-  todayDateText: {
-    fontWeight: 'bold',
-    color: '#92400E',
   },
   row: {
     flexDirection: 'row',
@@ -349,11 +481,14 @@ const styles = StyleSheet.create({
   commitmentHeader: {
     width: 120,
     paddingRight: 12,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   commitmentTitle: {
     fontSize: 14,
     fontWeight: '500',
     color: '#111827',
+    lineHeight: 20,
   },
   streakBadge: {
     marginTop: 2,
@@ -371,9 +506,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  todayCell: {
-    borderWidth: 2,
-    borderColor: '#FCD34D',
+  weekendCell: {
+    backgroundColor: '#E5E7EB',
+  },
+  todayColumnBar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderRadius: 8,
+    zIndex: 0,
   },
   checkmark: {
     color: 'white',
