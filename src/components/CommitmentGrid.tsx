@@ -10,8 +10,8 @@ import {
 } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
-const CELL_SIZE = 44;
-const CELL_MARGIN = 4; // Horizontal spacing
+const CELL_SIZE = 28;
+const CELL_MARGIN = 2; // Horizontal spacing
 const LEFT_COL_WIDTH = 120;
 const ROW_SPACING = 4; // Match horizontal spacing
 
@@ -272,7 +272,7 @@ export default function CommitmentGrid({
 
   const renderDateHeader = () => {
     return (
-      <View>
+      <View style={{ marginBottom: 4 }}>
         <View style={{ marginBottom: 4 }} />
         <View style={{ flexDirection: 'row' }}>
           {dates.map((date) => {
@@ -325,13 +325,14 @@ export default function CommitmentGrid({
         {/* Left labels column (not horizontally scrollable) */}
         <View style={{ width: LEFT_COL_WIDTH }}>
           {/* Spacer to align with date header height */}
-          <View style={{ height: 4 + 30 + 8, marginBottom: ROW_SPACING }}>
-            {/* This matches: top margin + dateHeader height + margins */}
-            {viewMode === 'daily' && dates.length > 0 && (
-              <Text style={[styles.dateText, { position: 'absolute', bottom: 15 }]}>
-                {formatRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
-              </Text>
-            )}
+          <View style={{ marginTop: 4, marginBottom: 4 }}>
+            <View style={{ height: 30, justifyContent: 'center', alignItems: 'flex-start' }}>
+              {viewMode === 'daily' && dates.length > 0 && (
+                <Text style={styles.dateText}>
+                  {formatRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
+                </Text>
+              )}
+            </View>
           </View>
           {commitments.map((commitment) => (
             <View key={`label-${commitment.id}`} style={[styles.commitmentHeader, { marginBottom: ROW_SPACING, height: CELL_SIZE, paddingTop: 0, paddingBottom: 0 }]}> 
@@ -489,6 +490,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#111827',
     lineHeight: 20,
+    textAlignVertical: 'center',
   },
   streakBadge: {
     marginTop: 2,
@@ -519,12 +521,12 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   countText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: 'bold',
   },
 });
