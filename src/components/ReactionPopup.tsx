@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions } from 'react-native';
 import CustomXIcon from './CustomXIcon';
 import CustomCircleDashIcon from './CustomCircleDashIcon';
+import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 
 interface ReactionPopupProps {
@@ -41,7 +42,7 @@ export default function ReactionPopup({ visible, onSelect, onDismiss, position }
             style={[styles.option, { backgroundColor: '#3B82F6' }]}
             onPress={() => handleSelect('completed')}
           >
-            <Text style={[styles.checkIcon, { color: 'white' }]}>✓</Text>
+            <CustomCheckmarkIcon size={15.84} color="white" strokeWidth={2.2} />
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -94,11 +95,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 4,
     backgroundColor: '#F9FAFB',
-  },
-  checkIcon: {
-    fontSize: 18,
-    color: '#3B82F6',
-    fontWeight: 'bold',
   },
   skipIcon: {
     fontSize: 18,

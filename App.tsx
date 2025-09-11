@@ -3,29 +3,19 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { useFonts } from 'expo-font';
-import { 
-  Manrope_200ExtraLight,
-  Manrope_300Light,
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { FontProvider } from '@/contexts/FontContext';
 import AppNavigator from '@/navigation/AppNavigator';
 import { store, persistor } from '@/store';
 import { SyncService } from '@/services/syncService';
 
 export default function App(): React.JSX.Element {
   const [fontsLoaded] = useFonts({
-    Manrope_200ExtraLight,
-    Manrope_300Light,
-    Manrope_400Regular,
-    Manrope_500Medium,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
-    Manrope_800ExtraBold,
+    // Golos Text fonts
+    'GolosText-Regular': require('./assets/fonts/GolosText-Regular.ttf'),
+    'GolosText-Medium': require('./assets/fonts/GolosText-Medium.ttf'),
+    'GolosText-SemiBold': require('./assets/fonts/GolosText-SemiBold.ttf'),
+    'GolosText-Bold': require('./assets/fonts/GolosText-Bold.ttf'),
   });
 
   useEffect(() => {
@@ -45,10 +35,12 @@ export default function App(): React.JSX.Element {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <AuthProvider>
-          <AppNavigator />
-          <StatusBar style="auto" />
-        </AuthProvider>
+        <FontProvider>
+          <AuthProvider>
+            <AppNavigator />
+            <StatusBar style="auto" />
+          </AuthProvider>
+        </FontProvider>
       </PersistGate>
     </Provider>
   );

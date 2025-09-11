@@ -14,6 +14,8 @@ import {
 import ReactionPopup from './ReactionPopup';
 import CustomXIcon from './CustomXIcon';
 import CustomSkipIcon from './CustomSkipIcon';
+import CustomCheckmarkIcon from './CustomCheckmarkIcon';
+import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -99,6 +101,7 @@ export default function CommitmentGrid({
   onSetRecordStatus,
   earliestDate,
 }: CommitmentGridProps): React.JSX.Element {
+  const fontStyle = useFontStyle();
   const scrollRef = useRef<FlatList>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   
@@ -231,7 +234,7 @@ export default function CommitmentGrid({
   const renderCommitmentRow = ({ item: commitment }: { item: Commitment }) => (
     <View style={styles.row}>
       <View style={dynamicStyles.commitmentHeader}>
-        <Text style={styles.commitmentTitle} numberOfLines={1}>
+        <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
           {commitment.title}
         </Text>
       </View>
@@ -250,7 +253,7 @@ export default function CommitmentGrid({
             
             if (status === 'completed') {
               cellStyle.push({ backgroundColor: '#3B82F6' });
-              cellContent = <Text style={styles.checkmark}>✓</Text>;
+              cellContent = <CustomCheckmarkIcon />;
             } else if (status === 'skipped') {
               cellStyle.push({ backgroundColor: '#3B82F6' });
               cellContent = <CustomSkipIcon size={12} color="white" />;
@@ -344,7 +347,7 @@ export default function CommitmentGrid({
             const isToday = date === todayISO;
             return (
               <View key={`header-${date}`} style={dynamicStyles.dateCell}>
-                <Text style={styles.dateText}>
+                <Text style={[styles.dateText, fontStyle]}>
                   {formatDateLabel(date)}
                 </Text>
               </View>
@@ -363,7 +366,7 @@ export default function CommitmentGrid({
           style={[styles.viewModeButton, viewMode === 'daily' && styles.viewModeButtonActive]}
           onPress={() => animateToViewMode('daily')}
         >
-          <Text style={[styles.viewModeText, viewMode === 'daily' && styles.viewModeTextActive]}>
+          <Text style={[styles.viewModeText, viewMode === 'daily' && styles.viewModeTextActive, fontStyle]}>
             Weekly
           </Text>
         </TouchableOpacity>
@@ -371,7 +374,7 @@ export default function CommitmentGrid({
           style={[styles.viewModeButton, viewMode === 'weekly' && styles.viewModeButtonActive]}
           onPress={() => animateToViewMode('weekly')}
         >
-          <Text style={[styles.viewModeText, viewMode === 'weekly' && styles.viewModeTextActive]}>
+          <Text style={[styles.viewModeText, viewMode === 'weekly' && styles.viewModeTextActive, fontStyle]}>
             Biweekly
           </Text>
         </TouchableOpacity>
@@ -385,7 +388,7 @@ export default function CommitmentGrid({
           <View style={{ marginTop: 4, marginBottom: 4 }}>
             <View style={{ height: 30, justifyContent: 'center', alignItems: 'flex-start' }}>
               {dates.length > 0 && (
-                <Text style={styles.dateText}>
+                <Text style={[styles.dateText, fontStyle]}>
                   {formatRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
                 </Text>
               )}
@@ -393,7 +396,7 @@ export default function CommitmentGrid({
           </View>
           {commitments.map((commitment) => (
             <View key={`label-${commitment.id}`} style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}> 
-              <Text style={styles.commitmentTitle} numberOfLines={1}>{commitment.title}</Text>
+              <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>{commitment.title}</Text>
             </View>
           ))}
         </View>
@@ -447,7 +450,7 @@ export default function CommitmentGrid({
                     
                     if (status === 'completed') {
                       cellStyle.push({ backgroundColor: '#3B82F6' });
-                      cellContent = <Text style={styles.checkmark}>✓</Text>;
+                      cellContent = <CustomCheckmarkIcon />;
                     } else if (status === 'skipped') {
                       cellStyle.push({ backgroundColor: '#3B82F6' });
                       cellContent = <CustomSkipIcon size={12} color="white" />;
@@ -575,11 +578,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(59, 130, 246, 0.15)',
     zIndex: 0,
-  },
-  checkmark: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   skipMark: {
     color: 'white',

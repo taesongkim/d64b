@@ -19,11 +19,13 @@ import { addCommitment, type Commitment } from '@/store/slices/commitmentsSlice'
 import { toggleRecord, setRecordStatus, type DayRecord, type RecordStatus } from '@/store/slices/recordsSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { HapticService } from '@/services/hapticService';
+import { useFontStyle } from '@/hooks/useFontStyle';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const commitments = useAppSelector(state => state.commitments.commitments);
   const records = useAppSelector(state => state.records.records);
+  const fontStyle = useFontStyle();
   
   // Load data from database on mount
   useEffect(() => {
@@ -167,8 +169,8 @@ export default function DashboardScreen(): React.JSX.Element {
       <NetworkStatusBanner />
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good morning!</Text>
-          <Text style={styles.date}>{new Date().toLocaleDateString('en-US', { 
+          <Text style={[styles.greeting, fontStyle]}>Good morning!</Text>
+          <Text style={[styles.date, fontStyle]}>{new Date().toLocaleDateString('en-US', { 
             weekday: 'long', 
             month: 'long', 
             day: 'numeric' 
@@ -178,31 +180,31 @@ export default function DashboardScreen(): React.JSX.Element {
           style={styles.addButton}
           onPress={() => setShowAddModal(true)}
         >
-          <Text style={styles.addButtonText}>+</Text>
+          <Text style={[styles.addButtonText, fontStyle]}>+</Text>
         </TouchableOpacity>
       </View>
       
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{commitments.length}</Text>
-          <Text style={styles.statLabel}>Active Habits</Text>
+          <Text style={[styles.statNumber, fontStyle]}>{commitments.length}</Text>
+          <Text style={[styles.statLabel, fontStyle]}>Active Habits</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
+          <Text style={[styles.statNumber, fontStyle]}>
             {records.filter(r => r.date === new Date().toISOString().split('T')[0]).length}
           </Text>
-          <Text style={styles.statLabel}>Completed Today</Text>
+          <Text style={[styles.statLabel, fontStyle]}>Completed Today</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>
+          <Text style={[styles.statNumber, fontStyle]}>
             {Math.max(...commitments.map(c => c.streak), 0)}
           </Text>
-          <Text style={styles.statLabel}>Best Streak</Text>
+          <Text style={[styles.statLabel, fontStyle]}>Best Streak</Text>
         </View>
       </View>
       
       <View style={styles.gridContainer}>
-        <Text style={styles.sectionTitle}>Your Commitments</Text>
+        <Text style={[styles.sectionTitle, fontStyle]}>Your Commitments</Text>
         {commitments.length > 0 ? (
           <CommitmentGrid
             commitments={commitments}
@@ -212,12 +214,12 @@ export default function DashboardScreen(): React.JSX.Element {
           />
         ) : (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No habits yet</Text>
+            <Text style={[styles.emptyStateText, fontStyle]}>No habits yet</Text>
             <TouchableOpacity 
               style={styles.emptyStateButton}
               onPress={() => setShowAddModal(true)}
             >
-              <Text style={styles.emptyStateButtonText}>Add your first habit</Text>
+              <Text style={[styles.emptyStateButtonText, fontStyle]}>Add your first habit</Text>
             </TouchableOpacity>
           </View>
         )}
