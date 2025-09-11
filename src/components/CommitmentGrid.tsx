@@ -15,6 +15,7 @@ import ReactionPopup from './ReactionPopup';
 import CustomXIcon from './CustomXIcon';
 import CustomSkipIcon from './CustomSkipIcon';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
+import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 
@@ -362,23 +363,19 @@ export default function CommitmentGrid({
 
   return (
     <View style={styles.container}>
-      {/* View Mode Selector */}
-      <View style={styles.viewModeContainer}>
+      {/* Compact View Mode Toggle */}
+      <View style={styles.compactToggleContainer}>
         <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'daily' && styles.viewModeButtonActive]}
+          style={[styles.compactToggleButton, viewMode === 'daily' && styles.compactToggleButtonActive]}
           onPress={() => animateToViewMode('daily')}
         >
-          <Text style={[styles.viewModeText, viewMode === 'daily' && styles.viewModeTextActive, fontStyle]}>
-            Weekly
-          </Text>
+          <SpaciousViewIcon size={16} isActive={viewMode === 'daily'} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.viewModeButton, viewMode === 'weekly' && styles.viewModeButtonActive]}
+          style={[styles.compactToggleButton, viewMode === 'weekly' && styles.compactToggleButtonActive]}
           onPress={() => animateToViewMode('weekly')}
         >
-          <Text style={[styles.viewModeText, viewMode === 'weekly' && styles.viewModeTextActive, fontStyle]}>
-            Biweekly
-          </Text>
+          <CompactViewIcon size={16} isActive={viewMode === 'weekly'} />
         </TouchableOpacity>
       </View>
       
@@ -497,30 +494,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  viewModeContainer: {
+  compactToggleContainer: {
     flexDirection: 'row',
-    marginBottom: 12,
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+    marginRight: 0, // Align with other right edges
     backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    padding: 2,
+    borderRadius: 20, // Pill shape
+    padding: 3,
+    minWidth: 60,
   },
-  viewModeButton: {
-    flex: 1,
-    paddingVertical: 8,
+  compactToggleButton: {
+    padding: 8,
+    borderRadius: 17, // Pill shape for buttons
     alignItems: 'center',
-    borderRadius: 6,
+    justifyContent: 'center',
+    flex: 1,
   },
-  viewModeButtonActive: {
+  compactToggleButtonActive: {
     backgroundColor: 'white',
-  },
-  viewModeText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontFamily: 'Manrope_500Medium',
-  },
-  viewModeTextActive: {
-    color: '#111827',
-    fontFamily: 'Manrope_600SemiBold',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   monthHeader: {
     marginBottom: 4,
