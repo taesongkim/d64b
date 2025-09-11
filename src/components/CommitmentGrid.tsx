@@ -18,6 +18,7 @@ import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
+import { HapticService } from '@/services/hapticService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -113,9 +114,12 @@ export default function CommitmentGrid({
   
   // Function to animate view mode changes using LayoutAnimation
   const animateToViewMode = (newMode: ViewMode) => {
+    // Provide haptic feedback for the toggle interaction
+    HapticService.light();
+    
     // Configure LayoutAnimation for smooth transitions
     LayoutAnimation.configureNext({
-      duration: 300,
+      duration: 250,
       create: {
         type: LayoutAnimation.Types.easeInEaseOut,
         property: LayoutAnimation.Properties.opacity,
@@ -365,14 +369,25 @@ export default function CommitmentGrid({
     <View style={styles.container}>
       {/* Compact View Mode Toggle */}
       <View style={styles.compactToggleContainer}>
+        {/* Animated sliding background */}
+        <View 
+          style={[
+            styles.toggleSlider,
+            viewMode === 'weekly' && styles.toggleSliderRight
+          ]} 
+        />
+        
+        {/* Left icon positioned to match slider left position */}
         <TouchableOpacity
-          style={[styles.compactToggleButton, viewMode === 'daily' && styles.compactToggleButtonActive]}
+          style={styles.iconButtonLeft}
           onPress={() => animateToViewMode('daily')}
         >
           <SpaciousViewIcon size={16} isActive={viewMode === 'daily'} />
         </TouchableOpacity>
+        
+        {/* Right icon positioned to match slider right position */}
         <TouchableOpacity
-          style={[styles.compactToggleButton, viewMode === 'weekly' && styles.compactToggleButtonActive]}
+          style={styles.iconButtonRight}
           onPress={() => animateToViewMode('weekly')}
         >
           <CompactViewIcon size={16} isActive={viewMode === 'weekly'} />
@@ -505,15 +520,14 @@ const styles = StyleSheet.create({
     width: 84, // 50% wider (56 * 1.5)
     height: 28, // Reduced height
   },
-  compactToggleButton: {
-    padding: 6,
-    borderRadius: 14, // Adjusted for lower height
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  compactToggleButtonActive: {
+  toggleSlider: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    width: 40, // Half of container width minus padding
+    height: 24, // Container height minus padding
     backgroundColor: 'white',
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -522,6 +536,29 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  toggleSliderRight: {
+    left: 42, // Move to right position with proper spacing
+  },
+  iconButtonLeft: {
+    position: 'absolute',
+    top: 2,
+    left: 2,
+    width: 40, // Match slider width
+    height: 24, // Match slider height
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2, // Above the slider
+  },
+  iconButtonRight: {
+    position: 'absolute',
+    top: 2,
+    left: 42, // Match slider right position
+    width: 40, // Match slider width
+    height: 24, // Match slider height
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2, // Above the slider
   },
   monthHeader: {
     marginBottom: 4,
