@@ -234,11 +234,6 @@ export default function CommitmentGrid({
         <Text style={styles.commitmentTitle} numberOfLines={1}>
           {commitment.title}
         </Text>
-        {commitment.streak > 0 && (
-          <View style={styles.streakBadge}>
-            <Text style={styles.streakText}>🔥 {commitment.streak}</Text>
-          </View>
-        )}
       </View>
       <View style={{ flex: 1 }}>
         {/* Cells are rendered within the shared horizontal ScrollView, so here we just map */}
@@ -399,11 +394,6 @@ export default function CommitmentGrid({
           {commitments.map((commitment) => (
             <View key={`label-${commitment.id}`} style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}> 
               <Text style={styles.commitmentTitle} numberOfLines={1}>{commitment.title}</Text>
-              {commitment.streak > 0 && (
-                <View style={styles.streakBadge}>
-                  <Text style={styles.streakText}>🔥 {commitment.streak}</Text>
-                </View>
-              )}
             </View>
           ))}
         </View>
@@ -569,13 +559,6 @@ const styles = StyleSheet.create({
     color: '#111827',
     lineHeight: 20,
     textAlignVertical: 'center',
-  },
-  streakBadge: {
-    marginTop: 2,
-  },
-  streakText: {
-    fontSize: 11,
-    color: '#DC2626',
   },
   cell: {
     borderRadius: 8,
