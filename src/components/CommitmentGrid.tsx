@@ -500,13 +500,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginRight: 0, // Align with other right edges
     backgroundColor: '#F3F4F6',
-    borderRadius: 20, // Pill shape
-    padding: 3,
-    minWidth: 60,
+    borderRadius: 16, // Slightly less rounded for lower height
+    padding: 2,
+    width: 84, // 50% wider (56 * 1.5)
+    height: 28, // Reduced height
   },
   compactToggleButton: {
-    padding: 8,
-    borderRadius: 17, // Pill shape for buttons
+    padding: 6,
+    borderRadius: 14, // Adjusted for lower height
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,

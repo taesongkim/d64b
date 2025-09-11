@@ -31,14 +31,14 @@ export function CompactViewIcon({ size = 20, color = '#6B7280', isActive = false
     <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
       <Svg width={size} height={size} viewBox="0 0 20 20">
         {/* 8 cells in 2x4 grid, perfectly centered */}
-        <Rect x="2" y="5" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
-        <Rect x="6" y="5" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
-        <Rect x="10" y="5" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
-        <Rect x="14" y="5" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
-        <Rect x="2" y="9" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
-        <Rect x="6" y="9" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
-        <Rect x="10" y="9" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
-        <Rect x="14" y="9" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="2" y="6" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="6" y="6" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="10" y="6" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="14" y="6" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="2" y="10" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="6" y="10" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="10" y="10" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
+        <Rect x="14" y="10" width="3" height="3" rx="0.5" fill={activeColor} opacity="0.3" />
       </Svg>
     </View>
   );
