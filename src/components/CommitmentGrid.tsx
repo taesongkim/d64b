@@ -234,7 +234,7 @@ export default function CommitmentGrid({
   const renderCommitmentRow = ({ item: commitment }: { item: Commitment }) => (
     <View style={styles.row}>
       <View style={dynamicStyles.commitmentHeader}>
-        <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
+        <Text style={[styles.commitmentTitle, fontStyle, { textTransform: 'uppercase' }]} numberOfLines={1}>
           {commitment.title}
         </Text>
       </View>
@@ -396,7 +396,7 @@ export default function CommitmentGrid({
           </View>
           {commitments.map((commitment) => (
             <View key={`label-${commitment.id}`} style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}> 
-              <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>{commitment.title}</Text>
+              <Text style={[styles.commitmentTitle, fontStyle, { textTransform: 'uppercase' }]} numberOfLines={1}>{commitment.title}</Text>
             </View>
           ))}
         </View>
@@ -557,10 +557,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   commitmentTitle: {
-    fontSize: 14,
-    fontFamily: 'Manrope_500Medium',
+    fontSize: 12,
     color: '#111827',
-    lineHeight: 20,
+    lineHeight: 16,
     textAlignVertical: 'center',
   },
   cell: {
