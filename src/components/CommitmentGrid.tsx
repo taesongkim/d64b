@@ -327,15 +327,17 @@ export default function CommitmentGrid({
   const formatRangeLabel = (startISO: string, endISO: string): string => {
     const s = new Date(startISO);
     const e = new Date(endISO);
-    const sameYear = s.getFullYear() === e.getFullYear();
-    const sameMonth = sameYear && s.getMonth() === e.getMonth();
+    const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
+    
     if (sameMonth) {
-      return `${s.toLocaleDateString('en-US', { month: 'short' })} ${s.getDate()}–${e.getDate()}, ${e.getFullYear()}`;
+      // Same month: "Jan 2024"
+      return `${s.toLocaleDateString('en-US', { month: 'short' })} ${e.getFullYear()}`;
+    } else {
+      // Different months: "Jan-Feb 2024" or "Dec-Jan 2025"
+      const startMonth = s.toLocaleDateString('en-US', { month: 'short' });
+      const endMonth = e.toLocaleDateString('en-US', { month: 'short' });
+      return `${startMonth}-${endMonth} ${e.getFullYear()}`;
     }
-    if (sameYear) {
-      return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${e.getFullYear()}`;
-    }
-    return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   };
 
   const renderDateHeader = () => {
@@ -343,10 +345,10 @@ export default function CommitmentGrid({
       <View style={{ marginBottom: 4 }}>
         <View style={{ marginBottom: 4 }} />
         <View style={{ flexDirection: 'row' }}>
-          {dates.map((date) => {
+          {dates.map((date, index) => {
             const isToday = date === todayISO;
             return (
-              <View key={`header-${date}`} style={dynamicStyles.dateCell}>
+              <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
                 <Text style={[styles.dateText, fontStyle]}>
                   {formatDateLabel(date)}
                 </Text>
