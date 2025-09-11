@@ -234,7 +234,7 @@ export default function CommitmentGrid({
   const renderCommitmentRow = ({ item: commitment }: { item: Commitment }) => (
     <View style={styles.row}>
       <View style={dynamicStyles.commitmentHeader}>
-        <Text style={[styles.commitmentTitle, fontStyle, { textTransform: 'uppercase' }]} numberOfLines={1}>
+        <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
           {commitment.title}
         </Text>
       </View>
@@ -390,7 +390,7 @@ export default function CommitmentGrid({
           <View style={{ marginTop: 4, marginBottom: 4 }}>
             <View style={{ height: 30, justifyContent: 'center', alignItems: 'flex-start' }}>
               {dates.length > 0 && (
-                <Text style={[styles.dateText, fontStyle]}>
+                <Text style={[styles.dateText, fontStyle, { textTransform: 'uppercase' }]}>
                   {formatRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
                 </Text>
               )}
@@ -398,7 +398,7 @@ export default function CommitmentGrid({
           </View>
           {commitments.map((commitment) => (
             <View key={`label-${commitment.id}`} style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}> 
-              <Text style={[styles.commitmentTitle, fontStyle, { textTransform: 'uppercase' }]} numberOfLines={1}>{commitment.title}</Text>
+              <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>{commitment.title}</Text>
             </View>
           ))}
         </View>
