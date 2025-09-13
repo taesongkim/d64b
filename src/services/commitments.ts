@@ -17,6 +17,12 @@ export async function createCommitment(data: CommitmentInsert) {
 }
 
 export async function getUserCommitments(userId: string) {
+  console.log('getUserCommitments called with userId:', userId);
+  
+  // Check current user session
+  const { data: { user } } = await supabase.auth.getUser();
+  console.log('Current authenticated user:', user?.id);
+  
   const { data, error } = await supabase
     .from('commitments')
     .select('*')
@@ -24,6 +30,7 @@ export async function getUserCommitments(userId: string) {
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
+  console.log('getUserCommitments result:', { data, error });
   return { data, error };
 }
 
