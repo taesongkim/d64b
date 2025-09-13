@@ -26,6 +26,15 @@ export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const commitments = useAppSelector(state => state.commitments.commitments);
   const records = useAppSelector(state => state.records.records);
+  
+  // Check if Phase 0 migration fields are available
+  const hasMigrationFields = useMemo(() => {
+    if (commitments.length === 0) return false;
+    const firstCommitment = commitments[0] as any;
+    return firstCommitment.lineage_id !== undefined || 
+           firstCommitment.tracking_mode !== undefined ||
+           firstCommitment.display_order !== undefined;
+  }, [commitments]);
   const fontStyle = useFontStyle();
   
   // Load data from database on mount
@@ -172,6 +181,15 @@ export default function DashboardScreen(): React.JSX.Element {
         <View>
           <Text style={[styles.greeting, fontStyle]}>Good morning!</Text>
           <Text style={[styles.date, fontStyle]}>{getTodayDisplayDate()}</Text>
+          {/* Phase 0 Migration Indicator */}
+          <View style={[
+            styles.migrationIndicator, 
+            { backgroundColor: hasMigrationFields ? '#10B981' : '#F59E0B' }
+          ]}>
+            <Text style={[styles.migrationText, fontStyle]}>
+              {hasMigrationFields ? '✅ Phase 0 Migration Active' : '⚠️ Migration Pending'}
+            </Text>
+          </View>
         </View>
         <TouchableOpacity 
           style={styles.addButton}
@@ -327,5 +345,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
+  },
+  migrationIndicator: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
+  migrationText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

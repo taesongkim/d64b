@@ -278,6 +278,16 @@ export default function CommitmentGrid({
     return (
       <View style={{ marginBottom: 4 }}>
         <View style={{ marginBottom: 4 }} />
+        {/* Phase 0 Debug Info */}
+        {commitments.length > 0 && (
+          <View style={{ marginBottom: 4, paddingHorizontal: 4 }}>
+            <Text style={[styles.dateText, fontStyle, { fontSize: 10, color: '#6B7280' }]}>
+              Phase 0: {commitments[0]?.lineage_id ? 'Lineage ✅' : 'No Lineage'} | 
+              {commitments[0]?.tracking_mode ? ' Mode ✅' : ' No Mode'} | 
+              {commitments[0]?.display_order !== undefined ? ' Order ✅' : ' No Order'}
+            </Text>
+          </View>
+        )}
         <View style={{ flexDirection: 'row' }}>
           {dates.map((date, index) => {
             // const isTodayHeader = isToday(date); // Unused
