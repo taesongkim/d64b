@@ -20,6 +20,7 @@ import { toggleRecord, setRecordStatus, type DayRecord, type RecordStatus } from
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { HapticService } from '@/services/hapticService';
 import { useFontStyle } from '@/hooks/useFontStyle';
+import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
@@ -48,8 +49,8 @@ export default function DashboardScreen(): React.JSX.Element {
             bestStreak: 3,
             isActive: true,
             isPrivate: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            createdAt: getCurrentTimestamp(),
+            updatedAt: getCurrentTimestamp()
           },
           { 
             id: '2', 
@@ -61,8 +62,8 @@ export default function DashboardScreen(): React.JSX.Element {
             bestStreak: 7,
             isActive: true,
             isPrivate: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            createdAt: getCurrentTimestamp(),
+            updatedAt: getCurrentTimestamp()
           },
           { 
             id: '3', 
@@ -74,8 +75,8 @@ export default function DashboardScreen(): React.JSX.Element {
             bestStreak: 5,
             isActive: true,
             isPrivate: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            createdAt: getCurrentTimestamp(),
+            updatedAt: getCurrentTimestamp()
           },
           { 
             id: '4', 
@@ -87,8 +88,8 @@ export default function DashboardScreen(): React.JSX.Element {
             bestStreak: 10,
             isActive: true,
             isPrivate: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            createdAt: getCurrentTimestamp(),
+            updatedAt: getCurrentTimestamp()
           },
           { 
             id: '5', 
@@ -102,8 +103,8 @@ export default function DashboardScreen(): React.JSX.Element {
             bestStreak: 12,
             isActive: true,
             isPrivate: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            createdAt: getCurrentTimestamp(),
+            updatedAt: getCurrentTimestamp()
           },
         ];
         
@@ -158,8 +159,8 @@ export default function DashboardScreen(): React.JSX.Element {
       ...commitmentData,
       id: Date.now().toString(),
       userId: 'current_user',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: getCurrentTimestamp(),
+      updatedAt: getCurrentTimestamp(),
     };
     dispatch(addCommitment(newCommitment));
   };
@@ -170,11 +171,7 @@ export default function DashboardScreen(): React.JSX.Element {
       <View style={styles.header}>
         <View>
           <Text style={[styles.greeting, fontStyle]}>Good morning!</Text>
-          <Text style={[styles.date, fontStyle]}>{new Date().toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</Text>
+          <Text style={[styles.date, fontStyle]}>{getTodayDisplayDate()}</Text>
         </View>
         <TouchableOpacity 
           style={styles.addButton}
@@ -191,7 +188,7 @@ export default function DashboardScreen(): React.JSX.Element {
         </View>
         <View style={styles.statCard}>
           <Text style={[styles.statNumber, fontStyle]}>
-            {records.filter(r => r.date === new Date().toISOString().split('T')[0]).length}
+            {records.filter(r => r.date === getTodayISO()).length}
           </Text>
           <Text style={[styles.statLabel, fontStyle]}>Completed Today</Text>
         </View>

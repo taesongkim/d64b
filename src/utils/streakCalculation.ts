@@ -1,4 +1,5 @@
 import { DayRecord } from '@/store/slices/recordsSlice';
+import { getTodayISO, toLocalISODate, parseLocalISODate } from './timeUtils';
 
 export interface StreakData {
   currentStreak: number;
@@ -30,8 +31,8 @@ export class StreakCalculator {
       };
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayISO = getTodayISO();
+    const today = parseLocalISODate(todayISO);
 
     // Calculate current streak
     let currentStreak = 0;
@@ -39,7 +40,7 @@ export class StreakCalculator {
 
     // Check if today is completed
     const todayRecord = commitmentRecords.find(
-      record => new Date(record.date).getTime() === today.getTime()
+      record => record.date === todayISO
     );
 
     // Start checking from today if completed, otherwise yesterday
@@ -47,8 +48,9 @@ export class StreakCalculator {
       currentDate.setDate(currentDate.getDate() - 1);
     }
 
-    while (currentDate.getTime() >= new Date(today.getTime() - (365 * 24 * 60 * 60 * 1000))) {
-      const dateStr = currentDate.toISOString().split('T')[0];
+    const oneYearAgo = new Date(today.getTime() - (365 * 24 * 60 * 60 * 1000));
+    while (currentDate.getTime() >= oneYearAgo.getTime()) {
+      const dateStr = toLocalISODate(currentDate);
       const record = records.find(r => r.commitmentId === commitmentId && r.date === dateStr);
       
       if (record) {
@@ -160,8 +162,7 @@ export class StreakCalculator {
     riskHour: number = 18
   ): boolean {
     const now = new Date();
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
+    const todayISO = getTodayISO();
     
     // Only consider streak at risk after the specified hour
     if (now.getHours() < riskHour) {
@@ -170,7 +171,7 @@ export class StreakCalculator {
 
     const todayRecord = records.find(
       record => record.commitmentId === commitmentId && 
-               record.date === today.toISOString().split('T')[0] &&
+               record.date === todayISO &&
                record.status === 'completed'
     );
 
@@ -189,7 +190,7 @@ export class StreakCalculator {
     for (let i = daysBack - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      dates.push(date.toISOString().split('T')[0]);
+      dates.push(toLocalISODate(date));
     }
     
     return dates;

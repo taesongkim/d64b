@@ -19,6 +19,15 @@ import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { HapticService } from '@/services/hapticService';
+import { 
+  getTodayISO, 
+  toLocalISODate, 
+  parseLocalISODate, 
+  isToday, 
+  formatDateForDisplay, 
+  isWeekend, 
+  formatDateRangeLabel 
+} from '@/utils/timeUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -104,7 +113,7 @@ export default function CommitmentGrid({
   earliestDate,
 }: CommitmentGridProps): React.JSX.Element {
   const fontStyle = useFontStyle();
-  const scrollRef = useRef<FlatList>(null);
+  // const scrollRef = useRef<FlatList>(null); // Unused
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   
   // Reaction popup state
@@ -140,8 +149,7 @@ export default function CommitmentGrid({
   const [dates, setDates] = useState<string[]>([]);
   const FUTURE_BUFFER_DAYS = 60; // how many future days to pre-render
   
-  // Utility
-  const toISODate = (d: Date) => d.toISOString().split('T')[0];
+  // Utility - now using centralized time functions
 
   const minRecordDate: string | null = useMemo(() => {
     if (!records || records.length === 0) return null;
@@ -159,14 +167,14 @@ export default function CommitmentGrid({
     
     // All views show individual daily cells - just different sizes
     // Determine start at earliest known date (prop -> records -> today)
-    const startISO = earliestDate || minRecordDate || toISODate(today);
-    const start = new Date(startISO);
+    const startISO = earliestDate || minRecordDate || toLocalISODate(today);
+    const start = parseLocalISODate(startISO);
     const end = new Date(today);
     end.setDate(end.getDate() + FUTURE_BUFFER_DAYS);
     
     const cursor = new Date(start);
     while (cursor <= end) {
-      list.push(toISODate(cursor));
+      list.push(toLocalISODate(cursor));
       cursor.setDate(cursor.getDate() + 1);
     }
     
@@ -175,9 +183,9 @@ export default function CommitmentGrid({
 
   useEffect(() => {
     setDates(buildInitialDates());
-  }, [viewMode, earliestDate, minRecordDate, toISODate(new Date())]);
+  }, [viewMode, earliestDate, minRecordDate, getTodayISO()]);
 
-  const todayISO = toISODate(new Date());
+  const todayISO = getTodayISO();
   const todayIndex = useMemo(() => {
     if (!dates || dates.length === 0) return 0;
     const idx = dates.indexOf(todayISO);
@@ -187,12 +195,12 @@ export default function CommitmentGrid({
   // Extend future dates when reaching the end
   const appendFutureDates = () => {
     if (dates.length === 0) return;
-    const last = new Date(dates[dates.length - 1]);
+    const last = parseLocalISODate(dates[dates.length - 1]);
     const newDates: string[] = [];
     for (let i = 1; i <= FUTURE_BUFFER_DAYS; i++) {
       const d = new Date(last);
       d.setDate(d.getDate() + i);
-      newDates.push(toISODate(d));
+      newDates.push(toLocalISODate(d));
     }
     setDates(prev => [...prev, ...newDates]);
   };
@@ -201,20 +209,7 @@ export default function CommitmentGrid({
   // Removed getCompletionCount - no aggregation, all cells represent individual days
   
   const formatDateLabel = (date: string): string => {
-    // Parse date string directly to avoid timezone issues
-    const [year, month, day] = date.split('-').map(Number);
-    const d = new Date(year, month - 1, day); // month is 0-indexed
-    
-    // All views show individual daily cells - show day of month
-    return d.getDate().toString();
-  };
-
-  const isWeekend = (date: string): boolean => {
-    // Parse date string directly to avoid timezone issues
-    const [year, month, day] = date.split('-').map(Number);
-    const d = new Date(year, month - 1, day); // month is 0-indexed
-    const dayOfWeek = d.getDay();
-    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+    return formatDateForDisplay(date, 'day');
   };
 
   // Popup handlers
@@ -236,59 +231,7 @@ export default function CommitmentGrid({
     setSelectedCell(null);
   };
   
-  const renderCommitmentRow = ({ item: commitment }: { item: Commitment }) => (
-    <View style={styles.row}>
-      <View style={dynamicStyles.commitmentHeader}>
-        <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
-          {commitment.title}
-        </Text>
-      </View>
-      <View style={{ flex: 1 }}>
-        {/* Cells are rendered within the shared horizontal ScrollView, so here we just map */}
-        <View style={{ flexDirection: 'row' }}>
-          {dates.map((date) => {
-            const record = records.find(r => r.commitmentId === commitment.id && r.date === date);
-            const status = record?.status || 'none';
-            const isToday = date === todayISO;
-            const isWeekendDay = isWeekend(date);
-            
-            // Determine cell styling based on status
-            let cellStyle = [dynamicStyles.cell];
-            let cellContent = null;
-            
-            if (status === 'completed') {
-              cellStyle.push({ backgroundColor: '#3B82F6' });
-              cellContent = <CustomCheckmarkIcon />;
-            } else if (status === 'skipped') {
-              cellStyle.push({ backgroundColor: '#3B82F6' });
-              cellContent = <CustomSkipIcon size={12} color="white" />;
-            } else if (status === 'failed') {
-              cellStyle.push({ backgroundColor: '#EF4444' });
-              cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
-            } else if (isWeekendDay) {
-              cellStyle.push(styles.weekendCell);
-            }
-            
-            if (isToday) {
-              cellStyle.push(styles.todayCell);
-            }
-            
-            return (
-              <TouchableOpacity
-                key={`${commitment.id}-${date}`}
-                style={cellStyle}
-                onPress={() => onCellPress(commitment.id, date)}
-                onLongPress={(event) => handleLongPress(commitment.id, date, event)}
-                delayLongPress={500}
-              >
-                {cellContent}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-    </View>
-  );
+  // Unused function - removed to fix TypeScript errors
   
   const [scrollX, setScrollX] = useState(0);
   const gridScrollRef = useRef<ScrollView>(null);
@@ -329,21 +272,7 @@ export default function CommitmentGrid({
     return { first, last };
   }, [scrollX, dates.length, viewMode, columnWidth]);
 
-  const formatRangeLabel = (startISO: string, endISO: string): string => {
-    const s = new Date(startISO);
-    const e = new Date(endISO);
-    const sameMonth = s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear();
-    
-    if (sameMonth) {
-      // Same month: "Jan 2024"
-      return `${s.toLocaleDateString('en-US', { month: 'short' })} ${e.getFullYear()}`;
-    } else {
-      // Different months: "Jan-Feb 2024" or "Dec-Jan 2025"
-      const startMonth = s.toLocaleDateString('en-US', { month: 'short' });
-      const endMonth = e.toLocaleDateString('en-US', { month: 'short' });
-      return `${startMonth}-${endMonth} ${e.getFullYear()}`;
-    }
-  };
+  // Using centralized formatDateRangeLabel function
 
   const renderDateHeader = () => {
     return (
@@ -351,7 +280,7 @@ export default function CommitmentGrid({
         <View style={{ marginBottom: 4 }} />
         <View style={{ flexDirection: 'row' }}>
           {dates.map((date, index) => {
-            const isToday = date === todayISO;
+            // const isTodayHeader = isToday(date); // Unused
             return (
               <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
                 <Text style={[styles.dateText, fontStyle]}>
@@ -403,7 +332,7 @@ export default function CommitmentGrid({
             <View style={{ height: 30, justifyContent: 'center', alignItems: 'flex-start' }}>
               {dates.length > 0 && (
                 <Text style={[styles.dateText, fontStyle, { textTransform: 'uppercase' }]}>
-                  {formatRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
+                  {formatDateRangeLabel(dates[visibleRange.first], dates[visibleRange.last])}
                 </Text>
               )}
             </View>
@@ -463,13 +392,13 @@ export default function CommitmentGrid({
                     let cellContent = null;
                     
                     if (status === 'completed') {
-                      cellStyle.push({ backgroundColor: '#3B82F6' });
-                      cellContent = <CustomCheckmarkIcon />;
+                      cellStyle.push(styles.completedCell);
+                      cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
                     } else if (status === 'skipped') {
-                      cellStyle.push({ backgroundColor: '#3B82F6' });
+                      cellStyle.push(styles.skippedCell);
                       cellContent = <CustomSkipIcon size={12} color="white" />;
                     } else if (status === 'failed') {
-                      cellStyle.push({ backgroundColor: '#EF4444' });
+                      cellStyle.push(styles.failedCell);
                       cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
                     } else if (isWeekendDay) {
                       cellStyle.push(styles.weekendCell);
@@ -610,6 +539,19 @@ const styles = StyleSheet.create({
   },
   weekendCell: {
     backgroundColor: '#E5E7EB',
+  },
+  todayCell: {
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+  },
+  completedCell: {
+    backgroundColor: '#3B82F6',
+  },
+  skippedCell: {
+    backgroundColor: '#3B82F6',
+  },
+  failedCell: {
+    backgroundColor: '#EF4444',
   },
   todayColumnBar: {
     position: 'absolute',
