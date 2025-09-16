@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { isFeatureEnabled } from '@/config/features';
+import { Icon } from '@/components/icons';
 
 interface UserStats {
   totalHabits: number;
@@ -157,7 +158,7 @@ export default function ProfileScreen(): React.JSX.Element {
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📊</Text>
+              <Icon name="stats" size={20} color="#6B7280" />
             </View>
             <Text style={styles.actionLabel}>Stats</Text>
           </TouchableOpacity>
@@ -165,7 +166,7 @@ export default function ProfileScreen(): React.JSX.Element {
           {isFeatureEnabled('ACHIEVEMENTS') && (
             <TouchableOpacity style={styles.actionButton}>
               <View style={styles.actionIcon}>
-                <Text style={styles.actionIconText}>🏆</Text>
+                <Icon name="trophy" size={20} color="#6B7280" />
               </View>
               <Text style={styles.actionLabel}>Achievements</Text>
             </TouchableOpacity>
@@ -174,14 +175,14 @@ export default function ProfileScreen(): React.JSX.Element {
           {isFeatureEnabled('DATA_EXPORT') && (
             <TouchableOpacity style={styles.actionButton}>
               <View style={styles.actionIcon}>
-                <Text style={styles.actionIconText}>📤</Text>
+                <Icon name="export" size={20} color="#6B7280" />
               </View>
               <Text style={styles.actionLabel}>Export</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>👥</Text>
+              <Icon name="friends" size={20} color="#6B7280" />
             </View>
             <Text style={styles.actionLabel}>Friends</Text>
           </TouchableOpacity>
@@ -554,9 +555,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-  },
-  actionIconText: {
-    fontSize: 24,
   },
   actionLabel: {
     fontSize: 12,

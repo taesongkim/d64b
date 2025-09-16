@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { isFeatureEnabled } from '@/config/features';
+import { Icon } from '@/components/icons';
 
 interface Friend {
   id: string;
@@ -244,7 +245,7 @@ export default function FriendsListScreen(): React.JSX.Element {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Icon name="search" size={16} color="#9CA3AF" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search friends..."
@@ -261,21 +262,21 @@ export default function FriendsListScreen(): React.JSX.Element {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>👥</Text>
-            <Text style={styles.emptyStateTitle}>No friends yet</Text>
-            <Text style={styles.emptyStateText}>
-              Add friends to see their progress and stay motivated together
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyStateButton}
-              onPress={() => setShowAddModal(true)}
-            >
-              <Text style={styles.emptyStateButtonText}>Find Friends</Text>
-            </TouchableOpacity>
-          </View>
-        }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Icon name="social" size={48} color="#9CA3AF" style={styles.emptyStateIcon} />
+              <Text style={styles.emptyStateTitle}>No friends yet</Text>
+              <Text style={styles.emptyStateText}>
+                Add friends to see their progress and stay motivated together
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyStateButton}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Text style={styles.emptyStateButtonText}>Find Friends</Text>
+              </TouchableOpacity>
+            </View>
+          }
       />
 
       {/* Add Friend Modal */}
@@ -391,7 +392,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: 8,
   },
   searchInput: {
@@ -571,7 +571,6 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   emptyStateIcon: {
-    fontSize: 48,
     marginBottom: 16,
   },
   emptyStateTitle: {

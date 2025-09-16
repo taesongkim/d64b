@@ -19,6 +19,7 @@ import {
 import { logout } from '@/store/slices/authSlice';
 import { HapticService } from '@/services/hapticService';
 import { isFeatureEnabled } from '@/config/features';
+import { Icon } from '@/components/icons';
 
 interface SettingRowProps {
   title: string;
@@ -349,7 +350,11 @@ export default function SettingsScreen(): React.JSX.Element {
         {/* Version Info */}
         <View style={styles.footer}>
           <Text style={styles.versionText}>Habit Tracker v1.0.0</Text>
-          <Text style={styles.footerText}>Made with ❤️ for building better habits</Text>
+          <View style={styles.footerTextContainer}>
+            <Text style={styles.footerText}>Made with </Text>
+            <Icon name="heart" size={16} color="#EF4444" />
+            <Text style={styles.footerText}> for building better habits</Text>
+          </View>
         </View>
 
       </ScrollView>
@@ -481,6 +486,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 8,
+  },
+  footerTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   footerText: {
     fontSize: 14,

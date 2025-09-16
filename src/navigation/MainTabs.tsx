@@ -1,5 +1,4 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from './types';
 import DashboardScreen from '@/screens/Dashboard/DashboardScreen';
@@ -8,6 +7,7 @@ import FriendsListScreen from '@/screens/Social/FriendsListScreen';
 import ProfileScreen from '@/screens/Profile/ProfileScreen';
 import SettingsScreen from '@/screens/Settings/SettingsScreen';
 import { isFeatureEnabled } from '@/config/features';
+import { Icon } from '@/components/icons';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -37,7 +37,7 @@ export default function MainTabs(): React.JSX.Element {
         options={{
           title: 'Dashboard',
           tabBarLabel: 'Home',
-          tabBarIcon: () => <Text style={{ fontSize: 20 }}>🏠</Text>,
+          tabBarIcon: ({ color }) => <Icon name="home" size={20} color={color} />,
         }}
       />
       {/* MVP-HIDDEN: Analytics Tab - Enable in v1.1 */}
@@ -48,7 +48,7 @@ export default function MainTabs(): React.JSX.Element {
           options={{
             title: 'Analytics',
             tabBarLabel: 'Analytics',
-            tabBarIcon: () => <Text style={{ fontSize: 20 }}>📊</Text>,
+            tabBarIcon: ({ color }) => <Icon name="analytics" size={20} color={color} />,
           }}
         />
       )}
@@ -58,7 +58,7 @@ export default function MainTabs(): React.JSX.Element {
         options={{
           title: 'Friends',
           tabBarLabel: 'Social',
-          tabBarIcon: () => <Text style={{ fontSize: 20 }}>👥</Text>,
+          tabBarIcon: ({ color }) => <Icon name="social" size={20} color={color} />,
         }}
       />
       <Tab.Screen 
@@ -67,7 +67,7 @@ export default function MainTabs(): React.JSX.Element {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
-          tabBarIcon: () => <Text style={{ fontSize: 20 }}>👤</Text>,
+          tabBarIcon: ({ color }) => <Icon name="profile" size={20} color={color} />,
         }}
       />
       <Tab.Screen 
@@ -76,7 +76,7 @@ export default function MainTabs(): React.JSX.Element {
         options={{
           title: 'Settings',
           tabBarLabel: 'Settings',
-          tabBarIcon: () => <Text style={{ fontSize: 20 }}>⚙️</Text>,
+          tabBarIcon: ({ color }) => <Icon name="settings" size={20} color={color} />,
         }}
       />
     </Tab.Navigator>
