@@ -1,14 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
   SafeAreaView,
-  TouchableOpacity,
-  ScrollView,
-  Modal,
-  TextInput,
-  Alert
+  TouchableOpacity
 } from 'react-native';
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
@@ -16,11 +12,12 @@ import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, type Commitment } from '@/store/slices/commitmentsSlice';
-import { toggleRecord, setRecordStatus, type DayRecord, type RecordStatus } from '@/store/slices/recordsSlice';
+import { toggleRecord, setRecordStatus, type RecordStatus } from '@/store/slices/recordsSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { HapticService } from '@/services/hapticService';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
+import { isFeatureEnabled } from '@/config/features';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
@@ -224,6 +221,20 @@ export default function DashboardScreen(): React.JSX.Element {
         )}
       </View>
 
+      {/* MVP-HIDDEN: Friend Activity Feed - Enable in v1.1 */}
+      {isFeatureEnabled('ACTIVITY_FEED') ? (
+        <View style={styles.activityContainer}>
+          <Text style={[styles.sectionTitle, fontStyle]}>Friend Activity</Text>
+          {/* Friend activity will be implemented here */}
+        </View>
+      ) : (
+        <View style={styles.comingSoonCard}>
+          <Text style={[styles.comingSoonText, fontStyle]}>
+            Friend activity will appear here once you connect with others!
+          </Text>
+        </View>
+      )}
+
       <AddCommitmentModal
         visible={showAddModal}
         onClose={() => setShowAddModal(false)}
@@ -329,5 +340,25 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
+  },
+  comingSoonCard: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    alignItems: 'center',
+  },
+  comingSoonText: {
+    color: '#6B7280',
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  activityContainer: {
+    marginHorizontal: 20,
+    marginBottom: 20,
   },
 });

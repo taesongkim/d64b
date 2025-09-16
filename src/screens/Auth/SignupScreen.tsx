@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '@/navigation/types';
+import { isFeatureEnabled } from '@/config/features';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -146,27 +147,32 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
               )}
             </TouchableOpacity>
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OR</Text>
-              <View style={styles.dividerLine} />
-            </View>
+            {/* MVP-HIDDEN: Social Authentication - Enable in v1.1 */}
+            {isFeatureEnabled('SOCIAL_AUTH') && (
+              <>
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>OR</Text>
+                  <View style={styles.dividerLine} />
+                </View>
 
-            <View style={styles.socialButtons}>
-              <TouchableOpacity 
-                style={styles.socialButton}
-                onPress={() => handleSocialSignup('Google')}
-              >
-                <Text style={styles.socialButtonText}>Continue with Google</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.socialButton}
-                onPress={() => handleSocialSignup('Apple')}
-              >
-                <Text style={styles.socialButtonText}>Continue with Apple</Text>
-              </TouchableOpacity>
-            </View>
+                <View style={styles.socialButtons}>
+                  <TouchableOpacity 
+                    style={styles.socialButton}
+                    onPress={() => handleSocialSignup('Google')}
+                  >
+                    <Text style={styles.socialButtonText}>Continue with Google</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={styles.socialButton}
+                    onPress={() => handleSocialSignup('Apple')}
+                  >
+                    <Text style={styles.socialButtonText}>Continue with Apple</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
 
           <TouchableOpacity 

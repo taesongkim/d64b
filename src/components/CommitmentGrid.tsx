@@ -392,16 +392,16 @@ export default function CommitmentGrid({
                     let cellContent = null;
                     
                     if (status === 'completed') {
-                      cellStyle.push(styles.completedCell);
+                      cellStyle = [dynamicStyles.cell, styles.completedCell];
                       cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
                     } else if (status === 'skipped') {
-                      cellStyle.push(styles.skippedCell);
+                      cellStyle = [dynamicStyles.cell, styles.skippedCell];
                       cellContent = <CustomSkipIcon size={12} color="white" />;
                     } else if (status === 'failed') {
-                      cellStyle.push(styles.failedCell);
+                      cellStyle = [dynamicStyles.cell, styles.failedCell];
                       cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
                     } else if (isWeekendDay) {
-                      cellStyle.push(styles.weekendCell);
+                      cellStyle = [dynamicStyles.cell, styles.weekendCell];
                     }
                     
                     return (

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { isFeatureEnabled } from '@/config/features';
 
 interface UserStats {
   totalHabits: number;
@@ -160,18 +161,24 @@ export default function ProfileScreen(): React.JSX.Element {
             </View>
             <Text style={styles.actionLabel}>Stats</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>🏆</Text>
-            </View>
-            <Text style={styles.actionLabel}>Achievements</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <View style={styles.actionIcon}>
-              <Text style={styles.actionIconText}>📤</Text>
-            </View>
-            <Text style={styles.actionLabel}>Export</Text>
-          </TouchableOpacity>
+          {/* MVP-HIDDEN: Achievements - Enable in v1.2 */}
+          {isFeatureEnabled('ACHIEVEMENTS') && (
+            <TouchableOpacity style={styles.actionButton}>
+              <View style={styles.actionIcon}>
+                <Text style={styles.actionIconText}>🏆</Text>
+              </View>
+              <Text style={styles.actionLabel}>Achievements</Text>
+            </TouchableOpacity>
+          )}
+          {/* MVP-HIDDEN: Data Export - Enable in v1.2 */}
+          {isFeatureEnabled('DATA_EXPORT') && (
+            <TouchableOpacity style={styles.actionButton}>
+              <View style={styles.actionIcon}>
+                <Text style={styles.actionIconText}>📤</Text>
+              </View>
+              <Text style={styles.actionLabel}>Export</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.actionButton}>
             <View style={styles.actionIcon}>
               <Text style={styles.actionIconText}>👥</Text>
@@ -329,20 +336,31 @@ export default function ProfileScreen(): React.JSX.Element {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.profileInfo}>
-            <TouchableOpacity onPress={handleChangePhoto} style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                {profileImage ? (
-                  <Image source={{ uri: profileImage }} style={styles.avatarImage} />
-                ) : (
+            {/* MVP-HIDDEN: Profile Picture Upload - Enable in v1.1 */}
+            {isFeatureEnabled('PROFILE_PICTURES') ? (
+              <TouchableOpacity onPress={handleChangePhoto} style={styles.avatarContainer}>
+                <View style={styles.avatar}>
+                  {profileImage ? (
+                    <Image source={{ uri: profileImage }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>
+                      {userName.split(' ').map(n => n[0]).join('')}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.cameraIcon}>
+                  <Text style={styles.cameraIconText}>📷</Text>
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.avatarContainer}>
+                <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
                     {userName.split(' ').map(n => n[0]).join('')}
                   </Text>
-                )}
+                </View>
               </View>
-              <View style={styles.cameraIcon}>
-                <Text style={styles.cameraIconText}>📷</Text>
-              </View>
-            </TouchableOpacity>
+            )}
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{userName}</Text>
               <Text style={styles.userEmail}>{userEmail}</Text>

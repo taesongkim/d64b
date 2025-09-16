@@ -12,6 +12,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { isFeatureEnabled } from '@/config/features';
 
 interface Friend {
   id: string;
@@ -228,14 +229,17 @@ export default function FriendsListScreen(): React.JSX.Element {
             Friends ({friends.length})
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'discover' && styles.tabActive]}
-          onPress={() => setSelectedTab('discover')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'discover' && styles.tabTextActive]}>
-            Discover
-          </Text>
-        </TouchableOpacity>
+        {/* MVP-HIDDEN: Discover Tab - Enable in v1.1 */}
+        {isFeatureEnabled('FRIEND_GROUPS') && (
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'discover' && styles.tabActive]}
+            onPress={() => setSelectedTab('discover')}
+          >
+            <Text style={[styles.tabText, selectedTab === 'discover' && styles.tabTextActive]}>
+              Discover
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Search Bar */}
@@ -250,38 +254,29 @@ export default function FriendsListScreen(): React.JSX.Element {
         />
       </View>
 
-      {selectedTab === 'friends' ? (
-        <FlatList
-          data={filteredFriends}
-          renderItem={renderFriendCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateIcon}>👥</Text>
-              <Text style={styles.emptyStateTitle}>No friends yet</Text>
-              <Text style={styles.emptyStateText}>
-                Add friends to see their progress and stay motivated together
-              </Text>
-              <TouchableOpacity
-                style={styles.emptyStateButton}
-                onPress={() => setShowAddModal(true)}
-              >
-                <Text style={styles.emptyStateButtonText}>Find Friends</Text>
-              </TouchableOpacity>
-            </View>
-          }
-        />
-      ) : (
-        <FlatList
-          data={discoverPeople}
-          renderItem={renderDiscoverCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {/* MVP: Only show friends tab, hide discover for now */}
+      <FlatList
+        data={filteredFriends}
+        renderItem={renderFriendCard}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateIcon}>👥</Text>
+            <Text style={styles.emptyStateTitle}>No friends yet</Text>
+            <Text style={styles.emptyStateText}>
+              Add friends to see their progress and stay motivated together
+            </Text>
+            <TouchableOpacity
+              style={styles.emptyStateButton}
+              onPress={() => setShowAddModal(true)}
+            >
+              <Text style={styles.emptyStateButtonText}>Find Friends</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      />
 
       {/* Add Friend Modal */}
       <Modal

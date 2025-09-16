@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,12 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   updateNotificationSettings,
-  updateAppPreferences,
   updatePrivacySettings,
   resetSettings,
 } from '@/store/slices/settingsSlice';
 import { logout } from '@/store/slices/authSlice';
 import { HapticService } from '@/services/hapticService';
+import { isFeatureEnabled } from '@/config/features';
 
 interface SettingRowProps {
   title: string;
@@ -85,15 +85,21 @@ export default function SettingsScreen(): React.JSX.Element {
     dispatch(updatePrivacySettings({ [key]: value }));
   };
 
-  const handleThemePress = () => {
+  const handleComingSoon = (feature: string) => {
     HapticService.selection();
-    // TODO: Show theme selection modal
-    Alert.alert('Theme', 'Theme selection coming soon!');
+    Alert.alert(
+      'Coming Soon!',
+      `${feature} will be available in a future update.`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleThemePress = () => {
+    handleComingSoon('Theme selection');
   };
 
   const handleLanguagePress = () => {
-    HapticService.selection();
-    Alert.alert('Language', 'Language selection coming soon!');
+    handleComingSoon('Language selection');
   };
 
   const handleExportData = async () => {
@@ -232,18 +238,38 @@ export default function SettingsScreen(): React.JSX.Element {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.settingsCard}>
-            <SettingRow
-              title="Theme"
-              subtitle={`Current: ${preferences.theme}`}
-              onPress={handleThemePress}
-              showArrow
-            />
-            <SettingRow
-              title="Language"
-              subtitle="English"
-              onPress={handleLanguagePress}
-              showArrow
-            />
+            {/* MVP-HIDDEN: Theme Selection - Enable in v1.2 */}
+            {isFeatureEnabled('THEMES') ? (
+              <SettingRow
+                title="Theme"
+                subtitle={`Current: ${preferences.theme}`}
+                onPress={handleThemePress}
+                showArrow
+              />
+            ) : (
+              <SettingRow
+                title="Theme"
+                subtitle="Light (Coming Soon)"
+                onPress={handleThemePress}
+                showArrow
+              />
+            )}
+            {/* MVP-HIDDEN: Language Selection - Enable in v1.2 */}
+            {isFeatureEnabled('LANGUAGES') ? (
+              <SettingRow
+                title="Language"
+                subtitle="English"
+                onPress={handleLanguagePress}
+                showArrow
+              />
+            ) : (
+              <SettingRow
+                title="Language"
+                subtitle="English (Coming Soon)"
+                onPress={handleLanguagePress}
+                showArrow
+              />
+            )}
             <SettingRow
               title="Week Starts On"
               subtitle={preferences.weekStartsOn === 'sunday' ? 'Sunday' : 'Monday'}
@@ -256,12 +282,15 @@ export default function SettingsScreen(): React.JSX.Element {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Privacy</Text>
           <View style={styles.settingsCard}>
-            <SettingRow
-              title="Show in Leaderboards"
-              subtitle="Appear in public rankings"
-              value={privacy.showInLeaderboards}
-              onValueChange={(val) => handlePrivacyChange('showInLeaderboards', val)}
-            />
+            {/* MVP-HIDDEN: Leaderboards - Enable in v1.2 */}
+            {isFeatureEnabled('LEADERBOARDS') && (
+              <SettingRow
+                title="Show in Leaderboards"
+                subtitle="Appear in public rankings"
+                value={privacy.showInLeaderboards}
+                onValueChange={(val) => handlePrivacyChange('showInLeaderboards', val)}
+              />
+            )}
             <SettingRow
               title="Allow Friend Requests"
               subtitle="Others can send you friend requests"
@@ -281,12 +310,15 @@ export default function SettingsScreen(): React.JSX.Element {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data</Text>
           <View style={styles.settingsCard}>
-            <SettingRow
-              title="Export Data"
-              subtitle="Download your data as JSON"
-              onPress={handleExportData}
-              showArrow
-            />
+            {/* MVP-HIDDEN: Data Export - Enable in v1.2 */}
+            {isFeatureEnabled('DATA_EXPORT') && (
+              <SettingRow
+                title="Export Data"
+                subtitle="Download your data as JSON"
+                onPress={handleExportData}
+                showArrow
+              />
+            )}
             <SettingRow
               title="Clear All Data"
               subtitle="Reset app to initial state"
