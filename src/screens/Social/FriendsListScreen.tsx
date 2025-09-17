@@ -135,36 +135,27 @@ export default function FriendsListScreen(): React.JSX.Element {
               </Text>
             </View>
           )}
-          {friend.currentStreak > 7 && (
-          <View style={styles.streakBadge}>
-            <Icon name="fire" size={14} color="#FF6B35" />
-          </View>
-          )}
         </View>
         
         <View style={styles.friendInfo}>
           <Text style={styles.friendName}>{friend.name}</Text>
           <Text style={styles.friendUsername}>{friend.username}</Text>
-          <Text style={styles.mutualFriends}>
-            {friend.mutualFriends} mutual friends
-          </Text>
         </View>
 
         <View style={styles.friendStats}>
-          <View style={styles.statItem}>
+          <View style={styles.statLine}>
+            <Text style={styles.statLabel}>streak:</Text>
             <Text style={styles.statValue}>{friend.currentStreak}</Text>
-            <Text style={styles.statLabel}>streak</Text>
           </View>
-          <View style={styles.statItem}>
+          <View style={styles.statLine}>
+            <Text style={styles.statLabel}>today:</Text>
             <Text style={styles.statValue}>{friend.completedToday}/{friend.totalHabits}</Text>
-            <Text style={styles.statLabel}>today</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.activitySection}>
         <Text style={styles.activityTitle}>Recent Activity</Text>
-        {renderMiniHabitGrid(friend)}
         <View style={styles.recentItems}>
           {friend.recentActivity.slice(0, 2).map((activity, index) => (
             <View key={index} style={styles.activityItem}>
@@ -417,6 +408,7 @@ const styles = StyleSheet.create({
   },
   friendHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
   },
   avatarContainer: {
@@ -441,19 +433,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Manrope_700Bold',
   },
-  streakBadge: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
   friendInfo: {
     flex: 1,
   },
@@ -474,18 +453,23 @@ const styles = StyleSheet.create({
   },
   friendStats: {
     alignItems: 'flex-end',
+    justifyContent: 'center',
+    height: 48, // Match avatar height to align bottom edges
   },
-  statItem: {
+  statLine: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    marginBottom: 2,
+    width: 60, // Reduced width for more compact spacing
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 14, // Slightly smaller for better fit
     fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: 9, // Smaller label for compactness
     color: '#9CA3AF',
     textTransform: 'uppercase',
   },
