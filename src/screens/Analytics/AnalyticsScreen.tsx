@@ -739,8 +739,8 @@ const styles = StyleSheet.create({
     borderLeftColor: '#22C55E',
   },
   infoInsight: {
-    backgroundColor: '#EFF6FF',
-    borderLeftColor: '#3B82F6',
+    backgroundColor: '#ECFDF5',
+    borderLeftColor: '#10B981',
   },
   warningInsight: {
     backgroundColor: '#FFFBEB',

@@ -542,13 +542,13 @@ const styles = StyleSheet.create({
   },
   todayCell: {
     borderWidth: 2,
-    borderColor: '#3B82F6',
+    borderColor: '#10B981',
   },
   completedCell: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#10B981',
   },
   skippedCell: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#10B981',
   },
   failedCell: {
     backgroundColor: '#EF4444',
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
     zIndex: 0,
   },
   skipMark: {

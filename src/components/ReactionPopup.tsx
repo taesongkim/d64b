@@ -39,14 +39,14 @@ export default function ReactionPopup({ visible, onSelect, onDismiss, position }
           top: Math.max(10, position.y - 60)
         }]}>
           <TouchableOpacity 
-            style={[styles.option, { backgroundColor: '#3B82F6' }]}
+            style={[styles.option, { backgroundColor: '#10B981' }]}
             onPress={() => handleSelect('completed')}
           >
             <CustomCheckmarkIcon size={15.84} color="white" strokeWidth={2.2} />
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.option, { backgroundColor: '#3B82F6' }]}
+            style={[styles.option, { backgroundColor: '#10B981' }]}
             onPress={() => handleSelect('skipped')}
           >
             <CustomCircleDashIcon size={18} color="white" />

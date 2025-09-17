@@ -7,7 +7,7 @@ interface CustomCircleDashIconProps {
   color?: string;
 }
 
-export default function CustomCircleDashIcon({ size = 18, color = '#3B82F6' }: CustomCircleDashIconProps) {
+export default function CustomCircleDashIcon({ size = 18, color = '#10B981' }: CustomCircleDashIconProps) {
   return (
     <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
       <Svg width={size} height={size} viewBox="0 0 18 18">

@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   miniGridCellCompleted: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#10B981',
   },
   recentItems: {
     gap: 4,
