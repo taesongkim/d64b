@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 16,
-    color: '#3B82F6',
+    color: '#111827',
     fontFamily: 'Manrope_500Medium',
   },
   deleteText: {

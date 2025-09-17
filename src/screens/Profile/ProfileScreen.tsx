@@ -213,7 +213,7 @@ export default function ProfileScreen(): React.JSX.Element {
           </View>
           <View style={styles.activityItem}>
             <View style={styles.activityIconContainer}>
-              <Icon name="add" size={16} color="#3B82F6" />
+              <Icon name="add" size={16} color="#111827" />
             </View>
             <View style={styles.activityContent}>
               <Text style={styles.activityText}>Added new habit "Read 30 mins"</Text>

@@ -16,7 +16,7 @@ export default function MainTabs(): React.JSX.Element {
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF',
+        tabBarActiveTintColor: '#111827',
         tabBarInactiveTintColor: '#8E8E93',
         tabBarStyle: {
           backgroundColor: '#f8f9fa',

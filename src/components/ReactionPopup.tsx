@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
   skipIcon: {
     fontSize: 18,
-    color: '#3B82F6',
+    color: '#111827',
     fontWeight: 'bold',
   },
 });

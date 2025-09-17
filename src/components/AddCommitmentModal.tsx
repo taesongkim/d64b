@@ -55,7 +55,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
     const commitment = {
       title: title.trim(),
       description: description.trim() || undefined,
-      color: '#3B82F6', // Uniform blue color
+      color: '#111827', // Uniform near-black color
       type: selectedType,
       target: selectedType !== 'binary' && target ? parseInt(target) : undefined,
       unit: selectedType !== 'binary' && unit ? unit.trim() : undefined,
