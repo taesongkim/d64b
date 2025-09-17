@@ -194,16 +194,31 @@ export default function ProfileScreen(): React.JSX.Element {
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         <View style={styles.activityList}>
           <View style={styles.activityItem}>
-            <Text style={styles.activityText}>✅ Completed "Morning Meditation"</Text>
-            <Text style={styles.activityTime}>2 hours ago</Text>
+            <View style={styles.activityIconContainer}>
+              <Icon name="activity-completed" size={16} color="#10B981" />
+            </View>
+            <View style={styles.activityContent}>
+              <Text style={styles.activityText}>Completed "Morning Meditation"</Text>
+              <Text style={styles.activityTime}>2 hours ago</Text>
+            </View>
           </View>
           <View style={styles.activityItem}>
-            <Text style={styles.activityText}>🔥 7 day streak on "Exercise"</Text>
-            <Text style={styles.activityTime}>Yesterday</Text>
+            <View style={styles.activityIconContainer}>
+              <Icon name="fire" size={16} color="#FF6B35" />
+            </View>
+            <View style={styles.activityContent}>
+              <Text style={styles.activityText}>7 day streak on "Exercise"</Text>
+              <Text style={styles.activityTime}>Yesterday</Text>
+            </View>
           </View>
           <View style={styles.activityItem}>
-            <Text style={styles.activityText}>🎯 Added new habit "Read 30 mins"</Text>
-            <Text style={styles.activityTime}>2 days ago</Text>
+            <View style={styles.activityIconContainer}>
+              <Icon name="add" size={16} color="#3B82F6" />
+            </View>
+            <View style={styles.activityContent}>
+              <Text style={styles.activityText}>Added new habit "Read 30 mins"</Text>
+              <Text style={styles.activityTime}>2 days ago</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -350,7 +365,7 @@ export default function ProfileScreen(): React.JSX.Element {
                   )}
                 </View>
                 <View style={styles.cameraIcon}>
-                  <Text style={styles.cameraIconText}>📷</Text>
+                  <Icon name="camera" size={16} color="#6B7280" />
                 </View>
               </TouchableOpacity>
             ) : (
@@ -456,9 +471,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#E5E7EB',
-  },
-  cameraIconText: {
-    fontSize: 12,
   },
   userDetails: {
     flex: 1,
@@ -566,15 +578,28 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   activityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
+  activityIconContainer: {
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activityContent: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   activityText: {
     fontSize: 14,
     color: '#374151',
-    marginBottom: 4,
+    flex: 1,
   },
   activityTime: {
     fontSize: 12,

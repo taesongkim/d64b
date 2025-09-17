@@ -136,9 +136,9 @@ export default function FriendsListScreen(): React.JSX.Element {
             </View>
           )}
           {friend.currentStreak > 7 && (
-            <View style={styles.streakBadge}>
-              <Text style={styles.streakBadgeText}>🔥</Text>
-            </View>
+          <View style={styles.streakBadge}>
+            <Icon name="fire" size={14} color="#FF6B35" />
+          </View>
           )}
         </View>
         
@@ -168,9 +168,13 @@ export default function FriendsListScreen(): React.JSX.Element {
         <View style={styles.recentItems}>
           {friend.recentActivity.slice(0, 2).map((activity, index) => (
             <View key={index} style={styles.activityItem}>
-              <Text style={styles.activityIcon}>
-                {activity.completed ? '✅' : '⭕'}
-              </Text>
+              <View style={styles.activityIcon}>
+                <Icon 
+                  name={activity.completed ? 'activity-completed' : 'activity-failed'} 
+                  size={16} 
+                  color={activity.completed ? '#10B981' : '#EF4444'} 
+                />
+              </View>
               <Text style={styles.activityText} numberOfLines={1}>
                 {activity.habitName}
               </Text>
@@ -450,9 +454,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'white',
   },
-  streakBadgeText: {
-    fontSize: 12,
-  },
   friendInfo: {
     flex: 1,
   },
@@ -523,7 +524,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   activityIcon: {
-    fontSize: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   activityText: {
     flex: 1,

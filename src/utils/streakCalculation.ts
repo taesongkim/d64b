@@ -143,7 +143,7 @@ export class StreakCalculator {
     }
 
     if (streakData.currentStreak < 7) {
-      return `${streakData.currentStreak} days strong! 🔥`;
+      return `${streakData.currentStreak} days strong!`;
     }
 
     if (streakData.currentStreak < 30) {
