@@ -21,14 +21,12 @@ export const databaseMiddleware: Middleware = (store) => (next) => async (action
   const result = next(action);
 
   try {
-    // Handle commitment actions
+    // Skip middleware for actions that are already handled with immediate saves
+    // These actions now save directly to Supabase in their respective handlers
     if (addCommitment.match(action)) {
-      store.dispatch(addToQueue({
-        type: 'CREATE',
-        entity: 'commitment',
-        entityId: action.payload.id,
-        data: action.payload
-      }));
+      // Skip - handled directly in handleAddCommitment
+      console.log('⏭️ Skipping middleware for addCommitment (immediate save)');
+      return result;
     }
 
     if (updateCommitment.match(action)) {
@@ -53,14 +51,11 @@ export const databaseMiddleware: Middleware = (store) => (next) => async (action
       }));
     }
 
-    // Handle record actions
+    // Handle record actions - Skip those with immediate saves
     if (addRecord.match(action)) {
-      store.dispatch(addToQueue({
-        type: 'CREATE',
-        entity: 'record',
-        entityId: action.payload.id,
-        data: action.payload
-      }));
+      // Skip - will be handled when we implement immediate record saves
+      console.log('⏭️ Skipping middleware for addRecord (immediate save)');
+      return result;
     }
 
     if (updateRecord.match(action)) {

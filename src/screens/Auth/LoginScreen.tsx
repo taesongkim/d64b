@@ -12,6 +12,8 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '@/navigation/types';
 import { isFeatureEnabled } from '@/config/features';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/services/supabase';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -19,16 +21,80 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const handleLogin = async (): Promise<void> => {
-    if (!email || !password) return;
+    console.log('🔍 Login attempt started');
+    console.log('Email:', email);
+    console.log('Password length:', password.length);
     
+    if (!email || !password) {
+      console.log('❌ Missing email or password');
+      setError('Please fill in all fields');
+      return;
+    }
+    
+    console.log('🔄 Setting loading state...');
     setLoading(true);
-    // Simulate login delay
-    setTimeout(() => {
+    setError(null);
+    
+    try {
+      console.log('📞 Calling signIn function...');
+      const { error } = await signIn(email, password);
+      console.log('📥 SignIn response:', { error: error?.message || 'No error' });
+      
+      if (error) {
+        console.log('❌ Login error:', error.message);
+        if (error.message.includes('email not confirmed') || error.message.includes('Email not confirmed')) {
+          setError('Please check your email and click the confirmation link before signing in.');
+          setShowResendConfirmation(true);
+        } else {
+          setError(error.message);
+          setShowResendConfirmation(false);
+        }
+      } else {
+        console.log('✅ Login successful!');
+        setShowResendConfirmation(false);
+      }
+      // Navigation will happen automatically via AuthContext state change
+    } catch (err) {
+      console.log('💥 Unexpected error:', err);
+      setError('An unexpected error occurred');
+      setShowResendConfirmation(false);
+    } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
-      navigation.getParent()?.navigate('MainTabs');
-    }, 1000);
+    }
+  };
+
+  const handleResendConfirmation = async (): Promise<void> => {
+    if (!email) {
+      setError('Please enter your email address first');
+      return;
+    }
+
+    setResendLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+      });
+
+      if (error) {
+        setError(`Failed to resend confirmation: ${error.message}`);
+      } else {
+        setError('Confirmation email sent! Please check your inbox.');
+        setShowResendConfirmation(false);
+      }
+    } catch (err) {
+      setError('Failed to resend confirmation email');
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   const handleSocialLogin = (provider: string): void => {
@@ -68,6 +134,27 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
             secureTextEntry
             editable={!loading}
           />
+
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={[styles.errorText, !showResendConfirmation && styles.errorTextOnly]}>
+                {error}
+              </Text>
+              {showResendConfirmation && (
+                <TouchableOpacity 
+                  style={styles.resendButton}
+                  onPress={handleResendConfirmation}
+                  disabled={resendLoading}
+                >
+                  {resendLoading ? (
+                    <ActivityIndicator size="small" color="#111827" />
+                  ) : (
+                    <Text style={styles.resendButtonText}>Resend Confirmation Email</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <TouchableOpacity 
             style={[styles.loginButton, loading && styles.loginButtonDisabled]}
@@ -229,6 +316,35 @@ const styles = StyleSheet.create({
   signupLinkBold: {
     fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    textAlign: 'center',
+    fontFamily: 'Manrope_500Medium',
+    marginBottom: 8,
+  },
+  errorTextOnly: {
+    marginBottom: 0,
+  },
+  resendButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  resendButtonText: {
+    color: '#111827',
+    fontSize: 12,
+    fontFamily: 'Manrope_600SemiBold',
   },
   devBypassButton: {
     backgroundColor: '#FEF3C7',

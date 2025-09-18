@@ -14,6 +14,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '@/navigation/types';
 import { isFeatureEnabled } from '@/config/features';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 
@@ -24,40 +25,52 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { signUp } = useAuth();
 
   const handleSignup = async (): Promise<void> => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Missing Fields', 'Please fill in all fields');
+      setError('Please fill in all fields');
       return;
     }
     
     if (password !== confirmPassword) {
-      Alert.alert('Password Mismatch', 'Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
     
     if (password.length < 8) {
-      Alert.alert('Weak Password', 'Password must be at least 8 characters');
+      setError('Password must be at least 8 characters');
       return;
     }
     
     if (!acceptedTerms) {
-      Alert.alert('Terms Required', 'Please accept the terms and conditions');
+      setError('Please accept the terms and conditions');
       return;
     }
     
     setLoading(true);
-    // Simulate signup delay
-    setTimeout(() => {
+    setError(null);
+    
+    try {
+      const { error } = await signUp(email, password, name);
+      
+      if (error) {
+        setError(error.message);
+      } else {
+        Alert.alert(
+          'Success!', 
+          'Your account has been created. Please check your email to verify.',
+          [
+            { text: 'OK', onPress: () => navigation.navigate('Login') }
+          ]
+        );
+      }
+    } catch (err) {
+      setError('An unexpected error occurred');
+    } finally {
       setLoading(false);
-      Alert.alert(
-        'Success!', 
-        'Your account has been created. Please check your email to verify.',
-        [
-          { text: 'OK', onPress: () => navigation.navigate('Login') }
-        ]
-      );
-    }, 1500);
+    }
   };
 
   const handleSocialSignup = (provider: string): void => {
@@ -121,6 +134,12 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
               secureTextEntry
               editable={!loading}
             />
+
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
             <TouchableOpacity 
               style={styles.termsContainer}
@@ -335,6 +354,18 @@ const styles = StyleSheet.create({
   loginLinkBold: {
     fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 14,
+    textAlign: 'center',
+    fontFamily: 'Manrope_500Medium',
   },
   devBypassButton: {
     backgroundColor: '#FEF3C7',

@@ -29,12 +29,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔄 Auth state change:', { event, userId: session?.user?.id || 'No user' });
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Create profile on sign up  
+        // Handle sign in
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log('👤 User signed in, checking profile...');
           // Check if profile exists, create if it doesn't
           const { data: profile } = await supabase
             .from('profiles')
@@ -43,8 +45,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
             .single();
           
           if (!profile) {
+            console.log('📝 Creating new profile...');
             await createProfile(session.user);
+          } else {
+            console.log('✅ Profile already exists');
           }
+        }
+
+        // Handle sign out
+        if (event === 'SIGNED_OUT') {
+          console.log('👋 User signed out, clearing state...');
+          setUser(null);
+          setSession(null);
+          // Note: Dashboard will clear Redux data when user becomes null
         }
       }
     );
@@ -86,16 +99,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔐 AuthContext signIn called with:', { email, passwordLength: password.length });
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    console.log('🔐 Supabase signIn result:', { error: error?.message || 'No error' });
     return { error };
   };
 
   const signOut = async () => {
+    console.log('🚪 AuthContext signOut called');
+    
     const { error } = await supabase.auth.signOut();
+    
+    console.log('🚪 Supabase signOut result:', { error: error?.message || 'No error' });
     return { error };
   };
 

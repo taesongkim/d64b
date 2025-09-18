@@ -10,10 +10,10 @@ import {
   Alert,
   Image
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserStats {
   totalHabits: number;
@@ -23,7 +23,7 @@ interface UserStats {
 }
 
 export default function ProfileScreen(): React.JSX.Element {
-  const navigation = useNavigation();
+  const { signOut } = useAuth();
   
   // Mock user data
   const [userName] = useState('Taesong Kim');
@@ -56,7 +56,14 @@ export default function ProfileScreen(): React.JSX.Element {
         { 
           text: 'Sign Out', 
           style: 'destructive',
-          onPress: () => navigation.getParent()?.navigate('AuthStack')
+          onPress: async () => {
+            try {
+              await signOut();
+              // Navigation will happen automatically via AuthContext state change
+            } catch (error) {
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          }
         }
       ]
     );

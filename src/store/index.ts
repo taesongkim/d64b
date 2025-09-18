@@ -36,7 +36,8 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }).concat(databaseMiddleware),
+    }), // Temporarily disabled databaseMiddleware since we're doing immediate saves
+    // .concat(databaseMiddleware),
 });
 
 export const persistor = persistStore(store);

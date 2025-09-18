@@ -20,6 +20,7 @@ import { logout } from '@/store/slices/authSlice';
 import { HapticService } from '@/services/hapticService';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface SettingRowProps {
   title: string;
@@ -77,6 +78,7 @@ export default function SettingsScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const { notifications, preferences, privacy } = useAppSelector(state => state.settings);
   const user = useAppSelector(state => state.auth.user);
+  const { signOut } = useAuth();
 
   const handleNotificationChange = (key: keyof typeof notifications, value: boolean) => {
     dispatch(updateNotificationSettings({ [key]: value }));
@@ -173,8 +175,14 @@ export default function SettingsScreen(): React.JSX.Element {
         {
           text: 'Logout',
           style: 'default',
-          onPress: () => {
-            dispatch(logout());
+          onPress: async () => {
+            try {
+              await signOut();
+              dispatch(logout()); // Also clear Redux auth state
+              // Navigation will happen automatically via AuthContext
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
           },
         },
       ]

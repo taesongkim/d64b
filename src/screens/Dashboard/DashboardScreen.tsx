@@ -11,32 +11,127 @@ import AddCommitmentModal from '@/components/AddCommitmentModal';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addCommitment, type Commitment } from '@/store/slices/commitmentsSlice';
-import { toggleRecord, setRecordStatus, type RecordStatus } from '@/store/slices/recordsSlice';
+import { addCommitment, setCommitments, type Commitment } from '@/store/slices/commitmentsSlice';
+import { toggleRecord, setRecordStatus, setRecords, type RecordStatus } from '@/store/slices/recordsSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { HapticService } from '@/services/hapticService';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
 import { isFeatureEnabled } from '@/config/features';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserCommitments, createCommitment, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate } from '@/services/commitments';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const commitments = useAppSelector(state => state.commitments.commitments);
   const records = useAppSelector(state => state.records.records);
+  const { user } = useAuth();
   
   const fontStyle = useFontStyle();
   
-  // Load data from database on mount
+  // Load authenticated user's data
   useEffect(() => {
-    loadInitialDataFromDatabase(dispatch);
-  }, [dispatch]);
+    const loadUserData = async () => {
+      if (!user?.id) {
+        console.log('❌ No authenticated user, clearing data');
+        dispatch(setCommitments([]));
+        dispatch(setRecords([]));
+        return;
+      }
 
+      console.log('📊 Loading data for authenticated user:', user.id);
+      
+      try {
+        // Load user's commitments from Supabase
+        const { commitments: userCommitments, error } = await getUserCommitments(user.id);
+        
+        if (error) {
+          console.error('❌ Error loading user commitments:', error);
+          return;
+        }
 
-  // Initialize with sample data if empty (only after database load)
+        console.log('📥 Loaded commitments:', userCommitments?.length || 0);
+        
+        if (userCommitments && userCommitments.length > 0) {
+          // Convert Supabase data to Redux format
+          const convertedCommitments = userCommitments.map(c => ({
+            id: c.id,
+            userId: c.user_id,
+            title: c.title,
+            description: c.description || undefined,
+            color: c.color,
+            type: 'binary' as 'binary' | 'counter' | 'timer', // Default to binary for now
+            target: c.target_days,
+            streak: 0, // Will be calculated from records
+            bestStreak: 0, // Will be calculated from records
+            isActive: c.is_active,
+            isPrivate: false, // Default for now
+            createdAt: c.created_at,
+            updatedAt: c.updated_at,
+          }));
+
+          dispatch(setCommitments(convertedCommitments));
+          console.log('✅ User commitments loaded into Redux');
+        } else {
+          console.log('📝 No commitments found for user');
+          dispatch(setCommitments([]));
+        }
+        
+        // Load user's records for the last 30 days
+        console.log('🔍 Checking if should load records:', { 
+          hasCommitments: !!userCommitments, 
+          commitmentCount: userCommitments?.length || 0 
+        });
+        
+        if (userCommitments && userCommitments.length > 0) {
+          console.log('📊 Loading user records for', userCommitments.length, 'commitments...');
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+          const endDate = new Date().toISOString().split('T')[0];
+
+          // Get records for all commitments
+          const recordsPromises = userCommitments.map(commitment => 
+            getCommitmentRecords(commitment.id, startDate, endDate)
+          );
+
+          try {
+            const recordsResults = await Promise.all(recordsPromises);
+            const allRecords = recordsResults.flatMap(result => result.data || []);
+            
+            // Convert to Redux format
+            const convertedRecords = allRecords.map(r => ({
+              id: r.id,
+              commitmentId: r.commitment_id,
+              date: r.completed_at.split('T')[0], // Extract date part
+              status: r.status === 'complete' ? 'completed' : r.status as RecordStatus,
+              value: undefined,
+              notes: r.notes || undefined,
+              createdAt: r.created_at,
+              updatedAt: r.updated_at || r.created_at,
+            }));
+
+            dispatch(setRecords(convertedRecords));
+            console.log('✅ User records loaded:', convertedRecords.length);
+          } catch (recordError) {
+            console.error('❌ Error loading records:', recordError);
+          }
+        }
+        
+      } catch (error) {
+        console.error('💥 Failed to load user data:', error);
+      }
+    };
+
+    loadUserData();
+  }, [user?.id, dispatch]);
+
+  // Fallback sample data for development (only if no user authenticated)
   useEffect(() => {
-    // Add a small delay to ensure database has been checked first
-    const timer = setTimeout(() => {
-      if (commitments.length === 0) {
+    let timer: NodeJS.Timeout | null = null;
+    
+    if (!user?.id && commitments.length === 0) {
+      timer = setTimeout(() => {
         const sampleCommitments: Commitment[] = [
           { 
             id: '1', 
@@ -110,11 +205,15 @@ export default function DashboardScreen(): React.JSX.Element {
         sampleCommitments.forEach(commitment => {
           dispatch(addCommitment(commitment));
         });
-      }
-    }, 500);
+      }, 500);
+    }
 
-    return () => clearTimeout(timer);
-  }, [commitments.length, dispatch]);
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [user?.id, commitments.length, dispatch]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
@@ -136,32 +235,125 @@ export default function DashboardScreen(): React.JSX.Element {
     dispatch(toggleRecord({ commitmentId, date }));
   };
 
-  const handleSetRecordStatus = (commitmentId: string, date: string, status: RecordStatus) => {
-    // Provide haptic feedback based on status
-    if (status === 'completed') {
-      HapticService.success();
-      setShowCompletionAnimation(true);
-    } else if (status === 'failed') {
-      HapticService.error();
-    } else if (status === 'skipped') {
-      HapticService.light();
-    } else {
-      HapticService.light(); // For 'none' status (removing record)
+  const handleSetRecordStatus = async (commitmentId: string, date: string, status: RecordStatus) => {
+    if (!user?.id) {
+      console.error('❌ Cannot update record: No authenticated user');
+      return;
     }
-    
-    dispatch(setRecordStatus({ commitmentId, date, status }));
+
+    console.log('📝 Updating record status:', { commitmentId, date, status, userId: user.id });
+
+    try {
+      // Handle database operations based on status
+      if (status !== 'none') {
+        // Save/update record to Supabase
+        const recordData = {
+          commitment_id: commitmentId,
+          completed_at: `${date}T12:00:00Z`, // Use noon UTC for the date
+          notes: null,
+          user_id: user.id,
+          status: status === 'completed' ? 'complete' : status,
+        };
+
+        console.log('💾 Saving record to Supabase...');
+        const { data, error } = await upsertCommitmentRecord(recordData);
+        
+        if (error) {
+          console.error('❌ Failed to save record to database:', error);
+          // Still update Redux for offline functionality
+        } else {
+          console.log('✅ Record saved to database:', data?.id);
+        }
+      } else {
+        // Delete record from Supabase when status is 'none'
+        console.log('🗑️ Deleting record from Supabase...');
+        const { error } = await deleteCommitmentRecordByDate(commitmentId, `${date}T12:00:00Z`);
+        
+        if (error) {
+          console.error('❌ Failed to delete record from database:', error);
+          // Still update Redux for offline functionality
+        } else {
+          console.log('✅ Record deleted from database');
+        }
+      }
+
+      // Update Redux state
+      dispatch(setRecordStatus({ commitmentId, date, status }));
+
+      // Provide haptic feedback based on status
+      if (status === 'completed') {
+        HapticService.success();
+        setShowCompletionAnimation(true);
+      } else if (status === 'failed') {
+        HapticService.error();
+      } else if (status === 'skipped') {
+        HapticService.light();
+      } else {
+        HapticService.light(); // For 'none' status (removing record)
+      }
+      
+    } catch (error) {
+      console.error('💥 Unexpected error saving record:', error);
+      // Still update Redux for offline functionality
+      dispatch(setRecordStatus({ commitmentId, date, status }));
+    }
   };
 
-  const handleAddCommitment = (commitmentData: Omit<Commitment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
-    HapticService.success(); // Success feedback for adding commitment
-    const newCommitment: Commitment = {
-      ...commitmentData,
-      id: Date.now().toString(),
-      userId: 'current_user',
-      createdAt: getCurrentTimestamp(),
-      updatedAt: getCurrentTimestamp(),
-    };
-    dispatch(addCommitment(newCommitment));
+  const handleAddCommitment = async (commitmentData: Omit<Commitment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    if (!user?.id) {
+      console.error('❌ Cannot add commitment: No authenticated user');
+      return;
+    }
+
+    console.log('➕ Adding commitment for user:', user.id);
+    
+    try {
+      // Save to Supabase first
+      const supabaseData = {
+        user_id: user.id,
+        title: commitmentData.title,
+        description: commitmentData.description || null,
+        color: commitmentData.color,
+        target_days: commitmentData.target || 30,
+        is_active: true,
+        // Note: 'type' field doesn't exist in current schema
+        // tracking_mode and other Phase 0 fields will be used later
+      };
+
+      console.log('💾 Saving commitment to Supabase...');
+      const { data, error } = await createCommitment(supabaseData);
+      
+      if (error) {
+        console.error('❌ Failed to save commitment to database:', error);
+        // Still add to Redux for offline functionality
+      } else {
+        console.log('✅ Commitment saved to database:', data?.id);
+      }
+
+      // Add to Redux (use Supabase ID if available, fallback to timestamp)
+      const newCommitment: Commitment = {
+        ...commitmentData,
+        id: data?.id || Date.now().toString(),
+        userId: user.id,
+        createdAt: getCurrentTimestamp(),
+        updatedAt: getCurrentTimestamp(),
+      };
+      
+      dispatch(addCommitment(newCommitment));
+      HapticService.success(); // Success feedback
+      
+    } catch (error) {
+      console.error('💥 Unexpected error saving commitment:', error);
+      // Still add to Redux for offline functionality
+      const newCommitment: Commitment = {
+        ...commitmentData,
+        id: Date.now().toString(),
+        userId: user.id,
+        createdAt: getCurrentTimestamp(),
+        updatedAt: getCurrentTimestamp(),
+      };
+      dispatch(addCommitment(newCommitment));
+    }
   };
 
   return (

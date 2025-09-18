@@ -1,15 +1,35 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import type { RootStackParamList } from './types';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator(): React.JSX.Element {
-  // TODO: Replace with actual auth state from Redux/Context
-  const [isAuthenticated] = useState(false);
+  const { user, loading } = useAuth();
+
+  console.log('🧭 AppNavigator render:', { 
+    user: user?.id || 'No user', 
+    loading,
+    willShowMainTabs: !!user 
+  });
+
+  // Show loading screen while checking auth state
+  if (loading) {
+    console.log('⏳ Showing loading screen');
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#111827" />
+      </View>
+    );
+  }
+
+  const initialRoute = user ? 'MainTabs' : 'AuthStack';
+  console.log('🎯 Initial route determined:', initialRoute);
 
   return (
     <NavigationContainer>
@@ -17,11 +37,22 @@ export default function AppNavigator(): React.JSX.Element {
         screenOptions={{
           headerShown: false,
         }}
-        initialRouteName={isAuthenticated ? 'MainTabs' : 'AuthStack'}
       >
-        <Stack.Screen name="AuthStack" component={AuthStack} />
-        <Stack.Screen name="MainTabs" component={MainTabs} />
+        {user ? (
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+        ) : (
+          <Stack.Screen name="AuthStack" component={AuthStack} />
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+  },
+});
