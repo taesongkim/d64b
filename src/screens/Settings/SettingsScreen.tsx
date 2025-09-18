@@ -77,8 +77,7 @@ function SettingRow({
 export default function SettingsScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const { notifications, preferences, privacy } = useAppSelector(state => state.settings);
-  const user = useAppSelector(state => state.auth.user);
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleNotificationChange = (key: keyof typeof notifications, value: boolean) => {
     dispatch(updateNotificationSettings({ [key]: value }));
@@ -199,12 +198,14 @@ export default function SettingsScreen(): React.JSX.Element {
           <View style={styles.profileCard}>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
-                {user?.username?.charAt(0).toUpperCase() || 'U'}
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
               </Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.username || 'User'}</Text>
-              <Text style={styles.profileEmail}>{user?.email || 'user@example.com'}</Text>
+              <Text style={styles.profileName}>
+                {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+              </Text>
+              <Text style={styles.profileEmail}>{user?.email || 'No email'}</Text>
             </View>
             <TouchableOpacity style={styles.editButton}>
               <Text style={styles.editButtonText}>Edit</Text>

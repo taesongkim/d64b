@@ -8,12 +8,20 @@ import {
   SafeAreaView,
   Switch,
   Alert,
-  Image
+  Image,
+  Share
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import {
+  updateNotificationSettings,
+  updatePrivacySettings,
+  resetSettings,
+} from '@/store/slices/settingsSlice';
+import { HapticService } from '@/services/hapticService';
 
 interface UserStats {
   totalHabits: number;
@@ -23,16 +31,15 @@ interface UserStats {
 }
 
 export default function ProfileScreen(): React.JSX.Element {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
+  const dispatch = useAppDispatch();
+  const { notifications, preferences, privacy } = useAppSelector(state => state.settings);
   
-  // Mock user data
-  const [userName] = useState('Taesong Kim');
-  const [userEmail] = useState('taesong.kim@example.com');
-  const [memberSince] = useState('October 2024');
+  // UI state
   const [showSettings, setShowSettings] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   
-  // Mock stats
+  // Mock stats (TODO: Replace with real data)
   const stats: UserStats = {
     totalHabits: 12,
     currentStreak: 7,
@@ -40,12 +47,10 @@ export default function ProfileScreen(): React.JSX.Element {
     completionRate: 78,
   };
   
-  // Settings state
-  const [notifications, setNotifications] = useState(true);
-  const [reminders, setReminders] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [publicProfile, setPublicProfile] = useState(true);
-  const [shareProgress, setShareProgress] = useState(false);
+  // Derived user data
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userEmail = user?.email || 'No email';
+  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Recently';
 
   const handleLogout = (): void => {
     Alert.alert(
@@ -69,20 +74,6 @@ export default function ProfileScreen(): React.JSX.Element {
     );
   };
 
-  const handleDeleteAccount = (): void => {
-    Alert.alert(
-      'Delete Account',
-      'This action cannot be undone. All your data will be permanently deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => console.log('Account deletion requested')
-        }
-      ]
-    );
-  };
 
   const pickImageFromLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -193,6 +184,15 @@ export default function ProfileScreen(): React.JSX.Element {
             </View>
             <Text style={styles.actionLabel}>Friends</Text>
           </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => setShowSettings(true)}
+          >
+            <View style={styles.actionIcon}>
+              <Icon name="settings" size={20} color="#6B7280" />
+            </View>
+            <Text style={styles.actionLabel}>Settings</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -232,123 +232,280 @@ export default function ProfileScreen(): React.JSX.Element {
     </>
   );
 
+  // Settings handlers
+  const handleNotificationChange = (key: keyof typeof notifications, value: boolean) => {
+    HapticService.selection();
+    dispatch(updateNotificationSettings({ [key]: value }));
+  };
+
+  const handlePrivacyChange = (key: keyof typeof privacy, value: boolean) => {
+    HapticService.selection();
+    dispatch(updatePrivacySettings({ [key]: value }));
+  };
+
+  const handleComingSoon = (feature: string) => {
+    HapticService.selection();
+    Alert.alert(
+      'Coming Soon!',
+      `${feature} will be available in a future update.`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleExportData = async () => {
+    HapticService.selection();
+    try {
+      const exportData = {
+        commitments: [], // Will be populated from Redux
+        records: [],
+        settings: { notifications, preferences, privacy },
+        exportDate: new Date().toISOString(),
+      };
+      
+      const jsonString = JSON.stringify(exportData, null, 2);
+      
+      await Share.share({
+        message: jsonString,
+        title: 'Habit Tracker Data Export',
+      });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to export data');
+    }
+  };
+
+  const handleClearData = () => {
+    HapticService.warning();
+    Alert.alert(
+      'Clear All Data',
+      'This will permanently delete all your habits, records, and reset settings. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear Data',
+          style: 'destructive',
+          onPress: () => {
+            dispatch(resetSettings());
+            Alert.alert('Success', 'All data has been cleared');
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = () => {
+    HapticService.error();
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all associated data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete Account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Feature', 'Account deletion coming soon!');
+          },
+        },
+      ]
+    );
+  };
+
   const renderSettingsView = () => (
     <>
-      {/* Notifications Settings */}
+      {/* Profile Info in Settings */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Account</Text>
+        <View style={styles.settingsList}>
+          <View style={styles.profileInfoItem}>
+            <View style={styles.profileInfoLeft}>
+              <Text style={styles.profileInfoLabel}>Name</Text>
+              <Text style={styles.profileInfoValue}>{userName}</Text>
+            </View>
+          </View>
+          <View style={styles.profileInfoItem}>
+            <View style={styles.profileInfoLeft}>
+              <Text style={styles.profileInfoLabel}>Email</Text>
+              <Text style={styles.profileInfoValue}>{userEmail}</Text>
+            </View>
+          </View>
+          <View style={styles.profileInfoItem}>
+            <View style={styles.profileInfoLeft}>
+              <Text style={styles.profileInfoLabel}>Member Since</Text>
+              <Text style={styles.profileInfoValue}>{memberSince}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Notifications */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notifications</Text>
         <View style={styles.settingsList}>
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Push Notifications</Text>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Daily Reminders</Text>
+              <Text style={styles.settingSubtitle}>Get reminded to check in on your habits</Text>
+            </View>
             <Switch
-              value={notifications}
-              onValueChange={setNotifications}
+              value={notifications.dailyReminders}
+              onValueChange={(val) => handleNotificationChange('dailyReminders', val)}
               trackColor={{ false: '#E5E7EB', true: '#111827' }}
-              thumbColor="white"
+              thumbColor={notifications.dailyReminders ? '#FFFFFF' : '#9CA3AF'}
             />
           </View>
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Daily Reminders</Text>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Streak Alerts</Text>
+              <Text style={styles.settingSubtitle}>Notifications when your streak is at risk</Text>
+            </View>
             <Switch
-              value={reminders}
-              onValueChange={setReminders}
+              value={notifications.streakAlerts}
+              onValueChange={(val) => handleNotificationChange('streakAlerts', val)}
               trackColor={{ false: '#E5E7EB', true: '#111827' }}
-              thumbColor="white"
+              thumbColor={notifications.streakAlerts ? '#FFFFFF' : '#9CA3AF'}
+            />
+          </View>
+          <View style={styles.settingItem}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Social Updates</Text>
+              <Text style={styles.settingSubtitle}>Friend activities and achievements</Text>
+            </View>
+            <Switch
+              value={notifications.socialUpdates}
+              onValueChange={(val) => handleNotificationChange('socialUpdates', val)}
+              trackColor={{ false: '#E5E7EB', true: '#111827' }}
+              thumbColor={notifications.socialUpdates ? '#FFFFFF' : '#9CA3AF'}
             />
           </View>
         </View>
       </View>
 
-      {/* Appearance Settings */}
+      {/* Preferences */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Appearance</Text>
+        <Text style={styles.sectionTitle}>Preferences</Text>
         <View style={styles.settingsList}>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Dark Mode</Text>
-            <Switch
-              value={darkMode}
-              onValueChange={setDarkMode}
-              trackColor={{ false: '#E5E7EB', true: '#111827' }}
-              thumbColor="white"
-            />
-          </View>
+          {/* MVP-HIDDEN: Theme Selection - Enable in v1.2 */}
+          {isFeatureEnabled('THEMES') ? (
+            <TouchableOpacity style={styles.settingItem} onPress={() => handleComingSoon('Theme selection')}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Theme</Text>
+                <Text style={styles.settingSubtitle}>Current: {preferences.theme}</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.settingItem} onPress={() => handleComingSoon('Theme selection')}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Theme</Text>
+                <Text style={styles.settingSubtitle}>Light (Coming Soon)</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          )}
+          {/* MVP-HIDDEN: Language Selection - Enable in v1.2 */}
+          {isFeatureEnabled('LANGUAGES') ? (
+            <TouchableOpacity style={styles.settingItem} onPress={() => handleComingSoon('Language selection')}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Language</Text>
+                <Text style={styles.settingSubtitle}>English</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity style={styles.settingItem} onPress={() => handleComingSoon('Language selection')}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Language</Text>
+                <Text style={styles.settingSubtitle}>English (Coming Soon)</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Privacy Settings */}
+      {/* Privacy */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Privacy</Text>
         <View style={styles.settingsList}>
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Public Profile</Text>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Allow Friend Requests</Text>
+              <Text style={styles.settingSubtitle}>Others can send you friend requests</Text>
+            </View>
             <Switch
-              value={publicProfile}
-              onValueChange={setPublicProfile}
+              value={privacy.allowFriendRequests}
+              onValueChange={(val) => handlePrivacyChange('allowFriendRequests', val)}
               trackColor={{ false: '#E5E7EB', true: '#111827' }}
-              thumbColor="white"
+              thumbColor={privacy.allowFriendRequests ? '#FFFFFF' : '#9CA3AF'}
             />
           </View>
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Share Progress with Friends</Text>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Analytics</Text>
+              <Text style={styles.settingSubtitle}>Help improve the app with usage data</Text>
+            </View>
             <Switch
-              value={shareProgress}
-              onValueChange={setShareProgress}
+              value={privacy.dataAnalytics}
+              onValueChange={(val) => handlePrivacyChange('dataAnalytics', val)}
               trackColor={{ false: '#E5E7EB', true: '#111827' }}
-              thumbColor="white"
+              thumbColor={privacy.dataAnalytics ? '#FFFFFF' : '#9CA3AF'}
             />
           </View>
         </View>
       </View>
 
-      {/* Support Section */}
+      {/* Data Management */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Support</Text>
+        <Text style={styles.sectionTitle}>Data</Text>
         <View style={styles.settingsList}>
-          <TouchableOpacity style={styles.linkItem}>
-            <Text style={styles.linkText}>Help Center</Text>
+          {/* MVP-HIDDEN: Data Export - Enable in v1.2 */}
+          {isFeatureEnabled('DATA_EXPORT') && (
+            <TouchableOpacity style={styles.settingItem} onPress={handleExportData}>
+              <View style={styles.settingContent}>
+                <Text style={styles.settingLabel}>Export Data</Text>
+                <Text style={styles.settingSubtitle}>Download your data as JSON</Text>
+              </View>
+              <Text style={styles.chevron}>›</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.settingItem} onPress={handleClearData}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Clear All Data</Text>
+              <Text style={styles.settingSubtitle}>Reset app to initial state</Text>
+            </View>
             <Text style={styles.chevron}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.linkItem}>
-            <Text style={styles.linkText}>Privacy Policy</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.linkItem}>
-            <Text style={styles.linkText}>Terms of Service</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.linkItem}>
-            <Text style={styles.linkText}>Contact Us</Text>
-            <Text style={styles.chevron}>›</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* About Section */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.aboutContent}>
-          <Text style={styles.appVersion}>D64B Version 1.0.0</Text>
-          <Text style={styles.aboutText}>
-            Build better habits, one day at a time.
-          </Text>
         </View>
       </View>
 
       {/* Account Actions */}
       <View style={styles.section}>
-        <TouchableOpacity 
-          style={styles.signOutButton}
-          onPress={handleLogout}
-        >
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.deleteButton}
-          onPress={handleDeleteAccount}
-        >
-          <Text style={styles.deleteText}>Delete Account</Text>
-        </TouchableOpacity>
+        <Text style={styles.sectionTitle}>Account</Text>
+        <View style={styles.settingsList}>
+          <TouchableOpacity style={styles.settingItem} onPress={handleLogout}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Logout</Text>
+            </View>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.settingItem} onPress={handleDeleteAccount}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Delete Account</Text>
+              <Text style={styles.settingSubtitle}>Permanently delete your account</Text>
+            </View>
+            <Text style={styles.deleteText}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Footer */}
+      <View style={styles.footer}>
+        <Text style={styles.versionText}>Habit Tracker v1.0.0</Text>
+        <View style={styles.footerTextContainer}>
+          <Text style={styles.footerText}>Made with </Text>
+          <Icon name="heart" size={16} color="#EF4444" />
+          <Text style={styles.footerText}> for building better habits</Text>
+        </View>
       </View>
     </>
   );
@@ -367,7 +524,7 @@ export default function ProfileScreen(): React.JSX.Element {
                     <Image source={{ uri: profileImage }} style={styles.avatarImage} />
                   ) : (
                     <Text style={styles.avatarText}>
-                      {userName.split(' ').map(n => n[0]).join('')}
+                      {userName.split(' ').map((n: string) => n[0]).join('')}
                     </Text>
                   )}
                 </View>
@@ -379,7 +536,7 @@ export default function ProfileScreen(): React.JSX.Element {
               <View style={styles.avatarContainer}>
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
-                    {userName.split(' ').map(n => n[0]).join('')}
+                    {userName.split(' ').map((n: string) => n[0]).join('')}
                   </Text>
                 </View>
               </View>
@@ -683,11 +840,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  deleteText: {
-    fontSize: 16,
-    fontFamily: 'Manrope_600SemiBold',
-    color: '#DC2626',
-  },
   devInfo: {
     backgroundColor: '#FEF3C7',
     borderRadius: 8,
@@ -701,5 +853,65 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#92400E',
     fontFamily: 'Manrope_500Medium',
+  },
+  // Settings styles
+  profileInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  profileInfoLeft: {
+    flex: 1,
+  },
+  profileInfoLabel: {
+    fontSize: 16,
+    fontFamily: 'Manrope_500Medium',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  profileInfoValue: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  settingContent: {
+    flex: 1,
+  },
+  settingSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#111827',
+    fontFamily: 'Manrope_500Medium',
+  },
+  deleteText: {
+    fontSize: 16,
+    color: '#EF4444',
+    fontFamily: 'Manrope_500Medium',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 32,
+  },
+  versionText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  footerTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });

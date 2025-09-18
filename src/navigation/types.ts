@@ -13,7 +13,6 @@ export type MainTabParamList = {
   Analytics: undefined;
   Social: undefined;
   Profile: undefined;
-  Settings: undefined;
 };
 
 declare global {

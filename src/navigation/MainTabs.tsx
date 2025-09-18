@@ -5,7 +5,6 @@ import DashboardScreen from '@/screens/Dashboard/DashboardScreen';
 import AnalyticsScreen from '@/screens/Analytics/AnalyticsScreen';
 import FriendsListScreen from '@/screens/Social/FriendsListScreen';
 import ProfileScreen from '@/screens/Profile/ProfileScreen';
-import SettingsScreen from '@/screens/Settings/SettingsScreen';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
 
@@ -68,15 +67,6 @@ export default function MainTabs(): React.JSX.Element {
           title: 'Profile',
           tabBarLabel: 'Profile',
           tabBarIcon: ({ color }) => <Icon name="profile" size={20} color={color} />,
-        }}
-      />
-      <Tab.Screen 
-        name="Settings" 
-        component={SettingsScreen}
-        options={{
-          title: 'Settings',
-          tabBarLabel: 'Settings',
-          tabBarIcon: ({ color }) => <Icon name="settings" size={20} color={color} />,
         }}
       />
     </Tab.Navigator>
