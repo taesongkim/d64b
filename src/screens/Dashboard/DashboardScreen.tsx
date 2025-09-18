@@ -219,20 +219,21 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   
   const handleCellPress = (commitmentId: string, date: string) => {
-    // Check if record currently exists to determine which haptic feedback to use
+    // Check if record currently exists to determine which status to set
     const existingRecord = records.find(
       r => r.commitmentId === commitmentId && r.date === date
     );
     
     if (existingRecord) {
+      // If record exists, remove it (set to 'none')
       HapticService.light(); // Light feedback for unchecking
+      handleSetRecordStatus(commitmentId, date, 'none');
     } else {
+      // If no record exists, mark as completed
       HapticService.success(); // Success feedback for completing
-      // Show completion animation for new completions
       setShowCompletionAnimation(true);
+      handleSetRecordStatus(commitmentId, date, 'completed');
     }
-    
-    dispatch(toggleRecord({ commitmentId, date }));
   };
 
   const handleSetRecordStatus = async (commitmentId: string, date: string, status: RecordStatus) => {
