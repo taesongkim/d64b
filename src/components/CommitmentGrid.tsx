@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import ReactionPopup from './ReactionPopup';
 import CustomXIcon from './CustomXIcon';
-import CustomSkipIcon from './CustomSkipIcon';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import { useFontStyle } from '@/hooks/useFontStyle';
@@ -396,7 +395,7 @@ export default function CommitmentGrid({
                       cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
                     } else if (status === 'skipped') {
                       cellStyle = [dynamicStyles.cell, styles.skippedCell];
-                      cellContent = <CustomSkipIcon size={12} color="white" />;
+                      cellContent = null; // Empty green square, no icon
                     } else if (status === 'failed') {
                       cellStyle = [dynamicStyles.cell, styles.failedCell];
                       cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
