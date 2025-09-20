@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,22 @@ import {
   FlatList,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  searchUsersByEmail, 
+  sendFriendRequest, 
+  getUserFriends,
+  getPendingFriendRequests,
+  acceptFriendRequest,
+  declineFriendRequest,
+  removeFriend,
+  checkFriendshipStatus,
+  type FriendProfile 
+} from '@/services/friends';
 
 interface Friend {
   id: string;
@@ -32,7 +45,19 @@ interface Friend {
 }
 
 export default function FriendsListScreen(): React.JSX.Element {
-  const [friends, setFriends] = useState<Friend[]>([
+  const { user } = useAuth();
+  
+  // Real friend data
+  const [friends, setFriends] = useState<FriendProfile[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Search state
+  const [searchResults, setSearchResults] = useState<FriendProfile[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  
+  // Mock friends for fallback (will be replaced)
+  const [mockFriends] = useState<Friend[]>([
     {
       id: '1',
       name: 'Sarah Chen',
@@ -79,25 +104,190 @@ export default function FriendsListScreen(): React.JSX.Element {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newFriendUsername, setNewFriendUsername] = useState('');
+  const [newFriendEmail, setNewFriendEmail] = useState('');
   const [selectedTab, setSelectedTab] = useState<'friends' | 'discover'>('friends');
 
+  // Load friends and requests on mount
+  useEffect(() => {
+    if (user?.id) {
+      loadFriendsData();
+    }
+  }, [user?.id]);
+
+  const loadFriendsData = async () => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    try {
+      // Load friends and pending requests
+      const [friendsResult, requestsResult] = await Promise.all([
+        getUserFriends(user.id),
+        getPendingFriendRequests(user.id)
+      ]);
+
+      if (friendsResult.data) {
+        setFriends(friendsResult.data);
+      }
+      
+      if (requestsResult.data) {
+        console.log('📥 Loaded pending requests:', requestsResult.data.map(r => ({
+          id: r.id.substring(0, 8) + '...',
+          sender_email: r.sender_profile?.email || 'MISSING EMAIL',
+          sender_name: r.sender_profile?.full_name || 'MISSING NAME',
+          raw_sender_profile: r.sender_profile
+        })));
+        setPendingRequests(requestsResult.data);
+      }
+    } catch (error) {
+      console.error('Failed to load friends data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchUsers = async (query: string) => {
+    if (query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const { data, error } = await searchUsersByEmail(query);
+      if (data) {
+        setSearchResults(data);
+      }
+      if (error) {
+        console.error('Search error:', error);
+      }
+    } catch (error) {
+      console.error('Failed to search users:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const filteredFriends = friends.filter(friend =>
+    (friend.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Use real friends if available, otherwise fallback to mock
+  const displayFriends = friends.length > 0 ? filteredFriends : mockFriends.filter(friend =>
     friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     friend.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleAddFriend = () => {
-    if (newFriendUsername.trim()) {
-      Alert.alert(
-        'Friend Request Sent',
-        `A friend request has been sent to ${newFriendUsername}`,
-        [{ text: 'OK', onPress: () => {
-          setNewFriendUsername('');
-          setShowAddModal(false);
-        }}]
-      );
+  const handleSendFriendRequest = async (receiverId: string, receiverEmail: string) => {
+    if (!user?.id) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await sendFriendRequest(receiverId);
+      
+      if (error) {
+        if (error.message === 'Friend request already sent') {
+          Alert.alert(
+            'Request Already Sent',
+            `You've already sent a friend request to ${receiverEmail}`,
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert('Error', `Failed to send friend request: ${error.message}`);
+        }
+      } else {
+        Alert.alert(
+          'Friend Request Sent!',
+          `A friend request has been sent to ${receiverEmail}`,
+          [{ text: 'OK' }]
+        );
+        setNewFriendEmail('');
+        setSearchResults([]);
+        setShowAddModal(false);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send friend request');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleAcceptRequest = async (requestId: string) => {
+    if (!requestId) {
+      Alert.alert('Error', 'Invalid request ID');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await acceptFriendRequest(requestId);
+      
+      if (error) {
+        Alert.alert('Error', `Failed to accept request: ${error.message}`);
+      } else {
+        Alert.alert('Success', 'Friend request accepted!');
+        loadFriendsData(); // Reload data
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      Alert.alert('Error', 'Failed to accept friend request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeclineRequest = async (requestId: string) => {
+    if (!requestId) {
+      Alert.alert('Error', 'Invalid request ID');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await declineFriendRequest(requestId);
+      
+      if (error) {
+        Alert.alert('Error', `Failed to decline request: ${error.message}`);
+      } else {
+        loadFriendsData(); // Reload data
+      }
+    } catch (error) {
+      console.error('Error declining friend request:', error);
+      Alert.alert('Error', 'Failed to decline friend request');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveFriend = async (friendId: string, friendName: string) => {
+    Alert.alert(
+      'Remove Friend',
+      `Are you sure you want to remove ${friendName} from your friends?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const { error } = await removeFriend(friendId);
+              
+              if (error) {
+                Alert.alert('Error', `Failed to remove friend: ${error.message}`);
+              } else {
+                Alert.alert('Success', 'Friend removed');
+                loadFriendsData(); // Reload data
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Failed to remove friend');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   const renderMiniHabitGrid = (friend: Friend) => {
@@ -122,7 +312,21 @@ export default function FriendsListScreen(): React.JSX.Element {
     );
   };
 
-  const renderFriendCard = ({ item: friend }: { item: Friend }) => (
+  const renderFriendCard = ({ item }: { item: Friend | FriendProfile }) => {
+    // Check if it's a real friend or mock friend
+    const isRealFriend = 'email' in item;
+    const friend = isRealFriend ? {
+      id: item.id,
+      name: item.full_name || item.email.split('@')[0],
+      username: item.email,
+      avatar: item.avatar_url,
+      mutualFriends: 0, // TODO: Calculate
+      currentStreak: 0, // TODO: Calculate  
+      completedToday: 0, // TODO: Calculate
+      totalHabits: 0, // TODO: Calculate
+    } : item as Friend;
+
+    return (
     <TouchableOpacity style={styles.friendCard}>
       <View style={styles.friendHeader}>
         <View style={styles.avatarContainer}>
@@ -157,7 +361,7 @@ export default function FriendsListScreen(): React.JSX.Element {
       <View style={styles.activitySection}>
         <Text style={styles.activityTitle}>Recent Activity</Text>
         <View style={styles.recentItems}>
-          {friend.recentActivity.slice(0, 2).map((activity, index) => (
+          {(friend.recentActivity || []).slice(0, 2).map((activity, index) => (
             <View key={index} style={styles.activityItem}>
               <View style={styles.activityIcon}>
                 <Icon 
@@ -173,9 +377,20 @@ export default function FriendsListScreen(): React.JSX.Element {
             </View>
           ))}
         </View>
+        
+        {/* Remove friend button for real friends */}
+        {isRealFriend && (
+          <TouchableOpacity
+            style={styles.removeFriendButton}
+            onPress={() => handleRemoveFriend(item.id, friend.name)}
+          >
+            <Text style={styles.removeFriendText}>Remove</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
-  );
+    );
+  };
 
   const renderDiscoverCard = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.discoverCard}>
@@ -250,9 +465,61 @@ export default function FriendsListScreen(): React.JSX.Element {
         />
       </View>
 
+      {/* Pending Friend Requests */}
+      {pendingRequests.length > 0 && (
+        <View style={styles.pendingRequestsSection}>
+          <Text style={styles.pendingRequestsTitle}>
+            Friend Requests ({pendingRequests.length})
+          </Text>
+          {pendingRequests.map((request) => (
+            <View key={request.id} style={styles.pendingRequestCard}>
+              <View style={styles.pendingRequestLeft}>
+                <View style={styles.pendingRequestAvatar}>
+                  <Text style={styles.pendingRequestAvatarText}>
+                    {request.sender_profile?.email?.charAt(0).toUpperCase() || 'U'}
+                  </Text>
+                </View>
+                <View style={styles.pendingRequestInfo}>
+                  <Text style={styles.pendingRequestName}>
+                    {request.sender_profile?.full_name || 
+                     request.sender_profile?.email?.split('@')[0] || 
+                     'Loading...'}
+                  </Text>
+                  <Text style={styles.pendingRequestEmail}>
+                    {request.sender_profile?.email || 'Loading email...'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.pendingRequestActions}>
+                <TouchableOpacity
+                  style={styles.acceptButton}
+                  onPress={() => handleAcceptRequest(request.id)}
+                >
+                  <Text style={styles.acceptButtonText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.declineButton}
+                  onPress={() => handleDeclineRequest(request.id)}
+                >
+                  <Text style={styles.declineButtonText}>Decline</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Loading indicator */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#111827" />
+          <Text style={styles.loadingText}>Loading friends...</Text>
+        </View>
+      )}
+
       {/* MVP: Only show friends tab, hide discover for now */}
       <FlatList
-        data={filteredFriends}
+        data={displayFriends}
         renderItem={renderFriendCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -274,43 +541,85 @@ export default function FriendsListScreen(): React.JSX.Element {
           }
       />
 
-      {/* Add Friend Modal */}
+      {/* Add Friend Modal with Search */}
       <Modal
         visible={showAddModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setShowAddModal(false)}
+        onRequestClose={() => {
+          setShowAddModal(false);
+          setNewFriendEmail('');
+          setSearchResults([]);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add Friend</Text>
             <Text style={styles.modalDescription}>
-              Enter their username or email to send a friend request
+              Search by email address to send a friend request
             </Text>
+            
+            {/* Search Input */}
             <TextInput
               style={styles.modalInput}
-              placeholder="@username or email"
+              placeholder="Enter email address"
               placeholderTextColor="#9CA3AF"
-              value={newFriendUsername}
-              onChangeText={setNewFriendUsername}
+              value={newFriendEmail}
+              onChangeText={(text) => {
+                setNewFriendEmail(text);
+                handleSearchUsers(text);
+              }}
               autoCapitalize="none"
+              keyboardType="email-address"
               autoFocus
             />
+
+            {/* Search Results */}
+            {searchLoading && (
+              <View style={styles.searchLoading}>
+                <ActivityIndicator size="small" color="#111827" />
+                <Text style={styles.searchLoadingText}>Searching...</Text>
+              </View>
+            )}
+
+            {searchResults.length > 0 && (
+              <View style={styles.searchResults}>
+                <Text style={styles.searchResultsTitle}>Search Results:</Text>
+                {searchResults.map((user) => (
+                  <TouchableOpacity
+                    key={user.id}
+                    style={styles.searchResultItem}
+                    onPress={() => handleSendFriendRequest(user.id, user.email)}
+                  >
+                    <View style={styles.searchResultAvatar}>
+                      <Text style={styles.searchResultAvatarText}>
+                        {user.email.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.searchResultInfo}>
+                      <Text style={styles.searchResultName}>
+                        {user.full_name || user.email.split('@')[0]}
+                      </Text>
+                      <Text style={styles.searchResultEmail}>{user.email}</Text>
+                    </View>
+                    <Icon name="add" size={20} color="#111827" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+
+            {/* Modal Buttons */}
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => {
                   setShowAddModal(false);
-                  setNewFriendUsername('');
+                  setNewFriendEmail('');
+                  setSearchResults([]);
                 }}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalAddButton}
-                onPress={handleAddFriend}
-              >
-                <Text style={styles.modalAddText}>Send Request</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -644,5 +953,193 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontFamily: 'Manrope_600SemiBold',
+  },
+  // Search styles
+  searchLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+  },
+  searchLoadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  searchResults: {
+    maxHeight: 200,
+    marginVertical: 16,
+  },
+  searchResultsTitle: {
+    fontSize: 14,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  searchResultAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  searchResultAvatarText: {
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+    color: 'white',
+  },
+  searchResultInfo: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#111827',
+  },
+  searchResultEmail: {
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  // Pending requests styles
+  pendingSection: {
+    marginVertical: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  pendingSectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#111827',
+    marginBottom: 8,
+  },
+  pendingRequestItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  pendingRequestInfo: {
+    flex: 1,
+  },
+  pendingRequestName: {
+    fontSize: 14,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#111827',
+  },
+  pendingRequestEmail: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  pendingRequestButtons: {
+    flexDirection: 'row',
+  },
+  acceptButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  acceptButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'Manrope_600SemiBold',
+  },
+  declineButton: {
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  declineButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'Manrope_600SemiBold',
+  },
+  removeFriendButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  removeFriendText: {
+    color: 'white',
+    fontSize: 10,
+    fontFamily: 'Manrope_600SemiBold',
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  // Main page pending requests styles
+  pendingRequestsSection: {
+    backgroundColor: '#FEF3C7',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+  },
+  pendingRequestsTitle: {
+    fontSize: 16,
+    fontFamily: 'Manrope_700Bold',
+    color: '#92400E',
+    marginBottom: 12,
+  },
+  pendingRequestCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  pendingRequestLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  pendingRequestAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  pendingRequestAvatarText: {
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+    color: 'white',
+  },
+  pendingRequestActions: {
+    flexDirection: 'row',
   },
 });
