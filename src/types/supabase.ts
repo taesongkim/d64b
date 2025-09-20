@@ -45,6 +45,7 @@ export interface Database {
           color: string
           target_days: number
           is_active: boolean
+          is_private: boolean
           created_at: string
           updated_at: string
           // Phase 0: New optional fields for future features
@@ -66,6 +67,7 @@ export interface Database {
           color?: string
           target_days?: number
           is_active?: boolean
+          is_private?: boolean
           created_at?: string
           updated_at?: string
           // Phase 0: New optional fields for future features
@@ -87,6 +89,7 @@ export interface Database {
           color?: string
           target_days?: number
           is_active?: boolean
+          is_private?: boolean
           created_at?: string
           updated_at?: string
           // Phase 0: New optional fields for future features

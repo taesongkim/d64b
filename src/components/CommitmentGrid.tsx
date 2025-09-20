@@ -100,6 +100,10 @@ interface CommitmentGridProps {
   onSetRecordStatus: (commitmentId: string, date: string, status: RecordStatus) => void;
   // Optional hint for the earliest date to display (e.g., account creation date)
   earliestDate?: string; // format YYYY-MM-DD
+  // Optional: hide the built-in toggle (for external toggle rendering)
+  hideToggle?: boolean;
+  // Optional: external viewMode control
+  viewMode?: ViewMode;
 }
 
 type ViewMode = 'daily' | 'weekly';
@@ -110,10 +114,15 @@ export default function CommitmentGrid({
   onCellPress,
   onSetRecordStatus,
   earliestDate,
+  hideToggle = false,
+  viewMode: externalViewMode,
 }: CommitmentGridProps): React.JSX.Element {
   const fontStyle = useFontStyle();
   // const scrollRef = useRef<FlatList>(null); // Unused
-  const [viewMode, setViewMode] = useState<ViewMode>('daily');
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>('daily');
+  
+  // Use external viewMode if provided, otherwise use internal state
+  const viewMode = externalViewMode || internalViewMode;
   
   // Reaction popup state
   const [popupVisible, setPopupVisible] = useState(false);
@@ -142,7 +151,12 @@ export default function CommitmentGrid({
       },
     });
     
-    setViewMode(newMode);
+    if (externalViewMode) {
+      // External viewMode is controlled by parent - no action needed here
+      // The parent will handle the state change
+    } else {
+      setInternalViewMode(newMode);
+    }
   };
   
   const [dates, setDates] = useState<string[]>([]);
@@ -295,32 +309,34 @@ export default function CommitmentGrid({
 
   return (
     <View style={styles.container}>
-      {/* Compact View Mode Toggle */}
-      <View style={styles.compactToggleContainer}>
-        {/* Animated sliding background */}
-        <View 
-          style={[
-            styles.toggleSlider,
-            viewMode === 'weekly' && styles.toggleSliderRight
-          ]} 
-        />
-        
-        {/* Left icon positioned to match slider left position */}
-        <TouchableOpacity
-          style={styles.iconButtonLeft}
-          onPress={() => animateToViewMode('daily')}
-        >
-          <SpaciousViewIcon size={16} isActive={viewMode === 'daily'} />
-        </TouchableOpacity>
-        
-        {/* Right icon positioned to match slider right position */}
-        <TouchableOpacity
-          style={styles.iconButtonRight}
-          onPress={() => animateToViewMode('weekly')}
-        >
-          <CompactViewIcon size={16} isActive={viewMode === 'weekly'} />
-        </TouchableOpacity>
-      </View>
+      {/* Compact View Mode Toggle - only show if not hidden */}
+      {!hideToggle && (
+        <View style={styles.compactToggleContainer}>
+          {/* Animated sliding background */}
+          <View 
+            style={[
+              styles.toggleSlider,
+              viewMode === 'weekly' && styles.toggleSliderRight
+            ]} 
+          />
+          
+          {/* Left icon positioned to match slider left position */}
+          <TouchableOpacity
+            style={styles.iconButtonLeft}
+            onPress={() => animateToViewMode('daily')}
+          >
+            <SpaciousViewIcon size={16} isActive={viewMode === 'daily'} />
+          </TouchableOpacity>
+          
+          {/* Right icon positioned to match slider right position */}
+          <TouchableOpacity
+            style={styles.iconButtonRight}
+            onPress={() => animateToViewMode('weekly')}
+          >
+            <CompactViewIcon size={16} isActive={viewMode === 'weekly'} />
+          </TouchableOpacity>
+        </View>
+      )}
       
       {/* Two-column layout: fixed labels left, synced header+grid right */}
       <View style={{ flexDirection: 'row' }}>

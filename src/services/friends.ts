@@ -217,6 +217,173 @@ export async function removeFriend(friendUserId: string) {
 }
 
 // ==============================================
+// FRIENDS CHARTS DATA
+// ==============================================
+
+export interface FriendChartData {
+  friend: FriendProfile;
+  commitments: Array<{
+    id: string;
+    title: string;
+    color: string;
+    type: 'binary' | 'counter' | 'timer';
+    target?: number;
+    streak: number;
+    bestStreak: number;
+    isActive: boolean;
+    isPrivate: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  records: Array<{
+    id: string;
+    commitmentId: string;
+    date: string;
+    status: 'completed' | 'skipped' | 'failed' | 'none';
+    value?: number;
+    notes?: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
+export async function getFriendsChartsData(userId: string): Promise<{ data: FriendChartData[], error: any }> {
+  console.log('📊 getFriendsChartsData called for user:', userId);
+
+
+  try {
+    // First get user's friends
+    const { data: friends, error: friendsError } = await getUserFriends(userId);
+    
+    console.log('📊 getUserFriends result:', { 
+      friendsCount: friends?.length || 0, 
+      error: friendsError?.message || 'No error',
+      friends: friends?.map(f => ({ id: f.id, name: f.full_name || f.email })) || []
+    });
+    
+    if (friendsError || !friends || friends.length === 0) {
+      console.log('📊 No friends found or error:', friendsError?.message || 'No friends');
+      return { data: [], error: friendsError };
+    }
+
+    console.log('📊 Found friends:', friends.length);
+
+    // For each friend, get their commitments and records
+    const friendsChartsPromises = friends.map(async (friend) => {
+      try {
+        // Get friend's commitments
+        console.log(`📊 Loading commitments for friend ${friend.full_name || friend.email} (${friend.id})`);
+        
+        const { data: commitments, error: commitmentsError } = await supabase
+          .from('commitments')
+          .select('*')
+          .eq('user_id', friend.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+
+        console.log(`📊 Commitments query result for ${friend.full_name || friend.email}:`, {
+          commitmentsCount: commitments?.length || 0,
+          error: commitmentsError?.message || 'No error',
+          commitments: commitments?.map(c => ({ id: c.id, title: c.title, is_active: c.is_active })) || []
+        });
+
+
+        if (commitmentsError || !commitments) {
+          console.log(`📊 Error loading commitments for friend ${friend.id}:`, commitmentsError?.message);
+          return {
+            friend,
+            commitments: [],
+            records: []
+          };
+        }
+
+        // Convert commitments to the expected format
+        const convertedCommitments = commitments.map(c => ({
+          id: c.id,
+          title: c.title,
+          color: c.color,
+          type: 'binary' as 'binary' | 'counter' | 'timer', // Default to binary for now
+          target: c.target_days,
+          streak: 0, // Will be calculated from records
+          bestStreak: 0, // Will be calculated from records
+          isActive: c.is_active,
+          isPrivate: c.is_private || false, // Use database value, default to false
+          createdAt: c.created_at,
+          updatedAt: c.updated_at,
+        }));
+
+        // Get records for the last 30 days for all commitments
+        let allRecords: any[] = [];
+        if (commitments.length > 0) {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+          const endDate = new Date().toISOString().split('T')[0];
+
+          const recordsPromises = commitments.map(commitment => 
+            supabase
+              .from('commitment_records')
+              .select('*')
+              .eq('commitment_id', commitment.id)
+              .eq('user_id', friend.id)
+              .gte('completed_at', `${startDate}T00:00:00Z`)
+              .lte('completed_at', `${endDate}T23:59:59Z`)
+              .order('completed_at', { ascending: true })
+          );
+
+          const recordsResults = await Promise.all(recordsPromises);
+          allRecords = recordsResults.flatMap(result => result.data || []);
+        }
+
+        // Convert records to the expected format
+        const convertedRecords = allRecords.map(r => ({
+          id: r.id,
+          commitmentId: r.commitment_id,
+          date: r.completed_at.split('T')[0], // Extract date part
+          status: r.status === 'complete' ? 'completed' : r.status as 'completed' | 'skipped' | 'failed' | 'none',
+          value: undefined,
+          notes: r.notes || undefined,
+          createdAt: r.created_at,
+          updatedAt: r.updated_at || r.created_at,
+        }));
+
+        console.log(`📊 Friend ${friend.full_name || friend.email}: ${convertedCommitments.length} commitments, ${convertedRecords.length} records`);
+
+        return {
+          friend,
+          commitments: convertedCommitments,
+          records: convertedRecords
+        };
+
+      } catch (error) {
+        console.error(`📊 Error processing friend ${friend.id}:`, error);
+        return {
+          friend,
+          commitments: [],
+          records: []
+        };
+      }
+    });
+
+    const friendsChartsData = await Promise.all(friendsChartsPromises);
+
+    // Show all friends, even those without commitments (for empty state display)
+    // const friendsWithCommitments = friendsChartsData.filter(data => data.commitments.length > 0);
+
+    console.log('📊 Friends charts data loaded:', {
+      totalFriends: friends.length,
+      friendsWithCommitments: friendsChartsData.length
+    });
+
+    return { data: friendsChartsData, error: null };
+
+  } catch (error) {
+    console.error('📊 Error in getFriendsChartsData:', error);
+    return { data: [], error };
+  }
+}
+
+// ==============================================
 // UTILITY FUNCTIONS
 // ==============================================
 

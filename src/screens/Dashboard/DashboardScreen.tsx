@@ -4,12 +4,14 @@ import {
   Text, 
   StyleSheet, 
   SafeAreaView,
-  TouchableOpacity
+  TouchableOpacity,
+  ScrollView
 } from 'react-native';
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
+import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, type Commitment } from '@/store/slices/commitmentsSlice';
 import { toggleRecord, setRecordStatus, setRecords, type RecordStatus } from '@/store/slices/recordsSlice';
@@ -20,6 +22,8 @@ import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/t
 import { isFeatureEnabled } from '@/config/features';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCommitments, createCommitment, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate } from '@/services/commitments';
+import { getFriendsChartsData, type FriendChartData } from '@/services/friends';
+import FriendChart from '@/components/FriendChart';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
@@ -65,7 +69,7 @@ export default function DashboardScreen(): React.JSX.Element {
             streak: 0, // Will be calculated from records
             bestStreak: 0, // Will be calculated from records
             isActive: c.is_active,
-            isPrivate: false, // Default for now
+            isPrivate: c.is_private || false, // Use database value, default to false
             createdAt: c.created_at,
             updatedAt: c.updated_at,
           }));
@@ -125,6 +129,41 @@ export default function DashboardScreen(): React.JSX.Element {
 
     loadUserData();
   }, [user?.id, dispatch]);
+
+  // Load friends charts data
+  useEffect(() => {
+    const loadFriendsCharts = async () => {
+      if (!user?.id) {
+        console.log('📊 No user ID, clearing friends charts');
+        setFriendsCharts([]);
+        return;
+      }
+
+      console.log('📊 Starting to load friends charts for user:', user.id);
+      setFriendsChartsLoading(true);
+      try {
+        const { data, error } = await getFriendsChartsData(user.id);
+        
+        if (error) {
+          console.error('❌ Error loading friends charts:', error);
+          setFriendsCharts([]);
+        } else {
+          console.log('📊 Friends charts loaded successfully:', {
+            count: data.length,
+            friends: data.map(f => ({ id: f.friend.id, name: f.friend.full_name || f.friend.email, commitments: f.commitments.length }))
+          });
+          setFriendsCharts(data);
+        }
+      } catch (error) {
+        console.error('💥 Failed to load friends charts:', error);
+        setFriendsCharts([]);
+      } finally {
+        setFriendsChartsLoading(false);
+      }
+    };
+
+    loadFriendsCharts();
+  }, [user?.id]);
 
   // Fallback sample data for development (only if no user authenticated)
   useEffect(() => {
@@ -217,6 +256,9 @@ export default function DashboardScreen(): React.JSX.Element {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
+  const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [friendsCharts, setFriendsCharts] = useState<FriendChartData[]>([]);
+  const [friendsChartsLoading, setFriendsChartsLoading] = useState(false);
   
   const handleCellPress = (commitmentId: string, date: string) => {
     // Check if record currently exists to determine which status to set
@@ -317,6 +359,7 @@ export default function DashboardScreen(): React.JSX.Element {
         color: commitmentData.color,
         target_days: commitmentData.target || 30,
         is_active: true,
+        is_private: commitmentData.isPrivate || false,
         // Note: 'type' field doesn't exist in current schema
         // tracking_mode and other Phase 0 fields will be used later
       };
@@ -360,73 +403,109 @@ export default function DashboardScreen(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       <NetworkStatusBanner />
-      <View style={styles.header}>
-        <View>
-          <Text style={[styles.greeting, fontStyle]}>Good morning!</Text>
-          <Text style={[styles.date, fontStyle]}>{getTodayDisplayDate()}</Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.addButton}
-          onPress={() => setShowAddModal(true)}
-        >
-          <Text style={[styles.addButtonText, fontStyle]}>+</Text>
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNumber, fontStyle]}>{commitments.length}</Text>
-          <Text style={[styles.statLabel, fontStyle]}>Active Habits</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNumber, fontStyle]}>
-            {records.filter(r => r.date === getTodayISO()).length}
-          </Text>
-          <Text style={[styles.statLabel, fontStyle]}>Completed Today</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statNumber, fontStyle]}>
-            {Math.max(...commitments.map(c => c.streak), 0)}
-          </Text>
-          <Text style={[styles.statLabel, fontStyle]}>Best Streak</Text>
-        </View>
-      </View>
-      
-      <View style={styles.gridContainer}>
-        <Text style={[styles.sectionTitle, fontStyle]}>Your Commitments</Text>
-        {commitments.length > 0 ? (
-          <CommitmentGrid
-            commitments={commitments}
-            records={records}
-            onCellPress={handleCellPress}
-            onSetRecordStatus={handleSetRecordStatus}
-          />
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={[styles.emptyStateText, fontStyle]}>No habits yet</Text>
-            <TouchableOpacity 
-              style={styles.emptyStateButton}
-              onPress={() => setShowAddModal(true)}
-            >
-              <Text style={[styles.emptyStateButtonText, fontStyle]}>Add your first habit</Text>
-            </TouchableOpacity>
+      <ScrollView 
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View>
+            <Text style={[styles.greeting, fontStyle]}>Good morning!</Text>
+            <Text style={[styles.date, fontStyle]}>{getTodayDisplayDate()}</Text>
           </View>
-        )}
-      </View>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => setShowAddModal(true)}
+          >
+            <Text style={[styles.addButtonText, fontStyle]}>+</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={[styles.statNumber, fontStyle]}>{commitments.length}</Text>
+            <Text style={[styles.statLabel, fontStyle]}>Active Habits</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statNumber, fontStyle]}>
+              {records.filter(r => r.date === getTodayISO()).length}
+            </Text>
+            <Text style={[styles.statLabel, fontStyle]}>Completed Today</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statNumber, fontStyle]}>
+              {Math.max(...commitments.map(c => c.streak), 0)}
+            </Text>
+            <Text style={[styles.statLabel, fontStyle]}>Best Streak</Text>
+          </View>
+        </View>
+        
+        <View style={styles.gridContainer}>
+          {/* Header row with title and toggle */}
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, fontStyle]}>Your Commitments</Text>
+            <ViewToggle 
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+            />
+          </View>
+          
+          {commitments.length > 0 ? (
+            <CommitmentGrid
+              commitments={commitments}
+              records={records}
+              onCellPress={handleCellPress}
+              onSetRecordStatus={handleSetRecordStatus}
+              hideToggle={true}
+              viewMode={viewMode}
+            />
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyStateText, fontStyle]}>No habits yet</Text>
+              <TouchableOpacity 
+                style={styles.emptyStateButton}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Text style={[styles.emptyStateButtonText, fontStyle]}>Add your first habit</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
-      {/* MVP-HIDDEN: Friend Activity Feed - Enable in v1.1 */}
-      {isFeatureEnabled('ACTIVITY_FEED') ? (
-        <View style={styles.activityContainer}>
-          <Text style={[styles.sectionTitle, fontStyle]}>Friend Activity</Text>
-          {/* Friend activity will be implemented here */}
-        </View>
-      ) : (
-        <View style={styles.comingSoonCard}>
-          <Text style={[styles.comingSoonText, fontStyle]}>
-            Friend activity will appear here once you connect with others!
-          </Text>
-        </View>
+      {/* Friends Charts Section */}
+      {user?.id && (
+        <>
+          {/* Divider */}
+          <View style={styles.divider} />
+          
+          <View style={styles.friendsChartsContainer}>
+            <Text style={[styles.sectionTitle, fontStyle]}>Friends' Progress</Text>
+            {friendsChartsLoading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={[styles.loadingText, fontStyle]}>Loading friends' charts...</Text>
+              </View>
+            ) : friendsCharts.length > 0 ? (
+              friendsCharts.map((friendChartData) => (
+                <FriendChart
+                  key={friendChartData.friend.id}
+                  friendChartData={friendChartData}
+                  onFriendPress={(friendId, friendName) => {
+                    console.log('👀 Friend pressed:', friendId, friendName);
+                    // TODO: Navigate to friend's detailed view in future
+                  }}
+                />
+              ))
+            ) : (
+              <View style={styles.comingSoonCard}>
+                <Text style={[styles.comingSoonText, fontStyle]}>
+                  Connect with friends to see their progress here!
+                </Text>
+              </View>
+            )}
+          </View>
+        </>
       )}
+      </ScrollView>
 
       <AddCommitmentModal
         visible={showAddModal}
@@ -446,6 +525,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -503,20 +589,25 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   gridContainer: {
-    flex: 1,
     paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
-    marginBottom: 16,
   },
   emptyState: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 100,
+    paddingVertical: 60,
+    minHeight: 200,
   },
   emptyStateText: {
     fontSize: 16,
@@ -535,14 +626,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_600SemiBold',
   },
   comingSoonCard: {
-    backgroundColor: 'white',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    paddingVertical: 40,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
   },
   comingSoonText: {
     color: '#6B7280',
@@ -553,5 +640,24 @@ const styles = StyleSheet.create({
   activityContainer: {
     marginHorizontal: 20,
     marginBottom: 20,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 20,
+    marginHorizontal: 20,
+  },
+  friendsChartsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 });
