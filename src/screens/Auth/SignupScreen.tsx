@@ -21,6 +21,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Signup'>;
 export default function SignupScreen({ navigation }: Props): React.JSX.Element {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,8 +30,18 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
   const { signUp } = useAuth();
 
   const handleSignup = async (): Promise<void> => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !username || !password || !confirmPassword) {
       setError('Please fill in all fields');
+      return;
+    }
+    
+    if (username.length < 3 || username.length > 20) {
+      setError('Username must be between 3 and 20 characters');
+      return;
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      setError('Username can only contain letters, numbers, and underscores');
       return;
     }
     
@@ -53,7 +64,7 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
     setError(null);
     
     try {
-      const { error } = await signUp(email, password, name);
+      const { error } = await signUp(email, password, name, username);
       
       if (error) {
         setError(error.message);
@@ -112,6 +123,17 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              editable={!loading}
+            />
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Username (3-20 characters)"
+              placeholderTextColor="#9CA3AF"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              autoCorrect={false}
               editable={!loading}
             />
             
@@ -210,6 +232,7 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
               onPress={() => {
                 setName('Test User');
                 setEmail('test@example.com');
+                setUsername('testuser');
                 setPassword('password123');
                 setConfirmPassword('password123');
                 setAcceptedTerms(true);

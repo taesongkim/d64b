@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
+import { generateUsernameSuggestion, checkUsernameAvailability } from '@/utils/usernameValidation';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: AuthError | null }>;
+  signUp: (email: string, password: string, fullName: string, username: string) => Promise<{ error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
 }
@@ -67,30 +68,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
 
   const createProfile = async (user: User): Promise<void> => {
     try {
+      // Use provided username from signup or generate one if not provided
+      let username = user.user_metadata?.username;
+      
+      if (!username) {
+        // Fallback: generate a unique username for existing users
+        username = generateUsernameSuggestion(
+          user.email!, 
+          user.user_metadata?.full_name
+        );
+      }
+      
+      // Ensure username is unique
+      let counter = 1;
+      let isAvailable = false;
+      let finalUsername = username;
+      
+      while (!isAvailable) {
+        const availability = await checkUsernameAvailability(finalUsername, supabase);
+        if (availability.isAvailable) {
+          isAvailable = true;
+        } else {
+          finalUsername = `${username}${counter}`;
+          counter++;
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .insert([
           {
             id: user.id,
             email: user.email!,
+            username: finalUsername, // Will be automatically lowercased by trigger
             full_name: user.user_metadata?.full_name || null,
             avatar_url: user.user_metadata?.avatar_url || null,
           },
         ]);
 
       if (error) throw error;
+      console.log('✅ Profile created with username:', finalUsername);
     } catch (error) {
       console.error('Error creating profile:', error);
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, username: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
+          username: username,
         },
       },
     });

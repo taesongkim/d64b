@@ -164,6 +164,7 @@ export default function FriendsListScreen(): React.JSX.Element {
     setSearchLoading(true);
     try {
       const { data, error } = await searchUsersByEmail(query);
+      
       if (data) {
         setSearchResults(data);
       }
@@ -177,9 +178,15 @@ export default function FriendsListScreen(): React.JSX.Element {
     }
   };
 
+  // Helper function to check if a user is already a friend
+  const isAlreadyFriend = (userId: string): boolean => {
+    return friends.some(friend => friend.id === userId);
+  };
+
   const filteredFriends = friends.filter(friend =>
     (friend.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.email.toLowerCase().includes(searchQuery.toLowerCase())
+    friend.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Use real friends if available, otherwise fallback to mock
@@ -188,7 +195,7 @@ export default function FriendsListScreen(): React.JSX.Element {
     friend.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSendFriendRequest = async (receiverId: string, receiverEmail: string) => {
+  const handleSendFriendRequest = async (receiverId: string, receiverUsername: string) => {
     if (!user?.id) return;
 
     setLoading(true);
@@ -199,7 +206,7 @@ export default function FriendsListScreen(): React.JSX.Element {
         if (error.message === 'Friend request already sent') {
           Alert.alert(
             'Request Already Sent',
-            `You've already sent a friend request to ${receiverEmail}`,
+            `You've already sent a friend request to @${receiverUsername}`,
             [{ text: 'OK' }]
           );
         } else {
@@ -208,7 +215,7 @@ export default function FriendsListScreen(): React.JSX.Element {
       } else {
         Alert.alert(
           'Friend Request Sent!',
-          `A friend request has been sent to ${receiverEmail}`,
+          `A friend request has been sent to @${receiverUsername}`,
           [{ text: 'OK' }]
         );
         setNewFriendEmail('');
@@ -271,7 +278,7 @@ export default function FriendsListScreen(): React.JSX.Element {
     }
   };
 
-  const handleCancelRequest = async (requestId: string, receiverEmail: string) => {
+  const handleCancelRequest = async (requestId: string, receiverUsername: string) => {
     if (!requestId) {
       Alert.alert('Error', 'Invalid request ID');
       return;
@@ -279,7 +286,7 @@ export default function FriendsListScreen(): React.JSX.Element {
 
     Alert.alert(
       'Cancel Request',
-      `Cancel friend request to ${receiverEmail}?`,
+      `Cancel friend request to @${receiverUsername}?`,
       [
         { text: 'No', style: 'cancel' },
         {
@@ -367,7 +374,7 @@ export default function FriendsListScreen(): React.JSX.Element {
     const friend = isRealFriend ? {
       id: item.id,
       name: item.full_name || item.email.split('@')[0],
-      username: item.email,
+      username: `@${item.username}`,
       avatar: item.avatar_url,
       mutualFriends: 0, // TODO: Calculate
       currentStreak: 0, // TODO: Calculate  
@@ -525,17 +532,18 @@ export default function FriendsListScreen(): React.JSX.Element {
               <View style={styles.pendingRequestLeft}>
                 <View style={styles.pendingRequestAvatar}>
                   <Text style={styles.pendingRequestAvatarText}>
-                    {request.sender_profile?.email?.charAt(0).toUpperCase() || 'U'}
+                    {(request.sender_profile?.username || request.sender_profile?.email)?.charAt(0).toUpperCase() || 'U'}
                   </Text>
                 </View>
                 <View style={styles.pendingRequestInfo}>
                   <Text style={styles.pendingRequestName}>
                     {request.sender_profile?.full_name || 
+                     request.sender_profile?.username || 
                      request.sender_profile?.email?.split('@')[0] || 
                      'Loading...'}
                   </Text>
-                  <Text style={styles.pendingRequestEmail}>
-                    {request.sender_profile?.email || 'Loading email...'}
+                  <Text style={styles.pendingRequestUsername}>
+                    @{request.sender_profile?.username || 'loading...'}
                   </Text>
                 </View>
               </View>
@@ -569,24 +577,25 @@ export default function FriendsListScreen(): React.JSX.Element {
               <View style={styles.sentRequestLeft}>
                 <View style={styles.sentRequestAvatar}>
                   <Text style={styles.sentRequestAvatarText}>
-                    {request.receiver_profile?.email?.charAt(0).toUpperCase() || 'U'}
+                    {(request.receiver_profile?.username || request.receiver_profile?.email)?.charAt(0).toUpperCase() || 'U'}
                   </Text>
                 </View>
                 <View style={styles.sentRequestInfo}>
                   <Text style={styles.sentRequestName}>
                     {request.receiver_profile?.full_name || 
+                     request.receiver_profile?.username || 
                      request.receiver_profile?.email?.split('@')[0] || 
                      'Loading...'}
                   </Text>
-                  <Text style={styles.sentRequestEmail}>
-                    {request.receiver_profile?.email || 'Loading email...'}
+                  <Text style={styles.sentRequestUsername}>
+                    @{request.receiver_profile?.username || 'loading...'}
                   </Text>
                 </View>
               </View>
               <View style={styles.sentRequestActions}>
                 <TouchableOpacity
                   style={styles.cancelButton}
-                  onPress={() => handleCancelRequest(request.id, request.receiver_profile?.email || 'user')}
+                  onPress={() => handleCancelRequest(request.id, request.receiver_profile?.username || 'user')}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
@@ -643,13 +652,13 @@ export default function FriendsListScreen(): React.JSX.Element {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add Friend</Text>
             <Text style={styles.modalDescription}>
-              Search by email address to send a friend request
+              Search by username or email to send a friend request
             </Text>
             
             {/* Search Input */}
             <TextInput
               style={styles.modalInput}
-              placeholder="Enter email address"
+              placeholder="Enter username or email"
               placeholderTextColor="#9CA3AF"
               value={newFriendEmail}
               onChangeText={(text) => {
@@ -657,7 +666,6 @@ export default function FriendsListScreen(): React.JSX.Element {
                 handleSearchUsers(text);
               }}
               autoCapitalize="none"
-              keyboardType="email-address"
               autoFocus
             />
 
@@ -669,31 +677,47 @@ export default function FriendsListScreen(): React.JSX.Element {
               </View>
             )}
 
-            {searchResults.length > 0 && (
-              <View style={styles.searchResults}>
+            {searchResults.length > 0 ? (
+              <View style={styles.searchResultsContainer}>
                 <Text style={styles.searchResultsTitle}>Search Results:</Text>
-                {searchResults.map((user) => (
-                  <TouchableOpacity
-                    key={user.id}
-                    style={styles.searchResultItem}
-                    onPress={() => handleSendFriendRequest(user.id, user.email)}
-                  >
-                    <View style={styles.searchResultAvatar}>
-                      <Text style={styles.searchResultAvatarText}>
-                        {user.email.charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.searchResultInfo}>
-                      <Text style={styles.searchResultName}>
-                        {user.full_name || user.email.split('@')[0]}
-                      </Text>
-                      <Text style={styles.searchResultEmail}>{user.email}</Text>
-                    </View>
-                    <Icon name="add" size={20} color="#111827" />
-                  </TouchableOpacity>
-                ))}
+                <ScrollView 
+                  style={styles.searchResultsScrollView}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  {searchResults.map((user) => {
+                    const alreadyFriend = isAlreadyFriend(user.id);
+                    return (
+                      <TouchableOpacity
+                        key={user.id}
+                        style={[styles.searchResultItem, alreadyFriend && styles.searchResultItemDisabled]}
+                        onPress={() => !alreadyFriend && handleSendFriendRequest(user.id, user.username)}
+                        disabled={alreadyFriend}
+                      >
+                        <View style={styles.searchResultAvatar}>
+                          <Text style={styles.searchResultAvatarText}>
+                            {(user.username || user.email).charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.searchResultInfo}>
+                          <Text style={styles.searchResultName}>
+                            {user.full_name || user.username || user.email.split('@')[0]}
+                          </Text>
+                          <Text style={styles.searchResultUsername}>@{user.username}</Text>
+                        </View>
+                        {alreadyFriend ? (
+                          <View style={styles.alreadyFriendsButton}>
+                            <Text style={styles.alreadyFriendsText}>Already Friends</Text>
+                          </View>
+                        ) : (
+                          <Icon name="add" size={20} color="#111827" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </View>
-            )}
+            ) : null}
 
 
             {/* Modal Buttons */}
@@ -990,6 +1014,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     width: '85%',
+    maxHeight: '80%',
+    flexDirection: 'column',
   },
   modalTitle: {
     fontSize: 20,
@@ -1053,6 +1079,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  searchResultsContainer: {
+    marginVertical: 16,
+    minHeight: 200,
+    maxHeight: 350,
+  },
+  searchResultsScrollView: {
+    maxHeight: 310,
+  },
   searchResults: {
     maxHeight: 200,
     marginVertical: 16,
@@ -1098,6 +1132,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
   },
+  searchResultItemDisabled: {
+    opacity: 0.6,
+  },
+  alreadyFriendsButton: {
+    backgroundColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  alreadyFriendsText: {
+    fontSize: 12,
+    fontFamily: 'Manrope_500Medium',
+    color: '#6B7280',
+  },
   // Pending requests styles
   pendingSection: {
     marginVertical: 16,
@@ -1128,7 +1176,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
-  pendingRequestEmail: {
+  pendingRequestUsername: {
     fontSize: 12,
     color: '#6B7280',
   },
@@ -1280,7 +1328,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
-  sentRequestEmail: {
+  sentRequestUsername: {
     fontSize: 12,
     color: '#6B7280',
   },

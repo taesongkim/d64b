@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -22,12 +22,22 @@ import {
   resetSettings,
 } from '@/store/slices/settingsSlice';
 import { HapticService } from '@/services/hapticService';
+import { supabase } from '@/services/supabase';
 
 interface UserStats {
   totalHabits: number;
   currentStreak: number;
   longestStreak: number;
   completionRate: number;
+}
+
+interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
 }
 
 export default function ProfileScreen(): React.JSX.Element {
@@ -38,6 +48,8 @@ export default function ProfileScreen(): React.JSX.Element {
   // UI state
   const [showSettings, setShowSettings] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   
   // Mock stats (TODO: Replace with real data)
   const stats: UserStats = {
@@ -47,10 +59,38 @@ export default function ProfileScreen(): React.JSX.Element {
     completionRate: 78,
   };
   
-  // Derived user data
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const userEmail = user?.email || 'No email';
-  const memberSince = user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Recently';
+  // Load user profile data
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error loading profile:', error);
+        } else {
+          setUserProfile(data);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    
+    loadUserProfile();
+  }, [user?.id]);
+
+  // Derived user data - now using profile data with fallbacks
+  const userName = userProfile?.full_name || userProfile?.username || user?.email?.split('@')[0] || 'User';
+  const userEmail = userProfile?.email || user?.email || 'No email';
+  const userUsername = userProfile?.username || 'No username';
+  const memberSince = userProfile?.created_at ? new Date(userProfile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Recently';
 
   const handleLogout = (): void => {
     Alert.alert(
@@ -543,7 +583,7 @@ export default function ProfileScreen(): React.JSX.Element {
             )}
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{userName}</Text>
-              <Text style={styles.userEmail}>{userEmail}</Text>
+              <Text style={styles.userUsername}>@{userUsername}</Text>
               <Text style={styles.memberSince}>Member since {memberSince}</Text>
             </View>
           </View>
@@ -645,7 +685,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 2,
   },
-  userEmail: {
+  userUsername: {
     fontSize: 14,
     color: '#6B7280',
     marginBottom: 2,

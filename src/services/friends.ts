@@ -10,6 +10,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 export interface FriendProfile {
   id: string;
   email: string;
+  username: string;
   full_name: string | null;
   avatar_url: string | null;
   friendship_created_at?: string;
@@ -24,20 +25,7 @@ export interface FriendRequestWithProfile extends FriendRequest {
 // FRIEND SEARCH
 // ==============================================
 
-export async function searchUsersByEmail(emailQuery: string) {
-  console.log('🔍 searchUsersByEmail called:', { emailQuery });
-  
-  const { data, error } = await supabase.rpc('search_users_by_email', {
-    p_email_query: emailQuery
-  });
-
-  console.log('🔍 searchUsersByEmail result:', { 
-    count: data?.length || 0, 
-    error: error?.message || 'No error' 
-  });
-
-  return { data: data || [], error };
-}
+// Note: searchUsersByEmail is now defined at the bottom of the file
 
 // ==============================================
 // FRIEND REQUESTS
@@ -110,7 +98,7 @@ export async function getPendingFriendRequests(userId: string) {
   const senderIds = requests.map(r => r.sender_id);
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, email, full_name, avatar_url')
+    .select('id, email, username, full_name, avatar_url')
     .in('id', senderIds);
 
   // Combine the data
@@ -128,7 +116,7 @@ export async function getSentFriendRequests(userId: string) {
     .from('friend_requests')
     .select(`
       *,
-      receiver_profile:profiles!receiver_id(id, email, full_name, avatar_url)
+      receiver_profile:profiles!receiver_id(id, email, username, full_name, avatar_url)
     `)
     .eq('sender_id', userId)
     .eq('status', 'pending')
@@ -453,4 +441,22 @@ export async function checkFriendshipStatus(otherUserId: string) {
   console.log('🔍 checkFriendshipStatus result:', result);
 
   return result;
+}
+
+// ==============================================
+// SEARCH FUNCTIONS
+// ==============================================
+
+export async function searchUsersByEmail(query: string) {
+  const { data, error } = await supabase.rpc('search_users_by_email', {
+    p_email_query: query
+  });
+
+  console.log('🔍 searchUsersByEmail result:', { 
+    query,
+    count: data?.length || 0, 
+    error: error?.message || 'No error' 
+  });
+
+  return { data: data || [], error };
 }
