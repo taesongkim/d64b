@@ -169,6 +169,26 @@ export async function declineFriendRequest(requestId: string) {
   return { data, error };
 }
 
+export async function cancelFriendRequest(requestId: string) {
+  if (!requestId) {
+    return { data: null, error: { message: 'Request ID is required' } };
+  }
+
+  const { data, error } = await supabase
+    .from('friend_requests')
+    .delete()
+    .eq('id', requestId)
+    .select()
+    .single();
+
+  console.log('🚫 cancelFriendRequest result:', { 
+    requestId: requestId.substring(0, 8) + '...', 
+    error: error?.message || 'No error' 
+  });
+
+  return { data, error };
+}
+
 // ==============================================
 // FRIENDSHIPS
 // ==============================================

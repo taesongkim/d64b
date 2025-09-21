@@ -22,8 +22,9 @@ import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/t
 import { isFeatureEnabled } from '@/config/features';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCommitments, createCommitment, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate } from '@/services/commitments';
-import { getFriendsChartsData, type FriendChartData } from '@/services/friends';
+import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
+import { useFriendsCharts } from '@/hooks/useFriendsCharts';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
@@ -130,40 +131,6 @@ export default function DashboardScreen(): React.JSX.Element {
     loadUserData();
   }, [user?.id, dispatch]);
 
-  // Load friends charts data
-  useEffect(() => {
-    const loadFriendsCharts = async () => {
-      if (!user?.id) {
-        console.log('📊 No user ID, clearing friends charts');
-        setFriendsCharts([]);
-        return;
-      }
-
-      console.log('📊 Starting to load friends charts for user:', user.id);
-      setFriendsChartsLoading(true);
-      try {
-        const { data, error } = await getFriendsChartsData(user.id);
-        
-        if (error) {
-          console.error('❌ Error loading friends charts:', error);
-          setFriendsCharts([]);
-        } else {
-          console.log('📊 Friends charts loaded successfully:', {
-            count: data.length,
-            friends: data.map(f => ({ id: f.friend.id, name: f.friend.full_name || f.friend.email, commitments: f.commitments.length }))
-          });
-          setFriendsCharts(data);
-        }
-      } catch (error) {
-        console.error('💥 Failed to load friends charts:', error);
-        setFriendsCharts([]);
-      } finally {
-        setFriendsChartsLoading(false);
-      }
-    };
-
-    loadFriendsCharts();
-  }, [user?.id]);
 
   // Fallback sample data for development (only if no user authenticated)
   useEffect(() => {
@@ -257,8 +224,9 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
-  const [friendsCharts, setFriendsCharts] = useState<FriendChartData[]>([]);
-  const [friendsChartsLoading, setFriendsChartsLoading] = useState(false);
+  
+  // Use the friends charts hook for global state management
+  const { friendsCharts, friendsChartsLoading } = useFriendsCharts(user?.id);
   
   const handleCellPress = (commitmentId: string, date: string) => {
     // Check if record currently exists to determine which status to set

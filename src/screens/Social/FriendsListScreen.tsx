@@ -21,12 +21,15 @@ import {
   sendFriendRequest, 
   getUserFriends,
   getPendingFriendRequests,
+  getSentFriendRequests,
   acceptFriendRequest,
   declineFriendRequest,
+  cancelFriendRequest,
   removeFriend,
   checkFriendshipStatus,
   type FriendProfile 
 } from '@/services/friends';
+import { triggerFriendsChartsRefresh } from '@/hooks/useFriendsCharts';
 
 interface Friend {
   id: string;
@@ -50,6 +53,7 @@ export default function FriendsListScreen(): React.JSX.Element {
   // Real friend data
   const [friends, setFriends] = useState<FriendProfile[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [sentRequests, setSentRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
   // Search state
@@ -119,10 +123,11 @@ export default function FriendsListScreen(): React.JSX.Element {
     
     setLoading(true);
     try {
-      // Load friends and pending requests
-      const [friendsResult, requestsResult] = await Promise.all([
+      // Load friends, pending requests, and sent requests
+      const [friendsResult, requestsResult, sentResult] = await Promise.all([
         getUserFriends(user.id),
-        getPendingFriendRequests(user.id)
+        getPendingFriendRequests(user.id),
+        getSentFriendRequests(user.id)
       ]);
 
       if (friendsResult.data) {
@@ -137,6 +142,11 @@ export default function FriendsListScreen(): React.JSX.Element {
           raw_sender_profile: r.sender_profile
         })));
         setPendingRequests(requestsResult.data);
+      }
+
+      if (sentResult.data) {
+        console.log('📤 Loaded sent requests:', sentResult.data.length);
+        setSentRequests(sentResult.data);
       }
     } catch (error) {
       console.error('Failed to load friends data:', error);
@@ -204,6 +214,7 @@ export default function FriendsListScreen(): React.JSX.Element {
         setNewFriendEmail('');
         setSearchResults([]);
         setShowAddModal(false);
+        loadFriendsData(); // Refresh friends data to show new sent request
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to send friend request');
@@ -227,6 +238,7 @@ export default function FriendsListScreen(): React.JSX.Element {
       } else {
         Alert.alert('Success', 'Friend request accepted!');
         loadFriendsData(); // Reload data
+        triggerFriendsChartsRefresh(); // Refresh home page friends charts
       }
     } catch (error) {
       console.error('Error accepting friend request:', error);
@@ -259,6 +271,42 @@ export default function FriendsListScreen(): React.JSX.Element {
     }
   };
 
+  const handleCancelRequest = async (requestId: string, receiverEmail: string) => {
+    if (!requestId) {
+      Alert.alert('Error', 'Invalid request ID');
+      return;
+    }
+
+    Alert.alert(
+      'Cancel Request',
+      `Cancel friend request to ${receiverEmail}?`,
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes, Cancel',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              const { error } = await cancelFriendRequest(requestId);
+              
+              if (error) {
+                Alert.alert('Error', 'Failed to cancel friend request');
+              } else {
+                loadFriendsData(); // Reload data
+              }
+            } catch (error) {
+              console.error('Error canceling friend request:', error);
+              Alert.alert('Error', 'Failed to cancel friend request');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleRemoveFriend = async (friendId: string, friendName: string) => {
     Alert.alert(
       'Remove Friend',
@@ -278,6 +326,7 @@ export default function FriendsListScreen(): React.JSX.Element {
               } else {
                 Alert.alert('Success', 'Friend removed');
                 loadFriendsData(); // Reload data
+                triggerFriendsChartsRefresh(); // Refresh home page friends charts
               }
             } catch (error) {
               Alert.alert('Error', 'Failed to remove friend');
@@ -502,6 +551,44 @@ export default function FriendsListScreen(): React.JSX.Element {
                   onPress={() => handleDeclineRequest(request.id)}
                 >
                   <Text style={styles.declineButtonText}>Decline</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Sent Friend Requests */}
+      {sentRequests.length > 0 && (
+        <View style={styles.sentRequestsSection}>
+          <Text style={styles.sentRequestsTitle}>
+            Sent Requests ({sentRequests.length})
+          </Text>
+          {sentRequests.map((request) => (
+            <View key={request.id} style={styles.sentRequestCard}>
+              <View style={styles.sentRequestLeft}>
+                <View style={styles.sentRequestAvatar}>
+                  <Text style={styles.sentRequestAvatarText}>
+                    {request.receiver_profile?.email?.charAt(0).toUpperCase() || 'U'}
+                  </Text>
+                </View>
+                <View style={styles.sentRequestInfo}>
+                  <Text style={styles.sentRequestName}>
+                    {request.receiver_profile?.full_name || 
+                     request.receiver_profile?.email?.split('@')[0] || 
+                     'Loading...'}
+                  </Text>
+                  <Text style={styles.sentRequestEmail}>
+                    {request.receiver_profile?.email || 'Loading email...'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.sentRequestActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => handleCancelRequest(request.id, request.receiver_profile?.email || 'user')}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1141,5 +1228,74 @@ const styles = StyleSheet.create({
   },
   pendingRequestActions: {
     flexDirection: 'row',
+  },
+  // Sent requests styles
+  sentRequestsSection: {
+    backgroundColor: '#E0E7FF',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#C7D2FE',
+  },
+  sentRequestsTitle: {
+    fontSize: 16,
+    fontFamily: 'Manrope_700Bold',
+    color: '#3730A3',
+    marginBottom: 12,
+  },
+  sentRequestCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  sentRequestLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  sentRequestAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  sentRequestAvatarText: {
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+    color: 'white',
+  },
+  sentRequestInfo: {
+    flex: 1,
+  },
+  sentRequestName: {
+    fontSize: 14,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#111827',
+  },
+  sentRequestEmail: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  sentRequestActions: {
+    flexDirection: 'row',
+  },
+  cancelButton: {
+    backgroundColor: '#6B7280',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontFamily: 'Manrope_600SemiBold',
   },
 });
