@@ -260,51 +260,6 @@ export default function ProfileScreen(): React.JSX.Element {
         </View>
       </View>
 
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActions}>
-          <TouchableOpacity style={styles.actionButton}>
-            <View style={styles.actionIcon}>
-              <Icon name="stats" size={20} color="#6B7280" />
-            </View>
-            <Text style={styles.actionLabel}>Stats</Text>
-          </TouchableOpacity>
-          {/* MVP-HIDDEN: Achievements - Enable in v1.2 */}
-          {isFeatureEnabled('ACHIEVEMENTS') && (
-            <TouchableOpacity style={styles.actionButton}>
-              <View style={styles.actionIcon}>
-                <Icon name="trophy" size={20} color="#6B7280" />
-              </View>
-              <Text style={styles.actionLabel}>Achievements</Text>
-            </TouchableOpacity>
-          )}
-          {/* MVP-HIDDEN: Data Export - Enable in v1.2 */}
-          {isFeatureEnabled('DATA_EXPORT') && (
-            <TouchableOpacity style={styles.actionButton}>
-              <View style={styles.actionIcon}>
-                <Icon name="export" size={20} color="#6B7280" />
-              </View>
-              <Text style={styles.actionLabel}>Export</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.actionButton}>
-            <View style={styles.actionIcon}>
-              <Icon name="friends" size={20} color="#6B7280" />
-            </View>
-            <Text style={styles.actionLabel}>Friends</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => setShowSettings(true)}
-          >
-            <View style={styles.actionIcon}>
-              <Icon name="settings" size={20} color="#6B7280" />
-            </View>
-            <Text style={styles.actionLabel}>Settings</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
 
       {/* Recent Activity */}
       <View style={styles.section}>
@@ -832,29 +787,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
     marginTop: 2,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  actionLabel: {
-    fontSize: 12,
-    color: '#6B7280',
   },
   activityList: {
     backgroundColor: 'white',
