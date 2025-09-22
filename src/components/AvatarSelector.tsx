@@ -102,7 +102,7 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
                 >
                   <AnimalAvatar
                     animal={animal}
-                    color={selectedColor || 'Yellow'}
+                    color={selectedColor || AVAILABLE_COLORS[0]}
                     size={50}
                   />
                   <Text style={styles.animalLabel}>{animal}</Text>
@@ -141,8 +141,8 @@ export const AvatarSelector: React.FC<AvatarSelectorProps> = ({
               <Text style={styles.sectionTitle}>Preview</Text>
               <View style={styles.previewContainer}>
                 <AnimalAvatar
-                  animal={selectedAnimal || 'Kitty'}
-                  color={selectedColor || 'Yellow'}
+                  animal={selectedAnimal || AVAILABLE_ANIMALS[0]}
+                  color={selectedColor || AVAILABLE_COLORS[0]}
                   size={80}
                 />
                 <Text style={styles.previewText}>

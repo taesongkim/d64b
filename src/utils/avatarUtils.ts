@@ -14,14 +14,14 @@ export type AnimalType =
   | 'Koala' 
   | 'Doggy';
 
-export type ColorType = 'Yellow' | 'Blue' | 'Red';
+export type ColorType = 'Yellow' | 'Blue' | 'Red' | 'Neutral';
 
 export interface AvatarConfig {
   animal: AnimalType;
   color: ColorType;
 }
 
-// Color palette from Figma
+// Color palette from Figma + Neutral option
 export const AVATAR_COLORS = {
   Yellow: {
     background: '#FCDF95',
@@ -34,6 +34,10 @@ export const AVATAR_COLORS = {
   Red: {
     background: '#F47887',
     animal: '#460008'
+  },
+  Neutral: {
+    background: '#E5E7EB',
+    animal: '#374151'
   }
 } as const;
 
@@ -44,7 +48,7 @@ export const AVAILABLE_ANIMALS: AnimalType[] = [
 ];
 
 // All available colors
-export const AVAILABLE_COLORS: ColorType[] = ['Yellow', 'Blue', 'Red'];
+export const AVAILABLE_COLORS: ColorType[] = ['Yellow', 'Blue', 'Red', 'Neutral'];
 
 // Generate all possible combinations
 export const ALL_AVATAR_COMBINATIONS: AvatarConfig[] = AVAILABLE_ANIMALS.flatMap(animal =>
