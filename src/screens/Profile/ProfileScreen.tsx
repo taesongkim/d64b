@@ -24,6 +24,7 @@ import {
 import { supabase } from '@/services/supabase';
 import AnimalAvatar from '@/components/AnimalAvatar';
 import AvatarSelector from '@/components/AvatarSelector';
+import NameEditModal from '@/components/NameEditModal';
 import { AnimalType, ColorType } from '@/utils/avatarUtils';
 
 interface UserStats {
@@ -55,6 +56,7 @@ export default function ProfileScreen(): React.JSX.Element {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const [showNameEditModal, setShowNameEditModal] = useState(false);
   
   // Mock stats (TODO: Replace with real data)
   const stats: UserStats = {
@@ -195,6 +197,30 @@ export default function ProfileScreen(): React.JSX.Element {
     } catch (error) {
       console.error('Catch block error updating avatar:', error);
       Alert.alert('Error', `Failed to update avatar: ${error}`);
+    }
+  };
+
+  const handleNameUpdate = async (newName: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ full_name: newName })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error updating name:', error);
+        throw error;
+      }
+
+      // Update local state
+      setUserProfile(prev => prev ? { ...prev, full_name: newName } : null);
+      
+      Alert.alert('Success', 'Name updated successfully!');
+    } catch (error) {
+      console.error('Error updating name:', error);
+      throw error;
     }
   };
 
@@ -394,12 +420,19 @@ export default function ProfileScreen(): React.JSX.Element {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
         <View style={styles.settingsList}>
-          <View style={styles.profileInfoItem}>
+          <TouchableOpacity 
+            style={styles.profileInfoItem}
+            onPress={() => setShowNameEditModal(true)}
+            activeOpacity={0.7}
+          >
             <View style={styles.profileInfoLeft}>
               <Text style={styles.profileInfoLabel}>Name</Text>
               <Text style={styles.profileInfoValue}>{userName}</Text>
             </View>
-          </View>
+            <View style={styles.profileInfoRight}>
+              <Icon name="edit" size={16} color="#6B7280" />
+            </View>
+          </TouchableOpacity>
           <View style={styles.profileInfoItem}>
             <View style={styles.profileInfoLeft}>
               <Text style={styles.profileInfoLabel}>Email</Text>
@@ -657,6 +690,15 @@ export default function ProfileScreen(): React.JSX.Element {
         onSelect={handleAvatarSelect}
         currentAnimal={userProfile?.avatar_animal as AnimalType}
         currentColor={userProfile?.avatar_color as ColorType}
+      />
+
+      {/* Name Edit Modal */}
+      <NameEditModal
+        visible={showNameEditModal}
+        onClose={() => setShowNameEditModal(false)}
+        onSave={handleNameUpdate}
+        currentName={userProfile?.full_name || ''}
+        currentEmail={userProfile?.email || user?.email || ''}
       />
     </SafeAreaView>
   );
@@ -943,6 +985,10 @@ const styles = StyleSheet.create({
   },
   profileInfoLeft: {
     flex: 1,
+  },
+  profileInfoRight: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileInfoLabel: {
     fontSize: 16,
