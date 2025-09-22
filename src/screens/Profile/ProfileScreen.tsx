@@ -21,8 +21,10 @@ import {
   updatePrivacySettings,
   resetSettings,
 } from '@/store/slices/settingsSlice';
-import { HapticService } from '@/services/hapticService';
 import { supabase } from '@/services/supabase';
+import AnimalAvatar from '@/components/AnimalAvatar';
+import AvatarSelector from '@/components/AvatarSelector';
+import { AnimalType, ColorType } from '@/utils/avatarUtils';
 
 interface UserStats {
   totalHabits: number;
@@ -37,6 +39,8 @@ interface UserProfile {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  avatar_animal: string | null;
+  avatar_color: string | null;
   created_at: string;
 }
 
@@ -50,6 +54,7 @@ export default function ProfileScreen(): React.JSX.Element {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
   
   // Mock stats (TODO: Replace with real data)
   const stats: UserStats = {
@@ -151,6 +156,45 @@ export default function ProfileScreen(): React.JSX.Element {
 
     if (!result.canceled && result.assets[0]) {
       setProfileImage(result.assets[0].uri);
+    }
+  };
+
+  const handleAvatarSelect = async (animal: AnimalType | null, color: ColorType | null) => {
+    if (!user?.id) return;
+
+    try {
+      console.log('Updating avatar with:', { animal, color, userId: user.id });
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          avatar_animal: animal,
+          avatar_color: color,
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Detailed error updating avatar:', {
+          error,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        Alert.alert('Error', `Failed to update avatar: ${error.message}`);
+      } else {
+        // Update local state
+        setUserProfile(prev => prev ? {
+          ...prev,
+          avatar_animal: animal,
+          avatar_color: color,
+        } : null);
+        
+        Alert.alert('Success', 'Avatar updated successfully!');
+      }
+    } catch (error) {
+      console.error('Catch block error updating avatar:', error);
+      Alert.alert('Error', `Failed to update avatar: ${error}`);
     }
   };
 
@@ -274,17 +318,14 @@ export default function ProfileScreen(): React.JSX.Element {
 
   // Settings handlers
   const handleNotificationChange = (key: keyof typeof notifications, value: boolean) => {
-    HapticService.selection();
     dispatch(updateNotificationSettings({ [key]: value }));
   };
 
   const handlePrivacyChange = (key: keyof typeof privacy, value: boolean) => {
-    HapticService.selection();
     dispatch(updatePrivacySettings({ [key]: value }));
   };
 
   const handleComingSoon = (feature: string) => {
-    HapticService.selection();
     Alert.alert(
       'Coming Soon!',
       `${feature} will be available in a future update.`,
@@ -293,7 +334,6 @@ export default function ProfileScreen(): React.JSX.Element {
   };
 
   const handleExportData = async () => {
-    HapticService.selection();
     try {
       const exportData = {
         commitments: [], // Will be populated from Redux
@@ -314,7 +354,6 @@ export default function ProfileScreen(): React.JSX.Element {
   };
 
   const handleClearData = () => {
-    HapticService.warning();
     Alert.alert(
       'Clear All Data',
       'This will permanently delete all your habits, records, and reset settings. This cannot be undone.',
@@ -333,7 +372,6 @@ export default function ProfileScreen(): React.JSX.Element {
   };
 
   const handleDeleteAccount = () => {
-    HapticService.error();
     Alert.alert(
       'Delete Account',
       'This will permanently delete your account and all associated data. This cannot be undone.',
@@ -556,31 +594,22 @@ export default function ProfileScreen(): React.JSX.Element {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.profileInfo}>
-            {/* MVP-HIDDEN: Profile Picture Upload - Enable in v1.1 */}
-            {isFeatureEnabled('PROFILE_PICTURES') ? (
-              <TouchableOpacity onPress={handleChangePhoto} style={styles.avatarContainer}>
-                <View style={styles.avatar}>
-                  {profileImage ? (
-                    <Image source={{ uri: profileImage }} style={styles.avatarImage} />
-                  ) : (
-                    <Text style={styles.avatarText}>
-                      {userName.split(' ').map((n: string) => n[0]).join('')}
-                    </Text>
-                  )}
-                </View>
-                <View style={styles.cameraIcon}>
-                  <Icon name="camera" size={16} color="#6B7280" />
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.avatarContainer}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {userName.split(' ').map((n: string) => n[0]).join('')}
-                  </Text>
-                </View>
+            {/* Avatar Section */}
+            <TouchableOpacity 
+              onPress={() => setShowAvatarSelector(true)} 
+              style={styles.avatarContainer}
+            >
+              <AnimalAvatar
+                animal={userProfile?.avatar_animal as AnimalType}
+                color={userProfile?.avatar_color as ColorType}
+                size={72}
+                showInitials={true}
+                name={userName}
+              />
+              <View style={styles.cameraIcon}>
+                <Icon name="edit" size={16} color="#6B7280" />
               </View>
-            )}
+            </TouchableOpacity>
             <View style={styles.userDetails}>
               <Text style={styles.userName}>{userName}</Text>
               <Text style={styles.userUsername}>@{userUsername}</Text>
@@ -620,6 +649,15 @@ export default function ProfileScreen(): React.JSX.Element {
           </View>
         )}
       </ScrollView>
+
+      {/* Avatar Selector Modal */}
+      <AvatarSelector
+        visible={showAvatarSelector}
+        onClose={() => setShowAvatarSelector(false)}
+        onSelect={handleAvatarSelect}
+        currentAnimal={userProfile?.avatar_animal as AnimalType}
+        currentColor={userProfile?.avatar_color as ColorType}
+      />
     </SafeAreaView>
   );
 }

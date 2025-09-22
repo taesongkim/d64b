@@ -16,7 +16,6 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, type Commitment } from '@/store/slices/commitmentsSlice';
 import { toggleRecord, setRecordStatus, setRecords, type RecordStatus } from '@/store/slices/recordsSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
-import { HapticService } from '@/services/hapticService';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
 import { isFeatureEnabled } from '@/config/features';
@@ -236,11 +235,9 @@ export default function DashboardScreen(): React.JSX.Element {
     
     if (existingRecord) {
       // If record exists, remove it (set to 'none')
-      HapticService.light(); // Light feedback for unchecking
       handleSetRecordStatus(commitmentId, date, 'none');
     } else {
       // If no record exists, mark as completed
-      HapticService.success(); // Success feedback for completing
       setShowCompletionAnimation(true);
       handleSetRecordStatus(commitmentId, date, 'completed');
     }
@@ -291,16 +288,9 @@ export default function DashboardScreen(): React.JSX.Element {
       // Update Redux state
       dispatch(setRecordStatus({ commitmentId, date, status }));
 
-      // Provide haptic feedback based on status
+      // Handle completion animation
       if (status === 'completed') {
-        HapticService.success();
         setShowCompletionAnimation(true);
-      } else if (status === 'failed') {
-        HapticService.error();
-      } else if (status === 'skipped') {
-        HapticService.light();
-      } else {
-        HapticService.light(); // For 'none' status (removing record)
       }
       
     } catch (error) {
@@ -352,7 +342,6 @@ export default function DashboardScreen(): React.JSX.Element {
       };
       
       dispatch(addCommitment(newCommitment));
-      HapticService.success(); // Success feedback
       
     } catch (error) {
       console.error('💥 Unexpected error saving commitment:', error);

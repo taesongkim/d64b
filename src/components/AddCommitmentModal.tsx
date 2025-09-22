@@ -10,7 +10,6 @@ import {
   Switch,
 } from 'react-native';
 import { Commitment } from '@/store/slices/commitmentsSlice';
-import { HapticService } from '@/services/hapticService';
 
 interface AddCommitmentModalProps {
   visible: boolean;
@@ -126,7 +125,6 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                       selectedType === type.value && styles.selectedType,
                     ]}
                     onPress={() => {
-                      HapticService.selection();
                       setSelectedType(type.value);
                     }}
                   >
@@ -191,7 +189,6 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                 <Switch
                   value={isPrivate}
                   onValueChange={(value) => {
-                    HapticService.selection();
                     setIsPrivate(value);
                   }}
                   trackColor={{ false: '#E5E7EB', true: '#111827' }}

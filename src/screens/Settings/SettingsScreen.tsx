@@ -17,7 +17,6 @@ import {
   resetSettings,
 } from '@/store/slices/settingsSlice';
 import { logout } from '@/store/slices/authSlice';
-import { HapticService } from '@/services/hapticService';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,7 +58,6 @@ function SettingRow({
           <Switch
             value={value}
             onValueChange={(val) => {
-              HapticService.selection();
               onValueChange(val);
             }}
             trackColor={{ false: '#E5E7EB', true: '#111827' }}
@@ -88,7 +86,6 @@ export default function SettingsScreen(): React.JSX.Element {
   };
 
   const handleComingSoon = (feature: string) => {
-    HapticService.selection();
     Alert.alert(
       'Coming Soon!',
       `${feature} will be available in a future update.`,
@@ -105,7 +102,6 @@ export default function SettingsScreen(): React.JSX.Element {
   };
 
   const handleExportData = async () => {
-    HapticService.selection();
     try {
       const exportData = {
         commitments: [], // Will be populated from Redux
@@ -126,7 +122,6 @@ export default function SettingsScreen(): React.JSX.Element {
   };
 
   const handleClearData = () => {
-    HapticService.warning();
     Alert.alert(
       'Clear All Data',
       'This will permanently delete all your habits, records, and reset settings. This cannot be undone.',
@@ -146,7 +141,6 @@ export default function SettingsScreen(): React.JSX.Element {
   };
 
   const handleDeleteAccount = () => {
-    HapticService.error();
     Alert.alert(
       'Delete Account',
       'This will permanently delete your account and all associated data. This cannot be undone.',
@@ -165,7 +159,6 @@ export default function SettingsScreen(): React.JSX.Element {
   };
 
   const handleLogout = () => {
-    HapticService.light();
     Alert.alert(
       'Logout',
       'Are you sure you want to logout?',

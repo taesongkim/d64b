@@ -30,12 +30,16 @@ import {
   type FriendProfile 
 } from '@/services/friends';
 import { triggerFriendsChartsRefresh } from '@/hooks/useFriendsCharts';
+import AnimalAvatar from '@/components/AnimalAvatar';
+import { AnimalType, ColorType } from '@/utils/avatarUtils';
 
 interface Friend {
   id: string;
   name: string;
   username: string;
   avatar?: string;
+  avatar_animal?: string;
+  avatar_color?: string;
   mutualFriends: number;
   currentStreak: number;
   completedToday: number;
@@ -376,6 +380,8 @@ export default function FriendsListScreen(): React.JSX.Element {
       name: item.full_name || item.email.split('@')[0],
       username: `@${item.username}`,
       avatar: item.avatar_url,
+      avatar_animal: item.avatar_animal,
+      avatar_color: item.avatar_color,
       mutualFriends: 0, // TODO: Calculate
       currentStreak: 0, // TODO: Calculate  
       completedToday: 0, // TODO: Calculate
@@ -386,15 +392,13 @@ export default function FriendsListScreen(): React.JSX.Element {
     <TouchableOpacity style={styles.friendCard}>
       <View style={styles.friendHeader}>
         <View style={styles.avatarContainer}>
-          {friend.avatar ? (
-            <Image source={{ uri: friend.avatar }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>
-                {friend.name.split(' ').map(n => n[0]).join('')}
-              </Text>
-            </View>
-          )}
+          <AnimalAvatar
+            animal={friend.avatar_animal as AnimalType}
+            color={friend.avatar_color as ColorType}
+            size={48}
+            showInitials={true}
+            name={friend.name}
+          />
         </View>
         
         <View style={styles.friendInfo}>
@@ -451,11 +455,11 @@ export default function FriendsListScreen(): React.JSX.Element {
   const renderDiscoverCard = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.discoverCard}>
       <View style={styles.discoverHeader}>
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>
-            {item.name.split(' ').map((n: string) => n[0]).join('')}
-          </Text>
-        </View>
+        <AnimalAvatar
+          size={48}
+          showInitials={true}
+          name={item.name}
+        />
         <View style={styles.discoverInfo}>
           <Text style={styles.friendName}>{item.name}</Text>
           <Text style={styles.friendUsername}>{item.username}</Text>

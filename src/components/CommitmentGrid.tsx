@@ -17,7 +17,6 @@ import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
-import { HapticService } from '@/services/hapticService';
 import { 
   getTodayISO, 
   toLocalISODate, 
@@ -131,9 +130,6 @@ export default function CommitmentGrid({
   
   // Function to animate view mode changes using LayoutAnimation
   const animateToViewMode = (newMode: ViewMode) => {
-    // Provide haptic feedback for the toggle interaction
-    HapticService.light();
-    
     // Configure LayoutAnimation for smooth transitions
     LayoutAnimation.configureNext({
       duration: 250,

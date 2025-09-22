@@ -13,6 +13,8 @@ export interface FriendProfile {
   username: string;
   full_name: string | null;
   avatar_url: string | null;
+  avatar_animal: string | null;
+  avatar_color: string | null;
   friendship_created_at?: string;
 }
 
@@ -98,7 +100,7 @@ export async function getPendingFriendRequests(userId: string) {
   const senderIds = requests.map(r => r.sender_id);
   const { data: profiles, error: profilesError } = await supabase
     .from('profiles')
-    .select('id, email, username, full_name, avatar_url')
+    .select('id, email, username, full_name, avatar_url, avatar_animal, avatar_color')
     .in('id', senderIds);
 
   // Combine the data
@@ -116,7 +118,7 @@ export async function getSentFriendRequests(userId: string) {
     .from('friend_requests')
     .select(`
       *,
-      receiver_profile:profiles!receiver_id(id, email, username, full_name, avatar_url)
+      receiver_profile:profiles!receiver_id(id, email, username, full_name, avatar_url, avatar_animal, avatar_color)
     `)
     .eq('sender_id', userId)
     .eq('status', 'pending')

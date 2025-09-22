@@ -7,9 +7,11 @@ import {
 } from 'react-native';
 import CommitmentGrid from './CommitmentGrid';
 import ViewToggle from './ViewToggle';
+import AnimalAvatar from './AnimalAvatar';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import type { FriendChartData } from '@/services/friends';
 import { RecordStatus } from '@/store/slices/recordsSlice';
+import { AnimalType, ColorType } from '@/utils/avatarUtils';
 
 interface FriendChartProps {
   friendChartData: FriendChartData;
@@ -49,10 +51,14 @@ export default function FriendChart({
           onPress={handleFriendPress}
           activeOpacity={0.7}
         >
-          <View style={styles.friendAvatar}>
-            <Text style={[styles.friendAvatarText, fontStyle]}>
-              {(friend.full_name || friend.email).charAt(0).toUpperCase()}
-            </Text>
+          <View style={styles.avatarContainer}>
+            <AnimalAvatar
+              animal={friend.avatar_animal as AnimalType}
+              color={friend.avatar_color as ColorType}
+              size={40}
+              showInitials={true}
+              name={friend.full_name || friend.email}
+            />
           </View>
           <View style={styles.friendInfo}>
             <Text style={[styles.friendName, fontStyle]} numberOfLines={1}>
@@ -111,19 +117,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
-  friendAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#111827',
-    justifyContent: 'center',
-    alignItems: 'center',
+  avatarContainer: {
     marginRight: 12,
-  },
-  friendAvatarText: {
-    color: 'white',
-    fontSize: 16,
-    fontFamily: 'Manrope_600SemiBold',
   },
   friendInfo: {
     flex: 1,

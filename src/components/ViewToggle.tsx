@@ -8,7 +8,6 @@ import {
   UIManager,
 } from 'react-native';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
-import { HapticService } from '@/services/hapticService';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android') {
@@ -27,9 +26,6 @@ interface ViewToggleProps {
 export default function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps): React.JSX.Element {
   // Function to animate view mode changes using LayoutAnimation
   const animateToViewMode = (newMode: ViewMode) => {
-    // Provide haptic feedback for the toggle interaction
-    HapticService.light();
-    
     // Configure LayoutAnimation for smooth transitions
     LayoutAnimation.configureNext({
       duration: 200,
