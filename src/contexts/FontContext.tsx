@@ -1,7 +1,7 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 
 interface FontContextType {
-  getFontFamily: () => string;
+  getFontFamily: (weight?: 'regular' | 'medium' | 'semiBold' | 'bold') => string;
 }
 
 const FontContext = createContext<FontContextType | undefined>(undefined);
@@ -11,8 +11,17 @@ interface FontProviderProps {
 }
 
 export function FontProvider({ children }: FontProviderProps) {
-  const getFontFamily = (): string => {
-    return 'GolosText-Regular';
+  const getFontFamily = (weight: 'regular' | 'medium' | 'semiBold' | 'bold' = 'regular'): string => {
+    switch (weight) {
+      case 'medium':
+        return 'GolosText-Medium';
+      case 'semiBold':
+        return 'GolosText-SemiBold';
+      case 'bold':
+        return 'GolosText-Bold';
+      default:
+        return 'GolosText-Regular';
+    }
   };
 
   return (

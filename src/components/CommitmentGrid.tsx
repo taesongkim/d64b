@@ -15,6 +15,7 @@ import ReactionPopup from './ReactionPopup';
 import CustomXIcon from './CustomXIcon';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
+import CommitmentCellModal from './CommitmentCellModal';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { 
@@ -82,6 +83,10 @@ interface Commitment {
   title: string;
   color: string;
   type: 'binary' | 'counter' | 'timer';
+  commitmentType: 'checkbox' | 'measurement';
+  requirements?: string[];
+  ratingRange?: { min: number; max: number };
+  unit?: string;
   streak: number;
 }
 
@@ -89,14 +94,15 @@ interface DayRecord {
   date: string;
   commitmentId: string;
   status: RecordStatus;
-  value?: number;
+  value?: any;
 }
 
 interface CommitmentGridProps {
   commitments: Commitment[];
   records: DayRecord[];
   onCellPress: (commitmentId: string, date: string) => void;
-  onSetRecordStatus: (commitmentId: string, date: string, status: RecordStatus) => void;
+  onSetRecordStatus: (commitmentId: string, date: string, status: RecordStatus, value?: any) => void;
+  onCommitmentTitlePress?: (commitmentId: string) => void; // New prop for commitment title clicks
   // Optional hint for the earliest date to display (e.g., account creation date)
   earliestDate?: string; // format YYYY-MM-DD
   // Optional: hide the built-in toggle (for external toggle rendering)
@@ -112,6 +118,7 @@ export default function CommitmentGrid({
   records, 
   onCellPress,
   onSetRecordStatus,
+  onCommitmentTitlePress,
   earliestDate,
   hideToggle = false,
   viewMode: externalViewMode,
@@ -127,6 +134,11 @@ export default function CommitmentGrid({
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [selectedCell, setSelectedCell] = useState<{ commitmentId: string; date: string } | null>(null);
+  
+  // Cell modal state
+  const [cellModalVisible, setCellModalVisible] = useState(false);
+  const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
+  const [selectedDate, setSelectedDate] = useState('');
   
   // Function to animate view mode changes using LayoutAnimation
   const animateToViewMode = (newMode: ViewMode) => {
@@ -233,6 +245,28 @@ export default function CommitmentGrid({
     if (selectedCell) {
       onSetRecordStatus(selectedCell.commitmentId, selectedCell.date, status);
     }
+  };
+
+  const handleCellModalSave = (commitmentId: string, date: string, status: RecordStatus, value?: any) => {
+    onSetRecordStatus(commitmentId, date, status, value);
+  };
+
+  const handleCellPress = (commitmentId: string, date: string) => {
+    const commitment = commitments.find(c => c.id === commitmentId);
+    if (!commitment) return;
+
+    // For binary commitments (Yes/No type), use the original simple toggle behavior
+    if (commitment.commitmentType === 'checkbox' && !commitment.requirements) {
+      onCellPress(commitmentId, date);
+      return;
+    }
+
+    // For non-binary commitments (Multiple Requirements, Rating, Measure), open the cell modal
+    const existingRecord = records.find(r => r.commitmentId === commitmentId && r.date === date);
+    
+    setSelectedCommitment(commitment);
+    setSelectedDate(date);
+    setCellModalVisible(true);
   };
 
   const handlePopupDismiss = () => {
@@ -349,9 +383,14 @@ export default function CommitmentGrid({
             </View>
           </View>
           {commitments.map((commitment) => (
-            <View key={`label-${commitment.id}`} style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}> 
+            <TouchableOpacity 
+              key={`label-${commitment.id}`} 
+              style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}
+              onPress={() => onCommitmentTitlePress?.(commitment.id)}
+              disabled={!onCommitmentTitlePress}
+            > 
               <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>{commitment.title}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
 
@@ -419,7 +458,7 @@ export default function CommitmentGrid({
                       <TouchableOpacity
                         key={`${c.id}-${date}`}
                         style={cellStyle}
-                        onPress={() => onCellPress(c.id, date)}
+                        onPress={() => handleCellPress(c.id, date)}
                         onLongPress={(event) => handleLongPress(c.id, date, event)}
                         delayLongPress={500}
                       >
@@ -440,6 +479,18 @@ export default function CommitmentGrid({
         onSelect={handlePopupSelect}
         onDismiss={handlePopupDismiss}
         position={popupPosition}
+      />
+
+      {/* Cell Modal for Non-Binary Commitments */}
+      <CommitmentCellModal
+        visible={cellModalVisible}
+        onClose={() => setCellModalVisible(false)}
+        commitment={selectedCommitment}
+        date={selectedDate}
+        existingRecord={selectedCommitment ? records.find(r => 
+          r.commitmentId === selectedCommitment.id && r.date === selectedDate
+        ) : null}
+        onSave={handleCellModalSave}
       />
     </View>
   );

@@ -8,7 +8,7 @@ export interface DayRecord {
   commitmentId: string;
   date: string;
   status: RecordStatus;
-  value?: number;
+  value?: any; // Can be number, array, object, etc. for different commitment types
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -82,8 +82,8 @@ const recordsSlice = createSlice({
         state.records.push(newRecord);
       }
     },
-    setRecordStatus: (state, action: PayloadAction<{ commitmentId: string; date: string; status: RecordStatus }>) => {
-      const { commitmentId, date, status } = action.payload;
+    setRecordStatus: (state, action: PayloadAction<{ commitmentId: string; date: string; status: RecordStatus; value?: any }>) => {
+      const { commitmentId, date, status, value } = action.payload;
       const existingRecord = state.records.find(
         r => r.commitmentId === commitmentId && r.date === date
       );
@@ -96,6 +96,7 @@ const recordsSlice = createSlice({
       } else if (existingRecord) {
         // Update existing record
         existingRecord.status = status;
+        existingRecord.value = value;
         existingRecord.updatedAt = new Date().toISOString();
       } else {
         // Create new record
@@ -105,6 +106,7 @@ const recordsSlice = createSlice({
           commitmentId,
           date,
           status,
+          value,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };

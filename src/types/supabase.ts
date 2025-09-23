@@ -57,6 +57,12 @@ export interface Database {
           is_private: boolean
           created_at: string
           updated_at: string
+                  // New commitment type architecture
+                  commitment_type: 'checkbox' | 'measurement'
+                  target: number | null
+                  unit: string | null
+                  requirements: Json | null
+                  rating_range: Json | null
           // Phase 0: New optional fields for future features
           lineage_id: string | null
           tracking_mode: string | null
@@ -79,6 +85,12 @@ export interface Database {
           is_private?: boolean
           created_at?: string
           updated_at?: string
+          // New commitment type architecture
+          commitment_type?: 'checkbox' | 'measurement'
+          target?: number | null
+          unit?: string | null
+          requirements?: Json | null
+          rating_range?: Json | null
           // Phase 0: New optional fields for future features
           lineage_id?: string | null
           tracking_mode?: string | null
@@ -101,6 +113,12 @@ export interface Database {
           is_private?: boolean
           created_at?: string
           updated_at?: string
+          // New commitment type architecture
+          commitment_type?: 'checkbox' | 'measurement'
+          target?: number | null
+          unit?: string | null
+          requirements?: Json | null
+          rating_range?: Json | null
           // Phase 0: New optional fields for future features
           lineage_id?: string | null
           tracking_mode?: string | null
@@ -129,6 +147,8 @@ export interface Database {
           completed_at: string
           notes: string | null
           created_at: string
+          // New commitment type architecture
+          value: Json | null
           // Phase 0: New optional fields for future features
           user_id: string | null
           status: string | null
@@ -141,6 +161,8 @@ export interface Database {
           completed_at: string
           notes?: string | null
           created_at?: string
+          // New commitment type architecture
+          value?: Json | null
           // Phase 0: New optional fields for future features
           user_id?: string | null
           status?: string | null
@@ -153,6 +175,8 @@ export interface Database {
           completed_at?: string
           notes?: string | null
           created_at?: string
+          // New commitment type architecture
+          value?: Json | null
           // Phase 0: New optional fields for future features
           user_id?: string | null
           status?: string | null

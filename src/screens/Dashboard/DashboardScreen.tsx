@@ -9,18 +9,19 @@ import {
 } from 'react-native';
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
+import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addCommitment, setCommitments, type Commitment } from '@/store/slices/commitmentsSlice';
+import { addCommitment, setCommitments, updateCommitment, type Commitment } from '@/store/slices/commitmentsSlice';
 import { toggleRecord, setRecordStatus, setRecords, type RecordStatus } from '@/store/slices/recordsSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
 import { isFeatureEnabled } from '@/config/features';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserCommitments, createCommitment, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate } from '@/services/commitments';
+import { getUserCommitments, createCommitment, updateCommitment as updateCommitmentService, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate } from '@/services/commitments';
 import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
@@ -32,6 +33,8 @@ export default function DashboardScreen(): React.JSX.Element {
   const { user } = useAuth();
   
   const fontStyle = useFontStyle();
+  const boldFontStyle = useFontStyle(undefined, 'bold');
+  const semiBoldFontStyle = useFontStyle(undefined, 'semiBold');
   
   // Load authenticated user's data
   useEffect(() => {
@@ -64,8 +67,16 @@ export default function DashboardScreen(): React.JSX.Element {
             title: c.title,
             description: c.description || undefined,
             color: c.color,
-            type: 'binary' as 'binary' | 'counter' | 'timer', // Default to binary for now
-            target: c.target_days,
+            // New commitment type architecture
+            commitmentType: c.commitment_type || 'checkbox', // Default to checkbox for existing commitments
+            target: c.target,
+            unit: c.unit,
+            requirements: c.requirements,
+            ratingRange: c.rating_range,
+            // Legacy fields for backward compatibility
+            type: c.commitment_type === 'checkbox' && !c.requirements ? 'binary' as const :
+                  c.commitment_type === 'checkbox' && c.requirements ? 'binary' as const :
+                  c.commitment_type === 'measurement' && c.rating_range ? 'counter' as const : 'timer' as const,
             streak: 0, // Will be calculated from records
             bestStreak: 0, // Will be calculated from records
             isActive: c.is_active,
@@ -223,6 +234,8 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
+  const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
   
   // Use the friends charts hook for global state management
   const { friendsCharts, friendsChartsLoading } = useFriendsCharts(user?.id);
@@ -243,7 +256,7 @@ export default function DashboardScreen(): React.JSX.Element {
     }
   };
 
-  const handleSetRecordStatus = async (commitmentId: string, date: string, status: RecordStatus) => {
+  const handleSetRecordStatus = async (commitmentId: string, date: string, status: RecordStatus, value?: any) => {
     if (!user?.id) {
       console.error('❌ Cannot update record: No authenticated user');
       return;
@@ -261,6 +274,7 @@ export default function DashboardScreen(): React.JSX.Element {
           notes: null,
           user_id: user.id,
           status: status === 'completed' ? 'complete' : status,
+          value: value || null, // Include the value for non-binary commitments
         };
 
         console.log('💾 Saving record to Supabase...');
@@ -286,7 +300,7 @@ export default function DashboardScreen(): React.JSX.Element {
       }
 
       // Update Redux state
-      dispatch(setRecordStatus({ commitmentId, date, status }));
+      dispatch(setRecordStatus({ commitmentId, date, status, value }));
 
       // Handle completion animation
       if (status === 'completed') {
@@ -296,7 +310,7 @@ export default function DashboardScreen(): React.JSX.Element {
     } catch (error) {
       console.error('💥 Unexpected error saving record:', error);
       // Still update Redux for offline functionality
-      dispatch(setRecordStatus({ commitmentId, date, status }));
+      dispatch(setRecordStatus({ commitmentId, date, status, value }));
     }
   };
 
@@ -318,6 +332,12 @@ export default function DashboardScreen(): React.JSX.Element {
         target_days: commitmentData.target || 30,
         is_active: true,
         is_private: commitmentData.isPrivate || false,
+        // New commitment type architecture
+        commitment_type: commitmentData.commitmentType,
+        target: commitmentData.target,
+        unit: commitmentData.unit,
+        requirements: commitmentData.requirements,
+        rating_range: commitmentData.ratingRange,
         // Note: 'type' field doesn't exist in current schema
         // tracking_mode and other Phase 0 fields will be used later
       };
@@ -355,6 +375,80 @@ export default function DashboardScreen(): React.JSX.Element {
       };
       dispatch(addCommitment(newCommitment));
     }
+  };
+
+  const handleCommitmentTitlePress = (commitmentId: string) => {
+    const commitment = commitments.find(c => c.id === commitmentId);
+    if (commitment) {
+      setSelectedCommitment(commitment);
+      setShowCommitmentDetailsModal(true);
+    }
+  };
+
+  const handleUpdateCommitment = async (id: string, updates: Partial<Commitment>) => {
+    if (!user?.id) {
+      console.error('❌ Cannot update commitment: No authenticated user');
+      return;
+    }
+
+    try {
+      console.log('📝 Updating commitment:', id, updates);
+      
+      // Convert Redux commitment updates to Supabase format
+      const supabaseUpdates: any = {};
+      
+      if (updates.title !== undefined) {
+        supabaseUpdates.title = updates.title;
+      }
+      if (updates.description !== undefined) {
+        supabaseUpdates.description = updates.description || null;
+      }
+      if (updates.color !== undefined) {
+        supabaseUpdates.color = updates.color;
+      }
+      if (updates.target !== undefined) {
+        supabaseUpdates.target = updates.target;
+      }
+      if (updates.unit !== undefined) {
+        supabaseUpdates.unit = updates.unit;
+      }
+      if (updates.requirements !== undefined) {
+        supabaseUpdates.requirements = updates.requirements;
+      }
+      if (updates.commitmentType !== undefined) {
+        supabaseUpdates.commitment_type = updates.commitmentType;
+      }
+      
+      // Update in Supabase
+      const { error } = await updateCommitmentService(id, supabaseUpdates);
+      
+      if (error) {
+        console.error('❌ Failed to update commitment in database:', error);
+        // Still update Redux for offline functionality
+      } else {
+        console.log('✅ Commitment updated in database');
+      }
+      
+      // Update Redux state
+      dispatch(updateCommitment({ id, updates }));
+      
+    } catch (error) {
+      console.error('💥 Error updating commitment:', error);
+      // Still update Redux for offline functionality
+      dispatch(updateCommitment({ id, updates }));
+    }
+  };
+
+  // Get notes for the selected commitment
+  const getCommitmentNotes = () => {
+    if (!selectedCommitment) return [];
+    
+    return records
+      .filter(r => r.commitmentId === selectedCommitment.id && r.notes)
+      .map(r => ({
+        date: r.date,
+        notes: r.notes || null,
+      }));
   };
 
   return (
@@ -413,6 +507,7 @@ export default function DashboardScreen(): React.JSX.Element {
               records={records}
               onCellPress={handleCellPress}
               onSetRecordStatus={handleSetRecordStatus}
+              onCommitmentTitlePress={handleCommitmentTitlePress}
               hideToggle={true}
               viewMode={viewMode}
             />
@@ -470,6 +565,17 @@ export default function DashboardScreen(): React.JSX.Element {
         onAdd={handleAddCommitment}
       />
       
+      <CommitmentDetailsModal
+        visible={showCommitmentDetailsModal}
+        onClose={() => {
+          setShowCommitmentDetailsModal(false);
+          setSelectedCommitment(null);
+        }}
+        commitment={selectedCommitment}
+        onUpdateCommitment={handleUpdateCommitment}
+        notes={getCommitmentNotes()}
+      />
+      
       <CompletionAnimation
         visible={showCompletionAnimation}
         onComplete={() => setShowCompletionAnimation(false)}
@@ -499,7 +605,6 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 24,
-    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   date: {
@@ -518,7 +623,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: 'white',
     fontSize: 24,
-    fontFamily: 'Manrope_400Regular',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -537,7 +641,6 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontFamily: 'Manrope_700Bold',
     color: '#111827',
   },
   statLabel: {
@@ -557,7 +660,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: 'Manrope_600SemiBold',
     color: '#111827',
   },
   emptyState: {
@@ -580,7 +682,6 @@ const styles = StyleSheet.create({
   emptyStateButtonText: {
     color: 'white',
     fontSize: 14,
-    fontFamily: 'Manrope_600SemiBold',
   },
   comingSoonCard: {
     paddingVertical: 40,

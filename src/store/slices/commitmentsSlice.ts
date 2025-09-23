@@ -6,9 +6,14 @@ export interface Commitment {
   title: string;
   description?: string;
   color: string;
-  type: 'binary' | 'counter' | 'timer';
+  // New commitment type architecture
+  commitmentType: 'checkbox' | 'measurement';
   target?: number;
   unit?: string;
+  requirements?: string[]; // For checkbox commitments with multiple tasks
+  ratingRange?: { min: number; max: number }; // For rating commitments
+  // Legacy fields for backward compatibility
+  type: 'binary' | 'counter' | 'timer'; // Deprecated, use commitmentType
   streak: number;
   bestStreak: number;
   isActive: boolean;
