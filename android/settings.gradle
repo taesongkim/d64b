@@ -31,7 +31,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
 }
 expoAutolinking.useExpoModules()
 
-rootProject.name = 'D64B'
+rootProject.name = 'HabitTracker'
 
 expoAutolinking.useExpoVersionCatalog()
 

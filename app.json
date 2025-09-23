@@ -1,13 +1,14 @@
 {
   "expo": {
-    "name": "D64B",
-    "slug": "d64b",
+    "name": "HabitTracker",
+    "slug": "habittracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "jsEngine": "hermes",
+    "sdkVersion": "54.0.0",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,14 +16,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.d64b.app"
+      "bundleIdentifier": "com.habittracker.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.d64b.app",
+      "package": "com.habittracker.app",
       "edgeToEdgeEnabled": true
     },
     "web": {
