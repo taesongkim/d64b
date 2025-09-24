@@ -1,3 +1,7 @@
+// ARCHIVED: Original src/store/index.ts before logout reset implementation
+// Date: 2025-09-24 14:30 EDT
+// Reason: Backup before implementing root reducer LOGOUT_GLOBAL reset
+
 import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,10 +15,7 @@ import syncReducer from './slices/syncSlice';
 import settingsReducer from './slices/settingsSlice';
 import { databaseMiddleware } from './middleware/databaseMiddleware';
 
-// Global logout action
-export const logoutGlobal = () => ({ type: 'auth/LOGOUT_GLOBAL' });
-
-const appReducer = combineReducers({
+const rootReducer = combineReducers({
   auth: authReducer,
   commitments: commitmentsReducer,
   records: recordsReducer,
@@ -22,14 +23,6 @@ const appReducer = combineReducers({
   sync: syncReducer,
   settings: settingsReducer,
 });
-
-const rootReducer = (state: any, action: any) => {
-  if (action.type === 'auth/LOGOUT_GLOBAL') {
-    // Clear all persisted state (returns undefined → triggers slice initialState)
-    return appReducer(undefined, action);
-  }
-  return appReducer(state, action);
-};
 
 const persistConfig = {
   key: 'root',
