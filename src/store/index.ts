@@ -11,8 +11,7 @@ import syncReducer from './slices/syncSlice';
 import settingsReducer from './slices/settingsSlice';
 import { databaseMiddleware } from './middleware/databaseMiddleware';
 
-// Global logout action
-export const logoutGlobal = () => ({ type: 'auth/LOGOUT_GLOBAL' });
+import { logoutGlobal } from './slices/authSlice';
 
 const appReducer = combineReducers({
   auth: authReducer,
@@ -52,6 +51,9 @@ export const store = configureStore({
 });
 
 export const persistor = persistStore(store);
+
+// Export logoutGlobal action for use in AuthContext
+export { logoutGlobal } from './slices/authSlice';
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

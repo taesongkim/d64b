@@ -40,9 +40,7 @@ export default function DashboardScreen(): React.JSX.Element {
   useEffect(() => {
     const loadUserData = async () => {
       if (!user?.id) {
-        console.log('❌ No authenticated user, clearing data');
-        dispatch(setCommitments([]));
-        dispatch(setRecords([]));
+        console.log('No authenticated user, skipping data load');
         return;
       }
 

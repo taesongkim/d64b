@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { generateUsernameSuggestion, checkUsernameAvailability } from '@/utils/usernameValidation';
+import { store, persistor, logoutGlobal } from '@/store';
 
 interface AuthContextType {
   user: User | null;
@@ -55,10 +56,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
 
         // Handle sign out
         if (event === 'SIGNED_OUT') {
-          console.log('👋 User signed out, clearing state...');
+          console.log('🔐 SIGNED_OUT → LOGOUT_GLOBAL + PURGE');
           setUser(null);
           setSession(null);
-          // Note: Dashboard will clear Redux data when user becomes null
+          (async () => {
+            try { store.dispatch(logoutGlobal()); } catch (e) { console.warn('logoutGlobal dispatch failed', e); }
+            try { await persistor.purge(); } catch (e) { console.warn('persistor.purge failed', e); }
+          })();
         }
       }
     );
@@ -142,9 +146,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
 
   const signOut = async () => {
     console.log('🚪 AuthContext signOut called');
-    
+
     const { error } = await supabase.auth.signOut();
-    
+
+    // Idempotent fallback if SIGNED_OUT event is delayed or missed
+    (async () => {
+      try { store.dispatch(logoutGlobal()); } catch {}
+      try { await persistor.purge(); } catch {}
+    })();
+
     console.log('🚪 Supabase signOut result:', { error: error?.message || 'No error' });
     return { error };
   };
