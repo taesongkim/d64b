@@ -418,3 +418,38 @@ Lessons Learned: [notes]
   - **What Changed:** Wire SIGNED_OUT -> auth/LOGOUT_GLOBAL + persistor.purge(); remove UI clearing from Dashboard; fix logoutGlobal export.
   - **Verification Plan:** UI logout zeros all slices; cold start remains zero; cross-account clean; offline logout clean.
   - **Commit:** VERIFIED - Ready for commit.
+
+- **Phase 1.4 — Verification Wrap (Cross-account + Offline) — PLAN**
+  - **Date/Time (ET):** 2025-09-25 13:32 EDT
+  - **Branch:** feat/logout-reset-centralization
+  - **Scope:** Verify logout centralization end-to-end: DevTools reset, cold-start rehydrate, cross-account isolation, offline logout edge. No code changes expected. Docs-only updates after verification.
+  - **Files/Routes to verify:**
+    - /src/contexts/AuthContext.tsx (console log: "🔐 SIGNED_OUT → LOGOUT_GLOBAL + PURGE")
+    - /src/store/index.ts (root reducer LOGOUT_GLOBAL interceptor)
+    - app://Profile → Sign Out, app://Dashboard, app://Analytics
+  - **Verification data sources:** RN DevTools console & Redux store snapshots
+  - **Artifacts:** Console tables from helper, short SHA(s) for docs commit
+  - **Gate Qs:** Verify? Yes/No. Confirm date/time.
+
+- **Phase 1.4 — Verify**
+  - **Date/Time (ET):** 2025-09-25 3:10PM ET
+  - **Branch:** feat/logout-reset-centralization
+  - **Commits verified:** 5bb706c, cf29485
+  - **Scope Verified:** Centralized logout reset (`auth/LOGOUT_GLOBAL` + `persistor.purge()`) and removal of UI-level clearing in `DashboardScreen.tsx`.
+  - **URLs (where to verify):**
+    - app://Profile → Sign Out (triggers SIGNED_OUT)
+    - app://Dashboard (post-logout should show zero data)
+    - app://Analytics (post-logout should show zero data)
+  - **Files (no edits in this phase):**
+    - /src/contexts/AuthContext.tsx
+    - /src/screens/Dashboard/DashboardScreen.tsx
+    - /src/store/index.ts
+  - **Console Evidence (summary):**
+    - `__snapV2('A_before_reset')` → counts > 0 (pre-reset baseline)
+    - `dispatch({ type: 'auth/LOGOUT_GLOBAL' })` → counts 0/0
+    - `__snapV2('B_after_login')` after UI logout + relogin → no overlap with A
+    - Cold start: `rehydrated: true`, counts persist at 0/0
+  - **Offline Edge:** With network loss, UI logout + relaunch → counts 0/0
+  - **Performance Notes:** Reset path synchronous; purge I/O minimal; no FPS regressions observed
+  - **Verification:** **YES**
+  - **Gate:** Completed. Record kept. No code changes in this phase.
