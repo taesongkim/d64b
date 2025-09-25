@@ -453,3 +453,17 @@ Lessons Learned: [notes]
   - **Performance Notes:** Reset path synchronous; purge I/O minimal; no FPS regressions observed
   - **Verification:** **YES**
   - **Gate:** Completed. Record kept. No code changes in this phase.
+
+- **Phase 1.5 — Plan (PR & Merge)**
+  - **Date/Time (ET):** 2025-09-25 3:10PM ET
+  - **Branch:** feat/logout-reset-centralization → main
+  - **Scope:** Open PR to merge centralized logout reset. Include commit(s): 5bb706c, cf29485.
+  - **PR Title:** feat(logout): centralize logout state reset + persist purge
+  - **PR Checklist (to include in PR body):**
+    - What/Why: Centralize logout; eliminate UI clearing; prevent cross-account bleed
+    - Scope of Changes: /src/store/index.ts, /src/contexts/AuthContext.tsx, /src/screens/Dashboard/DashboardScreen.tsx, /task-md/Task-protocol.md
+    - Verification: Phase 1.2–1.4 evidence included; console tables attached
+    - QA: Functional, a11y unchanged, perf unchanged, offline case passes
+    - Rollback: Revert commit cf29485 (and related), or temporarily dispatch UI-level clears; _archive/ backups available
+  - **Risks:** Sync race on sign-out, rehydration timing, navigation state; mitigated by root reducer reset + purge
+  - **Gate Qs:** "Please verify this phase plan is correct. Yes/No." "Also confirm date/time for this entry."
