@@ -418,3 +418,66 @@ Lessons Learned: [notes]
   - **What Changed:** Wire SIGNED_OUT -> auth/LOGOUT_GLOBAL + persistor.purge(); remove UI clearing from Dashboard; fix logoutGlobal export.
   - **Verification Plan:** UI logout zeros all slices; cold start remains zero; cross-account clean; offline logout clean.
   - **Commit:** VERIFIED - Ready for commit.
+
+- **Phase 1.6 — Recovery (Restore centralized logout onto main) — PLAN**
+  - **Date/Time (ET):** 2025-09-25 15:33 EDT
+  - **Branch:** fix/restore-logout-reset
+  - **Scope:** Restore centralized logout reset lost during previous merge. Ensure:
+    - `AuthContext.tsx`: Supabase `SIGNED_OUT` → dispatch `auth/LOGOUT_GLOBAL` **and** `await persistor.purge()`
+    - `store/index.ts`: root reducer wrapper intercepting `auth/LOGOUT_GLOBAL` and returning `appReducer(undefined, action)`, plus `logoutGlobal` export
+    - `DashboardScreen.tsx`: no UI-level clearing of Redux state on missing `user?.id`
+  - **Files:** 
+    - /src/contexts/AuthContext.tsx
+    - /src/store/index.ts
+    - /src/screens/Dashboard/DashboardScreen.tsx
+  - **Verification (expected):**
+    - UI logout fully clears Redux slices and persisted state
+    - Cold start remains cleared
+    - Cross-account isolation intact
+    - Offline logout path remains consistent
+  - **Risks:** Sign-out event timing, persist rehydration, navigation race
+  - **Gate Qs:** Verify? Yes/No. Confirm date/time.
+
+- **Phase 1.6.1 — Build (Recovery)**
+  - **Entry:** 2025-09-25 15:33 EDT, fix/restore-logout-reset
+  - **What changed:** Restored centralized logout by cherry-picking / restoring files on new branch.
+  - **Commit(s):** [record with `git rev-parse --short HEAD`]
+  - **URLs:** N/A (code only)
+  - **Files touched:** /src/contexts/AuthContext.tsx, /src/store/index.ts, /src/screens/Dashboard/DashboardScreen.tsx
+  - **Gate Qs:** Verify? Yes/No. Confirm date/time.
+
+- **Phase 1.6.2 — Verify (App)**
+  - **Date/Time (ET):** [fill at run]
+  - **Branch:** fix/restore-logout-reset
+  - **Where to verify (URLs):**
+    - app://Profile → Sign Out (triggers Supabase `SIGNED_OUT`)
+    - app://Dashboard (post-logout → 0 commitments)
+    - app://Analytics (post-logout → 0 records/series)
+  - **Console Evidence (DevTools):**
+    - Use `__snapV2('A_before_reset')` (counts > 0), then dispatch: `globalThis.store.dispatch({ type: 'auth/LOGOUT_GLOBAL' })`, then `__snapV2('after_reset')` (0/0)
+    - UI logout path: sign in, create data, Profile → Sign Out → `__snapV2('after_SIGNED_OUT')` (0/0), cold relaunch → still (0/0)
+    - Cross-account: login B → `__snapV2('B_after_login')` (no overlap)
+    - Offline edge: 100% loss → UI logout → relaunch → still (0/0)
+  - **Performance Notes:** Reset synchronous; purge I/O minimal
+  - **Verification:** Pending
+  - **Gate Qs:** Verify? Yes/No. Confirm date/time.
+
+- **Phase 1.6.3 — PR Opened (Recovery)**
+  - **Date/Time (ET):** 2025-09-25 15:33 EDT
+  - **Branch:** fix/restore-logout-reset → main
+  - **PR (creation page):** https://github.com/taesongkim/d64b/pull/new/fix/restore-logout-reset
+  - **Title:** fix(logout): restore centralized logout reset on top of current main
+  - **Body (summary):** Re-applies centralized logout reset (`auth/LOGOUT_GLOBAL` + `persistor.purge()`) and removes UI-level clearing to prevent cross-account bleed.
+  - **Scope of changes:** /src/store/index.ts, /src/contexts/AuthContext.tsx, /src/screens/Dashboard/DashboardScreen.tsx
+  - **Gate Qs:** Verify? Yes/No. Confirm date/time.
+
+- **Phase 1.6.3.1 — PR URL (final)**
+  - **Date/Time (ET):** [fill at submit]
+  - **PR:** [replace with final URL, e.g., https://github.com/taesongkim/d64b/pull/2]
+  - **Gate Qs:** Verify? Yes/No. Confirm date/time.
+
+- **Phase 1.6.4 — Merge**
+  - **Date/Time (ET):** [fill after merge]
+  - **Final SHA:** [short SHA]
+  - **Verification:** Post-merge cold start + `__snapV2('post_merge')` shows cleared state after UI logout; cross-account safe.
+  - **Gate Qs:** Verify? Yes/No. Confirm date/time.
