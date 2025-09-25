@@ -68,4 +68,7 @@ export const {
   clearError,
 } = authSlice.actions;
 
+// Global logout action for root reducer reset
+export const logoutGlobal = () => ({ type: 'auth/LOGOUT_GLOBAL' });
+
 export default authSlice.reducer;
