@@ -73,7 +73,7 @@ Lessons Learned: [notes]
 **Date/Time (ET):** 2025-09-25 18:48 EDT
 **Branch:** release/pretestflight-guardrails
 **Status:** COMPLETE
-**Tag:** v0.1.0-preflight (pending merge)
+**Tag:** v0.1.0-preflight ✅
 
 ### What We Tightened
 
