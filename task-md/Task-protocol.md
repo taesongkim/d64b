@@ -68,11 +68,12 @@ Lessons Learned: [notes]
 
 ---
 
-## Pre-TestFlight Guardrails
+## Pre-TestFlight Guardrails — COMPLETE ✅
 
 **Date/Time (ET):** 2025-09-25 18:48 EDT
 **Branch:** release/pretestflight-guardrails
-**Status:** Implemented
+**Status:** COMPLETE
+**Tag:** v0.1.0-preflight (pending merge)
 
 ### What We Tightened
 
@@ -136,7 +137,87 @@ Lessons Learned: [notes]
 
 ---
 
-## Active Tasks
+## MVP Feature Backlog
+
+**Branch Convention:** `feat/<area>-<short-name>` (base = main)
+**Process:** Task-MD phases (Plan → Build → Verify) with minimal diffs and evidence
+
+### Core Features
+
+- [ ] **User Onboarding Flow**
+  - **Area:** auth
+  - **Acceptance Criteria:** Email signup → profile creation → dashboard redirect, skip tutorial option, welcome tour for first-time users
+  - **Est:** 3-5 days
+
+- [ ] **Commitment Creation & Management**
+  - **Area:** commitments
+  - **Acceptance Criteria:** Create/edit/delete commitments, set target days, choose colors, mark as private/public
+  - **Est:** 2-3 days
+
+- [ ] **Daily Habit Tracking**
+  - **Area:** tracking
+  - **Acceptance Criteria:** Mark today's progress, view current streak, see completion percentage, undo today's entry
+  - **Est:** 2-3 days
+
+- [ ] **Basic Analytics Dashboard**
+  - **Area:** analytics
+  - **Acceptance Criteria:** Weekly/monthly views, streak visualization, completion trends, simple charts
+  - **Est:** 3-4 days
+
+- [ ] **Friend Discovery & Management**
+  - **Area:** social
+  - **Acceptance Criteria:** Search users by email, send/accept friend requests, view friends list, remove friends
+  - **Est:** 4-5 days
+
+- [ ] **Friends' Progress Visibility**
+  - **Area:** social
+  - **Acceptance Criteria:** See friends' public commitments, view their streaks (aggregated), privacy controls
+  - **Est:** 3-4 days
+
+### Enhancement Features
+
+- [ ] **Offline Support**
+  - **Area:** sync
+  - **Acceptance Criteria:** Track habits offline, sync when online, handle conflicts gracefully, show sync status
+  - **Est:** 5-7 days
+
+- [ ] **Notifications & Reminders**
+  - **Area:** notifications
+  - **Acceptance Criteria:** Daily habit reminders, streak milestone celebrations, friend activity updates
+  - **Est:** 3-4 days
+
+- [ ] **Profile Customization**
+  - **Area:** profile
+  - **Acceptance Criteria:** Upload avatar, edit username/bio, privacy settings, account deletion
+  - **Est:** 2-3 days
+
+- [ ] **Data Export & Import**
+  - **Area:** data
+  - **Acceptance Criteria:** Export habit data as CSV/JSON, import from other apps, backup/restore functionality
+  - **Est:** 2-3 days
+
+### Polish Features
+
+- [ ] **Dark Mode**
+  - **Area:** theming
+  - **Acceptance Criteria:** System preference detection, manual toggle, consistent styling across app
+  - **Est:** 1-2 days
+
+- [ ] **Accessibility Improvements**
+  - **Area:** a11y
+  - **Acceptance Criteria:** Screen reader support, high contrast mode, keyboard navigation, font scaling
+  - **Est:** 3-4 days
+
+- [ ] **Performance Optimization**
+  - **Area:** perf
+  - **Acceptance Criteria:** List virtualization, image optimization, bundle size reduction, startup time < 2s
+  - **Est:** 4-5 days
+
+**Non-Goals (Deferred):** Deep performance tuning, large refactors, analytics algorithm rewrites, E2E test harness
+
+---
+
+## Active Tasks (Legacy)
 > Phases use decimals for granular steps (e.g., Phase 1.3, Phase 3.5). Each phase must run the **Phase‑Level Gates** above.
 
 ### 1. Centralize Logout State Reset & Persist Purge
