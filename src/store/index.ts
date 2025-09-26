@@ -38,6 +38,24 @@ const persistConfig = {
   blacklist: ['commitments', 'records', 'social'],
 };
 
+// Dev-only: Guard against persist whitelist drift
+if (__DEV__) {
+  const expectedWhitelist = ['auth', 'settings', 'sync'];
+  const actualWhitelist = persistConfig.whitelist;
+
+  const whitelistMatch = expectedWhitelist.length === actualWhitelist.length &&
+    expectedWhitelist.every(item => actualWhitelist.includes(item));
+
+  if (!whitelistMatch) {
+    console.warn(
+      '⚠️  PERSIST WHITELIST DRIFT DETECTED!\n' +
+      `Expected: [${expectedWhitelist.join(', ')}]\n` +
+      `Actual: [${actualWhitelist.join(', ')}]\n` +
+      'This may compromise pre-TestFlight guardrails. Please review changes.'
+    );
+  }
+}
+
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({

@@ -63,7 +63,12 @@ module.exports = [
       'react-hooks/exhaustive-deps': 'warn',
       'no-console': 'warn',
       'prefer-const': 'error',
-      'no-unused-vars': 'off'
+      'no-unused-vars': 'off',
+      // Performance-focused rules (narrow scope for jank prevention)
+      'no-implicit-coercion': 'warn',
+      'no-unneeded-ternary': 'warn'
+      // Note: react/jsx-no-bind and react-native/no-inline-styles require
+      // eslint-plugin-react and eslint-plugin-react-native (not installed)
     }
   },
   {

@@ -21,7 +21,8 @@ Brief description of changes and motivation.
 - [ ] Branch follows convention: `feat/<area>-<short-name>` (base = main)
 - [ ] Phases completed: Plan → Build → Verify
 - [ ] Diffs kept minimal and focused
-- [ ] Evidence documented in Task-MD
+- [ ] Evidence documented in [Task-MD Protocol](./task-md/Task-protocol.md)
+- [ ] TTFS performance impact measured (if applicable)
 
 ## Files Changed
 List key files with brief description of changes.
