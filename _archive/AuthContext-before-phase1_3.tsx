@@ -2,8 +2,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session, User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabase';
 import { generateUsernameSuggestion, checkUsernameAvailability } from '@/utils/usernameValidation';
-import { store, persistor, logoutGlobal } from '@/store';
-import { SyncService } from '@/services/syncService';
 
 interface AuthContextType {
   user: User | null;
@@ -57,14 +55,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
 
         // Handle sign out
         if (event === 'SIGNED_OUT') {
-          console.log('🔐 SIGNED_OUT → STOP_SYNC + LOGOUT_GLOBAL + PURGE');
+          console.log('👋 User signed out, clearing state...');
           setUser(null);
           setSession(null);
-          (async () => {
-            try { SyncService.stop(); } catch (e) { console.warn('SyncService.stop failed', e); }
-            try { store.dispatch(logoutGlobal()); } catch (e) { console.warn('logoutGlobal dispatch failed', e); }
-            try { await persistor.purge(); } catch (e) { console.warn('persistor.purge failed', e); }
-          })();
+          // Note: Dashboard will clear Redux data when user becomes null
         }
       }
     );
@@ -113,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
         ]);
 
       if (error) throw error;
-      console.log('✅ Profile created successfully');
+      console.log('✅ Profile created with username:', finalUsername);
     } catch (error) {
       console.error('Error creating profile:', error);
     }
@@ -135,7 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔐 AuthContext signIn called');
+    console.log('🔐 AuthContext signIn called with:', { email, passwordLength: password.length });
     
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -148,16 +142,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
 
   const signOut = async () => {
     console.log('🚪 AuthContext signOut called');
-
+    
     const { error } = await supabase.auth.signOut();
-
-    // Idempotent fallback if SIGNED_OUT event is delayed or missed
-    (async () => {
-      try { SyncService.stop(); } catch {}
-      try { store.dispatch(logoutGlobal()); } catch {}
-      try { await persistor.purge(); } catch {}
-    })();
-
+    
     console.log('🚪 Supabase signOut result:', { error: error?.message || 'No error' });
     return { error };
   };

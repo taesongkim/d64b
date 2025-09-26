@@ -25,7 +25,6 @@ import { getUserCommitments, createCommitment, updateCommitment as updateCommitm
 import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
-import { since } from '@/_shared/perf';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
@@ -41,7 +40,9 @@ export default function DashboardScreen(): React.JSX.Element {
   useEffect(() => {
     const loadUserData = async () => {
       if (!user?.id) {
-        console.log('No authenticated user, skipping data load');
+        console.log('❌ No authenticated user, clearing data');
+        dispatch(setCommitments([]));
+        dispatch(setRecords([]));
         return;
       }
 
@@ -127,7 +128,6 @@ export default function DashboardScreen(): React.JSX.Element {
 
             dispatch(setRecords(convertedRecords));
             console.log('✅ User records loaded:', convertedRecords.length);
-            console.log('TTFS(ms)', since('app:start'));
           } catch (recordError) {
             console.error('❌ Error loading records:', recordError);
           }

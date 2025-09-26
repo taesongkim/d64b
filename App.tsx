@@ -3,11 +3,22 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { useFonts } from 'expo-font';
+import * as Sentry from '@sentry/react-native';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { FontProvider } from '@/contexts/FontContext';
 import AppNavigator from '@/navigation/AppNavigator';
 import { store, persistor } from '@/store';
 import { SyncService } from '@/services/syncService';
+import { mark } from '@/_shared/perf';
+
+// Initialize Sentry if DSN is provided
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    tracesSampleRate: 0.1,
+  });
+}
 
 export default function App(): React.JSX.Element {
   const [fontsLoaded] = useFonts({
@@ -19,11 +30,14 @@ export default function App(): React.JSX.Element {
   });
 
   useEffect(() => {
+    // Mark app start for TTFS timing
+    mark('app:start');
+
     // Initialize sync service after store is ready
     const initializeServices = async () => {
       await SyncService.initialize();
     };
-    
+
     initializeServices();
   }, []);
 

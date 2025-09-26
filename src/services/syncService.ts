@@ -17,6 +17,8 @@ const RETRY_DELAY = 5000; // 5 seconds
 export class SyncService {
   private static syncInterval: NodeJS.Timeout | null = null;
   private static isInitialized = false;
+  private static abortController: AbortController | null = null;
+  private static netInfoUnsubscribe: (() => void) | null = null;
 
   /**
    * Initialize the sync service
@@ -25,10 +27,10 @@ export class SyncService {
     if (this.isInitialized) return;
 
     // Monitor network connectivity
-    NetInfo.addEventListener(state => {
+    this.netInfoUnsubscribe = NetInfo.addEventListener(state => {
       const isOnline = state.isConnected && state.isInternetReachable;
       store.dispatch(setOnlineStatus(isOnline ?? false));
-      
+
       if (isOnline) {
         console.log('Network connected, starting sync...');
         this.startSync();
@@ -252,5 +254,36 @@ export class SyncService {
    */
   static clearSyncError(): void {
     store.dispatch(setSyncError(null));
+  }
+
+  /**
+   * Stop sync service completely (for logout/cleanup)
+   */
+  static stop(): void {
+    console.log('Stopping sync service...');
+
+    // Stop periodic sync
+    this.stopSync();
+
+    // Abort any in-flight requests
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+
+    // Unsubscribe from network listeners
+    if (this.netInfoUnsubscribe) {
+      this.netInfoUnsubscribe();
+      this.netInfoUnsubscribe = null;
+    }
+
+    // Reset initialization flag
+    this.isInitialized = false;
+
+    // Clear any pending sync state
+    store.dispatch(setSyncing(false));
+    store.dispatch(setSyncError(null));
+
+    console.log('Sync service stopped');
   }
 }

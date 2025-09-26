@@ -282,7 +282,7 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
     const friendsChartsPromises = friends.map(async (friend) => {
       try {
         // Get friend's commitments
-        console.log(`📊 Loading commitments for friend ${friend.full_name || friend.email} (${friend.id})`);
+        console.log(`📊 Loading commitments for friend ${friend.id}`);
         
         const { data: commitments, error: commitmentsError } = await supabase
           .from('commitments')
@@ -291,7 +291,7 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
           .eq('is_active', true)
           .order('created_at', { ascending: true });
 
-        console.log(`📊 Commitments query result for ${friend.full_name || friend.email}:`, {
+        console.log(`📊 Commitments query result for friend ${friend.id}:`, {
           commitmentsCount: commitments?.length || 0,
           error: commitmentsError?.message || 'No error',
           commitments: commitments?.map(c => ({ id: c.id, title: c.title, is_active: c.is_active })) || []
@@ -357,7 +357,7 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
           updatedAt: r.updated_at || r.created_at,
         }));
 
-        console.log(`📊 Friend ${friend.full_name || friend.email}: ${convertedCommitments.length} commitments, ${convertedRecords.length} records`);
+        console.log(`📊 Friend ${friend.id}: ${convertedCommitments.length} commitments, ${convertedRecords.length} records`);
 
         return {
           friend,

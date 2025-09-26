@@ -68,6 +68,74 @@ Lessons Learned: [notes]
 
 ---
 
+## Pre-TestFlight Guardrails
+
+**Date/Time (ET):** 2025-09-25 18:48 EDT
+**Branch:** release/pretestflight-guardrails
+**Status:** Implemented
+
+### What We Tightened
+
+1. **Persist Whitelist Restriction**
+   - Redux Persist now only stores: `['auth', 'settings', 'sync']`
+   - Explicitly blacklists large/derived data: `['commitments', 'records', 'social']`
+   - Added proper serializable check ignore for all redux-persist actions
+
+2. **Sync Safety**
+   - Added `SyncService.stop()` method that cancels intervals, unsubscribes listeners, aborts in-flight requests
+   - Wired into AuthContext sign-out path: `SyncService.stop()` → `logoutGlobal()` → `persistor.purge()`
+
+3. **Token & PII Security**
+   - Supabase sessions now stored in SecureStore/Keychain (not AsyncStorage)
+   - Removed PII from logs (emails, names, usernames in debug output)
+   - Created secure storage adapter at `/src/services/secureStorage.ts`
+
+4. **Basic Telemetry**
+   - Sentry init with environment gating (only if `EXPO_PUBLIC_SENTRY_DSN` provided)
+   - Low sample rate (0.1) for minimal overhead
+   - Graceful fallback if DSN missing
+
+5. **Minimal Performance Marks**
+   - Dev-only timing helper at `/src/_shared/perf.ts`
+   - TTFS measurement: `mark('app:start')` in App.tsx, `since('app:start')` in DashboardScreen
+   - Zero production impact (`__DEV__` guards)
+
+6. **Lint Hygiene**
+   - Added `@typescript-eslint/no-floating-promises` warning
+   - TypeScript strict mode already enabled (includes `strictNullChecks`)
+   - Existing React hooks exhaustive-deps warning retained
+
+### Sign-out Sequencing
+1. `SyncService.stop()` - Cancel background work
+2. `store.dispatch(logoutGlobal())` - Reset Redux state
+3. `await persistor.purge()` - Clear persisted storage
+
+### Token Storage Location
+- **Before:** AsyncStorage (insecure)
+- **After:** SecureStore/Keychain via `/src/services/secureStorage.ts`
+
+### Files Modified
+- `/src/store/index.ts` - persist whitelist, serializable ignore
+- `/src/services/syncService.ts` - stop() method
+- `/src/contexts/AuthContext.tsx` - sync stop + sequence
+- `/src/services/secureStorage.ts` - new SecureStore adapter
+- `/src/services/supabase.ts` - use secure storage
+- `/src/services/friends.ts` - remove PII logs
+- `/src/_shared/perf.ts` - new timing helper
+- `/App.tsx` - Sentry init, TTFS mark
+- `/src/screens/Dashboard/DashboardScreen.tsx` - TTFS log
+- `/eslint.config.js` - no-floating-promises rule
+
+### Post-TestFlight Roadmap (Deferred)
+- Deep performance tuning
+- List virtualization overhaul
+- Analytics algorithm refactors
+- Bundle/code-split experiments
+- Large file restructures
+- E2E test harness
+
+---
+
 ## Active Tasks
 > Phases use decimals for granular steps (e.g., Phase 1.3, Phase 3.5). Each phase must run the **Phase‑Level Gates** above.
 

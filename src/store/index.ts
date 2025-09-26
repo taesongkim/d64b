@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers } from 'redux';
+import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
 
 import authReducer from './slices/authSlice';
 import commitmentsReducer from './slices/commitmentsSlice';
@@ -33,8 +34,8 @@ const rootReducer = (state: any, action: any) => {
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth', 'commitments', 'records', 'social', 'settings'],
-  blacklist: ['sync'],
+  whitelist: ['auth', 'settings', 'sync'],
+  blacklist: ['commitments', 'records', 'social'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -44,7 +45,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
     }), // Temporarily disabled databaseMiddleware since we're doing immediate saves
     // .concat(databaseMiddleware),
