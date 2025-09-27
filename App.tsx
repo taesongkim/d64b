@@ -3,7 +3,6 @@ import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { useFonts } from 'expo-font';
-import * as Sentry from '@sentry/react-native';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { FontProvider } from '@/contexts/FontContext';
 import AppNavigator from '@/navigation/AppNavigator';
@@ -11,13 +10,21 @@ import { store, persistor } from '@/store';
 import { SyncService } from '@/services/syncService';
 import { mark } from '@/_shared/perf';
 
-// Initialize Sentry if DSN is provided
+// Initialize Sentry if DSN is provided and package is available
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 if (sentryDsn) {
-  Sentry.init({
-    dsn: sentryDsn,
-    tracesSampleRate: 0.1,
-  });
+  try {
+    // Dynamic import to avoid bundle errors when @sentry/react-native is not installed
+    const Sentry = require('@sentry/react-native');
+    Sentry.init({
+      dsn: sentryDsn,
+      tracesSampleRate: 0.1,
+    });
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('Sentry initialization failed - @sentry/react-native not installed:', error);
+    }
+  }
 }
 
 export default function App(): React.JSX.Element {
