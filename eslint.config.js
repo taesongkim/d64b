@@ -1,4 +1,6 @@
 const js = require('@eslint/js');
+const react = require('eslint-plugin-react');
+const reactNative = require('eslint-plugin-react-native');
 const reactHooks = require('eslint-plugin-react-hooks');
 const typescriptEslint = require('@typescript-eslint/eslint-plugin');
 const typescriptParser = require('@typescript-eslint/parser');
@@ -49,12 +51,20 @@ module.exports = [
         sourceType: 'module',
         ecmaFeatures: {
           jsx: true
-        }
+        },
+        project: './tsconfig.json'
       }
     },
     plugins: {
       '@typescript-eslint': typescriptEslint,
+      'react': react,
+      'react-native': reactNative,
       'react-hooks': reactHooks
+    },
+    settings: {
+      react: {
+        version: 'detect'
+      }
     },
     rules: {
       '@typescript-eslint/no-unused-vars': 'error',
@@ -66,9 +76,14 @@ module.exports = [
       'no-unused-vars': 'off',
       // Performance-focused rules (narrow scope for jank prevention)
       'no-implicit-coercion': 'warn',
-      'no-unneeded-ternary': 'warn'
-      // Note: react/jsx-no-bind and react-native/no-inline-styles require
-      // eslint-plugin-react and eslint-plugin-react-native (not installed)
+      'no-unneeded-ternary': 'warn',
+      // React performance rules
+      'react/jsx-no-bind': ['warn', {
+        allowArrowFunctions: false,
+        allowFunctions: false,
+        ignoreRefs: true
+      }],
+      'react-native/no-inline-styles': 'warn'
     }
   },
   {
