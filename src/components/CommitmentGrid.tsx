@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   View,
   Text,
-  FlatList,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -18,14 +17,13 @@ import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import CommitmentCellModal from './CommitmentCellModal';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
-import { 
-  getTodayISO, 
-  toLocalISODate, 
-  parseLocalISODate, 
-  isToday, 
-  formatDateForDisplay, 
-  isWeekend, 
-  formatDateRangeLabel 
+import {
+  getTodayISO,
+  toLocalISODate,
+  parseLocalISODate,
+  formatDateForDisplay,
+  isWeekend,
+  formatDateRangeLabel
 } from '@/utils/timeUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -262,8 +260,6 @@ export default function CommitmentGrid({
     }
 
     // For non-binary commitments (Multiple Requirements, Rating, Measure), open the cell modal
-    const existingRecord = records.find(r => r.commitmentId === commitmentId && r.date === date);
-    
     setSelectedCommitment(commitment);
     setSelectedDate(date);
     setCellModalVisible(true);
