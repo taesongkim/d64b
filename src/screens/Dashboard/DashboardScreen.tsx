@@ -83,9 +83,9 @@ export default function DashboardScreen(): React.JSX.Element {
             isPrivate: c.is_private || false, // Use database value, default to false
             createdAt: c.created_at,
             updatedAt: c.updated_at,
-            // Archive and soft delete fields (will be available after migration)
-            archived: (c as any).archived || false,
-            deletedAt: (c as any).deleted_at || null,
+            // Archive and soft delete fields
+            archived: c.archived || false,
+            deletedAt: c.deleted_at || null,
           }));
 
           dispatch(setCommitments(convertedCommitments));

@@ -18,7 +18,6 @@ import {
   purgeExpiredDeleted,
   type Commitment,
 } from '@/store/slices/commitmentsSlice';
-import { Icon } from '@/components/icons';
 
 interface ManageCommitmentsScreenProps {
   navigation: any;
@@ -76,14 +75,14 @@ const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navig
           style={[styles.actionButton, styles.restoreButton]}
           onPress={() => handleRestore(item.id)}
         >
-          <Icon name="restore" size={16} color="#059669" />
+          <Text style={styles.actionIcon}>↩️</Text>
           <Text style={[styles.actionText, styles.restoreText]}>Restore</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleSoftDelete(item.id, item.title)}
         >
-          <Icon name="trash" size={16} color="#EF4444" />
+          <Text style={styles.actionIcon}>🗑️</Text>
           <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
         </TouchableOpacity>
       </View>
@@ -104,14 +103,14 @@ const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navig
           style={[styles.actionButton, styles.restoreButton]}
           onPress={() => handleRestore(item.id)}
         >
-          <Icon name="restore" size={16} color="#059669" />
+          <Text style={styles.actionIcon}>↩️</Text>
           <Text style={[styles.actionText, styles.restoreText]}>Undelete</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.permanentDeleteButton]}
           onPress={() => handlePermanentDelete(item.id, item.title)}
         >
-          <Icon name="trash" size={16} color="#DC2626" />
+          <Text style={styles.actionIcon}>🗑️</Text>
           <Text style={[styles.actionText, styles.permanentDeleteText]}>Delete Forever</Text>
         </TouchableOpacity>
       </View>
@@ -122,7 +121,7 @@ const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navig
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-left" size={24} color="#111827" />
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Manage Commitments</Text>
         <View style={styles.placeholder} />
@@ -184,6 +183,11 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
+  },
+  backButtonText: {
+    fontSize: 20,
+    color: '#111827',
+    fontWeight: '400',
   },
   headerTitle: {
     flex: 1,
@@ -271,6 +275,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FECACA',
+  },
+  actionIcon: {
+    fontSize: 14,
+    marginRight: 4,
   },
   actionText: {
     fontSize: 14,

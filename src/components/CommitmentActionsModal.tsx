@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import { Commitment } from '@/store/slices/commitmentsSlice';
-import { Icon } from './icons';
 
 interface CommitmentActionsModalProps {
   visible: boolean;
@@ -92,7 +91,7 @@ const CommitmentActionsModal: React.FC<CommitmentActionsModalProps> = ({
           <View style={styles.header}>
             <Text style={styles.title}>{commitment.title}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Icon name="activity-failed" size={24} color="#6B7280" />
+              <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -123,11 +122,11 @@ const CommitmentActionsModal: React.FC<CommitmentActionsModalProps> = ({
               {isActive && (
                 <>
                   <TouchableOpacity style={styles.actionButton} onPress={handleArchive}>
-                    <Icon name="archive" size={20} color="#6B7280" />
+                    <Text style={[styles.actionIcon, styles.archiveIcon]}>📦</Text>
                     <Text style={styles.actionText}>Archive</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
-                    <Icon name="trash" size={20} color="#EF4444" />
+                    <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
                     <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
                   </TouchableOpacity>
                 </>
@@ -136,11 +135,11 @@ const CommitmentActionsModal: React.FC<CommitmentActionsModalProps> = ({
               {isArchived && (
                 <>
                   <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
-                    <Icon name="restore" size={20} color="#059669" />
+                    <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
                     <Text style={[styles.actionText, styles.restoreText]}>Restore</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
-                    <Icon name="trash" size={20} color="#EF4444" />
+                    <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
                     <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
                   </TouchableOpacity>
                 </>
@@ -149,11 +148,11 @@ const CommitmentActionsModal: React.FC<CommitmentActionsModalProps> = ({
               {isRecentlyDeleted && (
                 <>
                   <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
-                    <Icon name="restore" size={20} color="#059669" />
+                    <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
                     <Text style={[styles.actionText, styles.restoreText]}>Undelete</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.actionButton} onPress={handlePermanentDelete}>
-                    <Icon name="trash" size={20} color="#DC2626" />
+                    <Text style={[styles.actionIcon, styles.permanentDeleteIcon]}>🗑️</Text>
                     <Text style={[styles.actionText, styles.permanentDeleteText]}>Delete Permanently</Text>
                   </TouchableOpacity>
                 </>
@@ -196,6 +195,11 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#6B7280',
+    fontWeight: '300',
   },
   content: {
     flex: 1,
@@ -240,11 +244,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  actionIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  archiveIcon: {
+    opacity: 0.8,
+  },
+  deleteIcon: {
+    opacity: 0.8,
+  },
+  restoreIcon: {
+    opacity: 0.8,
+  },
+  permanentDeleteIcon: {
+    opacity: 0.8,
+  },
   actionText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#374151',
-    marginLeft: 12,
   },
   destructiveText: {
     color: '#EF4444',

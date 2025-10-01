@@ -21,7 +21,7 @@ export async function getUserCommitments(userId: string) {
 
   const { data, error } = await supabase
     .from('commitments')
-    .select('*') // Will include archived and deleted_at once migration is run
+    .select('*, archived, deleted_at')
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
@@ -61,7 +61,7 @@ export async function deleteCommitment(id: string) {
 export async function setArchived(id: string, archived: boolean) {
   const { data, error } = await supabase
     .from('commitments')
-    .update({ archived } as any) // Type assertion needed until migration is run
+    .update({ archived })
     .eq('id', id)
     .select()
     .single();
@@ -72,7 +72,7 @@ export async function setArchived(id: string, archived: boolean) {
 export async function setDeletedAt(id: string, deletedAt: string | null) {
   const { data, error } = await supabase
     .from('commitments')
-    .update({ deleted_at: deletedAt } as any) // Type assertion needed until migration is run
+    .update({ deleted_at: deletedAt })
     .eq('id', id)
     .select()
     .single();

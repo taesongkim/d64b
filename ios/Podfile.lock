@@ -62,6 +62,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - ExpoSecureStore (15.0.7):
+    - ExpoModulesCore
   - FBLazyVector (0.81.4)
   - hermes-engine (0.81.4):
     - hermes-engine/Pre-built (= 0.81.4)
@@ -1938,6 +1940,7 @@ DEPENDENCIES:
   - ExpoImagePicker (from `../node_modules/expo-image-picker/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
+  - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - lottie-react-native (from `../node_modules/lottie-react-native`)
@@ -2037,6 +2040,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-keep-awake/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
+  ExpoSecureStore:
+    :path: "../node_modules/expo-secure-store/ios"
   FBLazyVector:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
   hermes-engine:
@@ -2197,6 +2202,7 @@ SPEC CHECKSUMS:
   ExpoImagePicker: bd0a5c81d7734548f6908a480609257e85d19ea8
   ExpoKeepAwake: 3f5e3ac53627849174f3603271df8e08f174ed4a
   ExpoModulesCore: f35e51bd73613b2d3556c5c7d13f2f42f58b1ea9
+  ExpoSecureStore: f44dee1354536bdb3d7fab8cc451ee737c41beca
   FBLazyVector: 9e0cd874afd81d9a4d36679daca991b58b260d42
   hermes-engine: 35c763d57c9832d0eef764316ca1c4d043581394
   lottie-ios: a881093fab623c467d3bce374367755c272bdd59
