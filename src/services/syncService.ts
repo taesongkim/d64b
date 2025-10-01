@@ -1,14 +1,15 @@
 import NetInfo from '@react-native-community/netinfo';
 import { store } from '@/store';
-import { 
-  setSyncing, 
-  removeFromQueue, 
+import {
+  setSyncing,
+  removeFromQueue,
   incrementRetryCount,
   setOnlineStatus,
   setSyncError,
   setLastSyncAt,
   type SyncAction
 } from '@/store/slices/syncSlice';
+import * as commitmentService from './commitments';
 // import { DatabaseService } from './database'; // Disabled - using Supabase
 
 const MAX_RETRY_COUNT = 3;
@@ -146,36 +147,41 @@ export class SyncService {
    * Sync commitment with server
    */
   private static async syncCommitment(item: SyncAction): Promise<void> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+    console.log(`🔄 Syncing commitment ${item.type}:`, { entityId: item.entityId, data: item.data });
 
-    // TODO: Replace with actual API endpoints
-    const apiEndpoint = process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com';
-    
     switch (item.type) {
       case 'CREATE':
-        // await fetch(`${apiEndpoint}/commitments`, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(item.data)
-        // });
         console.log('Would sync CREATE commitment:', item.data);
         break;
-        
+
       case 'UPDATE':
-        // await fetch(`${apiEndpoint}/commitments/${item.entityId}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(item.data)
-        // });
-        console.log('Would sync UPDATE commitment:', item.data);
+        // Handle archive/delete operations based on data payload
+        const data = item.data;
+
+        if (data.idempotencyKey?.includes(':archive')) {
+          await commitmentService.setArchived(item.entityId, data.archived);
+          console.log(`✅ Synced archive status for commitment ${item.entityId}:`, data.archived);
+        } else if (data.idempotencyKey?.includes(':restore')) {
+          await commitmentService.setArchived(item.entityId, data.archived);
+          await commitmentService.setDeletedAt(item.entityId, data.deletedAt);
+          console.log(`✅ Synced restore for commitment ${item.entityId}`);
+        } else if (data.idempotencyKey?.includes(':deletedAt:')) {
+          await commitmentService.setDeletedAt(item.entityId, data.deletedAt);
+          await commitmentService.setArchived(item.entityId, data.archived);
+          console.log(`✅ Synced soft delete for commitment ${item.entityId}:`, data.deletedAt);
+        } else {
+          // Regular update
+          console.log('Would sync UPDATE commitment:', item.data);
+        }
         break;
-        
+
       case 'DELETE':
-        // await fetch(`${apiEndpoint}/commitments/${item.entityId}`, {
-        //   method: 'DELETE'
-        // });
-        console.log('Would sync DELETE commitment:', item.entityId);
+        if (item.data?.idempotencyKey?.includes(':permaDelete:')) {
+          await commitmentService.permanentDelete(item.entityId);
+          console.log(`✅ Synced permanent delete for commitment ${item.entityId}`);
+        } else {
+          console.log('Would sync DELETE commitment:', item.entityId);
+        }
         break;
     }
   }

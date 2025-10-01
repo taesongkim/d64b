@@ -18,16 +18,16 @@ export async function createCommitment(data: CommitmentInsert) {
 
 export async function getUserCommitments(userId: string) {
   console.log('🔍 getUserCommitments called for userId:', userId);
-  
+
   const { data, error } = await supabase
     .from('commitments')
-    .select('*')
+    .select('*') // Will include archived and deleted_at once migration is run
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
-  console.log('🔍 getUserCommitments result:', { 
-    dataCount: data?.length || 0, 
+  console.log('🔍 getUserCommitments result:', {
+    dataCount: data?.length || 0,
     error: error?.message || 'No error',
     firstCommitment: data?.[0]?.id || 'None'
   });
@@ -55,6 +55,38 @@ export async function deleteCommitment(id: string) {
     .single();
 
   return { data, error };
+}
+
+// Archive/Delete operations
+export async function setArchived(id: string, archived: boolean) {
+  const { data, error } = await supabase
+    .from('commitments')
+    .update({ archived } as any) // Type assertion needed until migration is run
+    .eq('id', id)
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+export async function setDeletedAt(id: string, deletedAt: string | null) {
+  const { data, error } = await supabase
+    .from('commitments')
+    .update({ deleted_at: deletedAt } as any) // Type assertion needed until migration is run
+    .eq('id', id)
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+export async function permanentDelete(id: string) {
+  const { error } = await supabase
+    .from('commitments')
+    .delete()
+    .eq('id', id);
+
+  return { error };
 }
 
 // Commitment Records CRUD

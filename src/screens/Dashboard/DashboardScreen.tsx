@@ -10,11 +10,12 @@ import {
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
+import CommitmentActionsModal from '@/components/CommitmentActionsModal';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addCommitment, setCommitments, updateCommitment, type Commitment } from '@/store/slices/commitmentsSlice';
+import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
 import { toggleRecord, setRecordStatus, setRecords, type RecordStatus } from '@/store/slices/recordsSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { useFontStyle } from '@/hooks/useFontStyle';
@@ -29,7 +30,7 @@ import { since } from '@/_shared/perf';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
-  const commitments = useAppSelector(state => state.commitments.commitments);
+  const commitments = useAppSelector(selectActiveCommitments);
   const records = useAppSelector(state => state.records.records);
   const { user } = useAuth();
   
@@ -82,6 +83,9 @@ export default function DashboardScreen(): React.JSX.Element {
             isPrivate: c.is_private || false, // Use database value, default to false
             createdAt: c.created_at,
             updatedAt: c.updated_at,
+            // Archive and soft delete fields (will be available after migration)
+            archived: (c as any).archived || false,
+            deletedAt: (c as any).deleted_at || null,
           }));
 
           dispatch(setCommitments(convertedCommitments));
@@ -235,6 +239,7 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
+  const [showCommitmentActionsModal, setShowCommitmentActionsModal] = useState(false);
   const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
   
   // Use the friends charts hook for global state management
@@ -381,7 +386,7 @@ export default function DashboardScreen(): React.JSX.Element {
     const commitment = commitments.find(c => c.id === commitmentId);
     if (commitment) {
       setSelectedCommitment(commitment);
-      setShowCommitmentDetailsModal(true);
+      setShowCommitmentActionsModal(true);
     }
   };
 
@@ -437,6 +442,22 @@ export default function DashboardScreen(): React.JSX.Element {
       // Still update Redux for offline functionality
       dispatch(updateCommitment({ id, updates }));
     }
+  };
+
+  const handleArchiveCommitment = (id: string) => {
+    dispatch(archiveCommitmentThunk(id));
+  };
+
+  const handleRestoreCommitment = (id: string) => {
+    dispatch(restoreCommitmentThunk(id));
+  };
+
+  const handleSoftDeleteCommitment = (id: string) => {
+    dispatch(softDeleteCommitmentThunk(id));
+  };
+
+  const handlePermanentDeleteCommitment = (id: string) => {
+    dispatch(permanentDeleteCommitmentThunk(id));
   };
 
   // Get notes for the selected commitment
@@ -574,6 +595,19 @@ export default function DashboardScreen(): React.JSX.Element {
         commitment={selectedCommitment}
         onUpdateCommitment={handleUpdateCommitment}
         notes={getCommitmentNotes()}
+      />
+
+      <CommitmentActionsModal
+        visible={showCommitmentActionsModal}
+        onClose={() => {
+          setShowCommitmentActionsModal(false);
+          setSelectedCommitment(null);
+        }}
+        commitment={selectedCommitment}
+        onArchive={handleArchiveCommitment}
+        onRestore={handleRestoreCommitment}
+        onSoftDelete={handleSoftDeleteCommitment}
+        onPermanentDelete={handlePermanentDeleteCommitment}
       />
       
       <CompletionAnimation

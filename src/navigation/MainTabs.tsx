@@ -4,7 +4,7 @@ import type { MainTabParamList } from './types';
 import DashboardScreen from '@/screens/Dashboard/DashboardScreen';
 import AnalyticsScreen from '@/screens/Analytics/AnalyticsScreen';
 import FriendsListScreen from '@/screens/Social/FriendsListScreen';
-import ProfileScreen from '@/screens/Profile/ProfileScreen';
+import ProfileStack from './ProfileStack';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
 
@@ -60,9 +60,9 @@ export default function MainTabs(): React.JSX.Element {
           tabBarIcon: ({ color }) => <Icon name="social" size={20} color={color} />,
         }}
       />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen}
+      <Tab.Screen
+        name="Profile"
+        component={ProfileStack}
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',

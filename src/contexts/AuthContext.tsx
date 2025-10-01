@@ -4,6 +4,7 @@ import { supabase } from '@/services/supabase';
 import { generateUsernameSuggestion, checkUsernameAvailability } from '@/utils/usernameValidation';
 import { store, persistor, logoutGlobal } from '@/store';
 import { SyncService } from '@/services/syncService';
+import { purgeExpiredDeleted } from '@/store/slices/commitmentsSlice';
 
 interface AuthContextType {
   user: User | null;
@@ -40,13 +41,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
         // Handle sign in
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('👤 User signed in, checking profile...');
+
+          // Purge expired deleted commitments on app start
+          store.dispatch(purgeExpiredDeleted());
+          console.log('🧹 Purged expired deleted commitments');
+
           // Check if profile exists, create if it doesn't
           const { data: profile } = await supabase
             .from('profiles')
             .select('id')
             .eq('id', session.user.id)
             .single();
-          
+
           if (!profile) {
             console.log('📝 Creating new profile...');
             await createProfile(session.user);

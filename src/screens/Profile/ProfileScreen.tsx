@@ -45,7 +45,11 @@ interface UserProfile {
   created_at: string;
 }
 
-export default function ProfileScreen(): React.JSX.Element {
+interface ProfileScreenProps {
+  navigation: any;
+}
+
+export default function ProfileScreen({ navigation }: ProfileScreenProps): React.JSX.Element {
   const { user, signOut } = useAuth();
   const dispatch = useAppDispatch();
   const { notifications, preferences, privacy } = useAppSelector(state => state.settings);
@@ -524,6 +528,13 @@ export default function ProfileScreen(): React.JSX.Element {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data</Text>
         <View style={styles.settingsList}>
+          <TouchableOpacity style={styles.settingItem} onPress={() => navigation.navigate('ManageCommitments')}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>Manage Commitments</Text>
+              <Text style={styles.settingSubtitle}>View archived and deleted commitments</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </TouchableOpacity>
           {/* MVP-HIDDEN: Data Export - Enable in v1.2 */}
           {isFeatureEnabled('DATA_EXPORT') && (
             <TouchableOpacity style={styles.settingItem} onPress={handleExportData}>
