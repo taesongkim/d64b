@@ -19,6 +19,10 @@ interface CommitmentDetailsModalProps {
   commitment: Commitment | null;
   onUpdateCommitment: (id: string, updates: Partial<Commitment>) => void;
   notes: Array<{ date: string; notes: string | null }>; // Notes from commitment_records
+  onArchive: (id: string) => void;
+  onRestore: (id: string) => void;
+  onSoftDelete: (id: string) => void;
+  onPermanentDelete: (id: string) => void;
 }
 
 const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
@@ -27,11 +31,21 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   commitment,
   onUpdateCommitment,
   notes,
+  onArchive,
+  onRestore,
+  onSoftDelete,
+  onPermanentDelete,
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
+
+  // Archive/Delete state logic
+  const isActive = commitment && !commitment.archived && !commitment.deletedAt;
+  const isArchived = commitment && commitment.archived === true && !commitment.deletedAt;
+  const isRecentlyDeleted = commitment && commitment.deletedAt &&
+    new Date(commitment.deletedAt).getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000;
 
   useEffect(() => {
     if (commitment) {
@@ -49,9 +63,57 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
 
   const handleSaveDescription = () => {
     if (!commitment) return;
-    
+
     onUpdateCommitment(commitment.id, { description: editedDescription.trim() || undefined });
     setIsEditingDescription(false);
+  };
+
+  // Archive/Delete handlers
+  const handleArchive = () => {
+    if (!commitment) return;
+    onArchive(commitment.id);
+    onClose();
+  };
+
+  const handleRestore = () => {
+    if (!commitment) return;
+    onRestore(commitment.id);
+    onClose();
+  };
+
+  const handleSoftDelete = () => {
+    if (!commitment) return;
+    Alert.alert(
+      'Delete Commitment',
+      'This commitment will be moved to Recently Deleted and can be restored within 7 days.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => {
+          onSoftDelete(commitment.id);
+          onClose();
+        }},
+      ]
+    );
+  };
+
+  const handlePermanentDelete = () => {
+    if (!commitment) return;
+    Alert.alert(
+      'Delete Permanently',
+      'This commitment will be permanently deleted and cannot be restored. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete Forever', style: 'destructive', onPress: () => {
+          onPermanentDelete(commitment.id);
+          onClose();
+        }},
+      ]
+    );
+  };
+
+  const getDeletedDaysAgo = () => {
+    if (!commitment?.deletedAt) return 0;
+    return Math.floor((Date.now() - new Date(commitment.deletedAt).getTime()) / (24 * 60 * 60 * 1000));
   };
 
 
@@ -69,19 +131,19 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
     <Modal
       visible={visible}
       animationType="slide"
-      transparent={true}
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <SafeAreaView style={styles.modalContent}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Commitment Details</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Icon name="activity-failed" size={24} color="#6B7280" />
-            </TouchableOpacity>
-          </View>
+      <SafeAreaView style={styles.fullScreenContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.backButton}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Commitment Details</Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Commitment Name */}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Name</Text>
@@ -183,14 +245,85 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
                 </View>
               )}
             </View>
+
+            {/* Status and Actions Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Actions</Text>
+
+              {/* Status indicator */}
+              <View style={styles.statusSection}>
+                {isActive && (
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusText}>Active</Text>
+                  </View>
+                )}
+                {isArchived && (
+                  <View style={[styles.statusBadge, styles.archivedBadge]}>
+                    <Text style={[styles.statusText, styles.archivedText]}>Archived</Text>
+                  </View>
+                )}
+                {isRecentlyDeleted && (
+                  <View style={[styles.statusBadge, styles.deletedBadge]}>
+                    <Text style={[styles.statusText, styles.deletedText]}>
+                      Deleted {getDeletedDaysAgo()} days ago
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Action buttons */}
+              <View style={styles.actionsSection}>
+                {isActive && (
+                  <>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleArchive}>
+                      <Text style={[styles.actionIcon, styles.archiveIcon]}>📦</Text>
+                      <Text style={styles.actionText}>Archive</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
+                      <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
+                      <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {isArchived && (
+                  <>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
+                      <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
+                      <Text style={[styles.actionText, styles.restoreText]}>Restore</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
+                      <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
+                      <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {isRecentlyDeleted && (
+                  <>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
+                      <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
+                      <Text style={[styles.actionText, styles.restoreText]}>Undelete</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.actionButton} onPress={handlePermanentDelete}>
+                      <Text style={[styles.actionIcon, styles.permanentDeleteIcon]}>🗑️</Text>
+                      <Text style={[styles.actionText, styles.permanentDeleteText]}>Delete Permanently</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
           </ScrollView>
         </SafeAreaView>
-      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  fullScreenContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -202,6 +335,17 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: '90%',
     minHeight: '60%',
+  },
+  backButton: {
+    padding: 8,
+  },
+  backButtonText: {
+    fontSize: 20,
+    color: '#111827',
+    fontWeight: '400',
+  },
+  headerSpacer: {
+    width: 40,
   },
   header: {
     flexDirection: 'row',
@@ -297,6 +441,76 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#9CA3AF',
     fontStyle: 'italic',
+  },
+  statusSection: {
+    marginBottom: 16,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: '#10B981',
+  },
+  archivedBadge: {
+    backgroundColor: '#F59E0B',
+  },
+  deletedBadge: {
+    backgroundColor: '#EF4444',
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+  },
+  archivedText: {
+    color: 'white',
+  },
+  deletedText: {
+    color: 'white',
+  },
+  actionsSection: {
+    gap: 12,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  actionIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  archiveIcon: {
+    opacity: 0.8,
+  },
+  deleteIcon: {
+    opacity: 0.8,
+  },
+  restoreIcon: {
+    opacity: 0.8,
+  },
+  permanentDeleteIcon: {
+    opacity: 0.8,
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  destructiveText: {
+    color: '#EF4444',
+  },
+  permanentDeleteText: {
+    color: '#DC2626',
+    fontWeight: '600',
+  },
+  restoreText: {
+    color: '#059669',
   },
 });
 

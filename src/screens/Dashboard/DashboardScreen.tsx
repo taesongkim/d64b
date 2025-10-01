@@ -10,7 +10,6 @@ import {
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
-import CommitmentActionsModal from '@/components/CommitmentActionsModal';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import ViewToggle from '@/components/ViewToggle';
@@ -239,7 +238,6 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
-  const [showCommitmentActionsModal, setShowCommitmentActionsModal] = useState(false);
   const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
   
   // Use the friends charts hook for global state management
@@ -386,7 +384,7 @@ export default function DashboardScreen(): React.JSX.Element {
     const commitment = commitments.find(c => c.id === commitmentId);
     if (commitment) {
       setSelectedCommitment(commitment);
-      setShowCommitmentActionsModal(true);
+      setShowCommitmentDetailsModal(true);
     }
   };
 
@@ -595,20 +593,12 @@ export default function DashboardScreen(): React.JSX.Element {
         commitment={selectedCommitment}
         onUpdateCommitment={handleUpdateCommitment}
         notes={getCommitmentNotes()}
-      />
-
-      <CommitmentActionsModal
-        visible={showCommitmentActionsModal}
-        onClose={() => {
-          setShowCommitmentActionsModal(false);
-          setSelectedCommitment(null);
-        }}
-        commitment={selectedCommitment}
         onArchive={handleArchiveCommitment}
         onRestore={handleRestoreCommitment}
         onSoftDelete={handleSoftDeleteCommitment}
         onPermanentDelete={handlePermanentDeleteCommitment}
       />
+
       
       <CompletionAnimation
         visible={showCompletionAnimation}
