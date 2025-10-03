@@ -7,29 +7,77 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		08688D89BB8548C49E10AC05 /* ViewHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = E763E9DBB0984157BF782CAA /* ViewHelpers.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		31C4CC7C5FABC3028DE18E7D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C2826FD6E6E262B99629C7B8 /* PrivacyInfo.xcprivacy */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		58C4FDE1607578D9F72295C1 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3AB9F03925ADFB007870FF8F /* PrivacyInfo.xcprivacy */; };
+		42AEE1BDDFE943638F537052 /* Image+dynamic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B89057532BC485CA040815F /* Image+dynamic.swift */; };
+		5505ACF5F64F420396ED119E /* LiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 620A64812B5D49368E2188E9 /* LiveActivityWidget.swift */; };
+		5C7BF3380758104BADA2C6FB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 112133B33EC1905078F58F75 /* ExpoModulesProvider.swift */; };
+		5E351F5E531746B09D67EBB7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F5789B1C65044408691D9BF /* Assets.xcassets */; };
+		75A3664A9EC541748F6836D8 /* LiveActivityWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7D4C61E26A44DF29013A54C /* LiveActivityWidgetBundle.swift */; };
+		77A9B46A1A76443F9C0CC4D1 /* LiveActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74847F912E4C4D688BA7666F /* LiveActivityView.swift */; };
+		79C5D4B13DE34595AD25FBD0 /* HabitTrackerLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F9FD248445F84F1F825A85C2 /* HabitTrackerLiveActivity.appex */; };
+		9C72651A9D7D4ABABDD4EF37 /* View+applyWidgetURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EC4F3ED08545AC81EF4573 /* View+applyWidgetURL.swift */; };
+		AB5DFB63E405B3B90B9F80D2 /* libPods-HabitTracker.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C276F7448955A2B29E36DF9 /* libPods-HabitTracker.a */; };
+		B7BCA276DE264A3296DA130D /* View+applyIfPresent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62A7DC14201F468484AC409C /* View+applyIfPresent.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		C41F143F3B2C4451968D53CB /* Date+toTimerInterval.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85D61D504ADE4AFD823B97EC /* Date+toTimerInterval.swift */; };
+		C55D46BC02E942F78DD28440 /* Color+hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = F166DB43E84F403999AB8B8E /* Color+hex.swift */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F85C0221F0A0CBEC49798CD6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38B50CEE4E01423FAA2C0308 /* ExpoModulesProvider.swift */; };
-		FA5468CC7350FD2909BBEFDB /* libPods-HabitTracker.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B164DBDF4B5248F399930F14 /* libPods-HabitTracker.a */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		51395E23F06049F2A9269E1A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DF30D0D675A04A139BF374E4;
+			remoteInfo = HabitTrackerLiveActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		340EA3F42887429E8FFAF1EA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				79C5D4B13DE34595AD25FBD0 /* HabitTrackerLiveActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		0B89057532BC485CA040815F /* Image+dynamic.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = "Image+dynamic.swift"; sourceTree = "<group>"; };
+		112133B33EC1905078F58F75 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-HabitTracker/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* HabitTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HabitTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = HabitTracker/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = HabitTracker/Info.plist; sourceTree = "<group>"; };
-		1D68BCD2623EC20BBF368013 /* Pods-HabitTracker.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HabitTracker.release.xcconfig"; path = "Target Support Files/Pods-HabitTracker/Pods-HabitTracker.release.xcconfig"; sourceTree = "<group>"; };
-		28AA97205C8E9D9665BCE974 /* Pods-HabitTracker.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HabitTracker.debug.xcconfig"; path = "Target Support Files/Pods-HabitTracker/Pods-HabitTracker.debug.xcconfig"; sourceTree = "<group>"; };
-		38B50CEE4E01423FAA2C0308 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-HabitTracker/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		3AB9F03925ADFB007870FF8F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = HabitTracker/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		1BFFA0AB934D4B778350137B /* Info.plist */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1C47DEB0150DAC8BC6995267 /* Pods-HabitTracker.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HabitTracker.debug.xcconfig"; path = "Target Support Files/Pods-HabitTracker/Pods-HabitTracker.debug.xcconfig"; sourceTree = "<group>"; };
+		5C276F7448955A2B29E36DF9 /* libPods-HabitTracker.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HabitTracker.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		620A64812B5D49368E2188E9 /* LiveActivityWidget.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = LiveActivityWidget.swift; sourceTree = "<group>"; };
+		62A7DC14201F468484AC409C /* View+applyIfPresent.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = "View+applyIfPresent.swift"; sourceTree = "<group>"; };
+		62EC4F3ED08545AC81EF4573 /* View+applyWidgetURL.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = "View+applyWidgetURL.swift"; sourceTree = "<group>"; };
+		74847F912E4C4D688BA7666F /* LiveActivityView.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = LiveActivityView.swift; sourceTree = "<group>"; };
+		85D61D504ADE4AFD823B97EC /* Date+toTimerInterval.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = "Date+toTimerInterval.swift"; sourceTree = "<group>"; };
+		8F5789B1C65044408691D9BF /* Assets.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A192B229ABF0C673A050DD14 /* Pods-HabitTracker.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-HabitTracker.release.xcconfig"; path = "Target Support Files/Pods-HabitTracker/Pods-HabitTracker.release.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = HabitTracker/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B164DBDF4B5248F399930F14 /* libPods-HabitTracker.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-HabitTracker.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B111D673065D42E4A8523C2B /* HabitTrackerLiveActivity.entitlements */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; path = HabitTrackerLiveActivity.entitlements; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
+		C2826FD6E6E262B99629C7B8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = HabitTracker/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		E763E9DBB0984157BF782CAA /* ViewHelpers.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = ViewHelpers.swift; sourceTree = "<group>"; };
+		E7D4C61E26A44DF29013A54C /* LiveActivityWidgetBundle.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = LiveActivityWidgetBundle.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = HabitTracker/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* HabitTracker-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "HabitTracker-Bridging-Header.h"; path = "HabitTracker/HabitTracker-Bridging-Header.h"; sourceTree = "<group>"; };
+		F166DB43E84F403999AB8B8E /* Color+hex.swift */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 4; includeInIndex = 0; lastKnownFileType = sourcecode.swift; path = "Color+hex.swift"; sourceTree = "<group>"; };
+		F9FD248445F84F1F825A85C2 /* HabitTrackerLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; fileEncoding = 9; includeInIndex = 0; path = HabitTrackerLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +85,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				FA5468CC7350FD2909BBEFDB /* libPods-HabitTracker.a in Frameworks */,
+				AB5DFB63E405B3B90B9F80D2 /* libPods-HabitTracker.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9C6D7991743B4C589B327A99 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,26 +108,45 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				3AB9F03925ADFB007870FF8F /* PrivacyInfo.xcprivacy */,
+				C2826FD6E6E262B99629C7B8 /* PrivacyInfo.xcprivacy */,
 			);
 			name = HabitTracker;
-			sourceTree = "<group>";
-		};
-		1854464FD9EB927BF924F860 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				9E9C84B7C585CA1E3CDEDFFA /* HabitTracker */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				B164DBDF4B5248F399930F14 /* libPods-HabitTracker.a */,
+				5C276F7448955A2B29E36DF9 /* libPods-HabitTracker.a */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		37F8E60D1AFCA9727219C6FC /* HabitTracker */ = {
+			isa = PBXGroup;
+			children = (
+				112133B33EC1905078F58F75 /* ExpoModulesProvider.swift */,
+			);
+			name = HabitTracker;
+			sourceTree = "<group>";
+		};
+		6357FF6ED2014859A8C0DC54 /* HabitTrackerLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				F166DB43E84F403999AB8B8E /* Color+hex.swift */,
+				85D61D504ADE4AFD823B97EC /* Date+toTimerInterval.swift */,
+				0B89057532BC485CA040815F /* Image+dynamic.swift */,
+				74847F912E4C4D688BA7666F /* LiveActivityView.swift */,
+				620A64812B5D49368E2188E9 /* LiveActivityWidget.swift */,
+				E7D4C61E26A44DF29013A54C /* LiveActivityWidgetBundle.swift */,
+				62A7DC14201F468484AC409C /* View+applyIfPresent.swift */,
+				62EC4F3ED08545AC81EF4573 /* View+applyWidgetURL.swift */,
+				E763E9DBB0984157BF782CAA /* ViewHelpers.swift */,
+				1BFFA0AB934D4B778350137B /* Info.plist */,
+				8F5789B1C65044408691D9BF /* Assets.xcassets */,
+				B111D673065D42E4A8523C2B /* HabitTrackerLiveActivity.entitlements */,
+			);
+			path = HabitTrackerLiveActivity;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -89,8 +163,9 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				F9CEEDE165B7DBEB0BC4F75F /* Pods */,
-				1854464FD9EB927BF924F860 /* ExpoModulesProviders */,
+				6357FF6ED2014859A8C0DC54 /* HabitTrackerLiveActivity */,
+				A83B12F1A9D40385EB0057C2 /* Pods */,
+				FA671F3111E3E80DE8B56AAD /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -101,16 +176,18 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* HabitTracker.app */,
+				F9FD248445F84F1F825A85C2 /* HabitTrackerLiveActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		9E9C84B7C585CA1E3CDEDFFA /* HabitTracker */ = {
+		A83B12F1A9D40385EB0057C2 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				38B50CEE4E01423FAA2C0308 /* ExpoModulesProvider.swift */,
+				1C47DEB0150DAC8BC6995267 /* Pods-HabitTracker.debug.xcconfig */,
+				A192B229ABF0C673A050DD14 /* Pods-HabitTracker.release.xcconfig */,
 			);
-			name = HabitTracker;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -122,14 +199,12 @@
 			path = HabitTracker/Supporting;
 			sourceTree = "<group>";
 		};
-		F9CEEDE165B7DBEB0BC4F75F /* Pods */ = {
+		FA671F3111E3E80DE8B56AAD /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				28AA97205C8E9D9665BCE974 /* Pods-HabitTracker.debug.xcconfig */,
-				1D68BCD2623EC20BBF368013 /* Pods-HabitTracker.release.xcconfig */,
+				37F8E60D1AFCA9727219C6FC /* HabitTracker */,
 			);
-			name = Pods;
-			path = Pods;
+			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,22 +215,41 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "HabitTracker" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				7D9CA37D16440DA59296861E /* [Expo] Configure project */,
+				790C192E85191D160FC79010 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				20267FD4CB256086ECE85261 /* [CP] Embed Pods Frameworks */,
+				340EA3F42887429E8FFAF1EA /* Embed Foundation Extensions */,
+				E18FB248C1419EB348960A48 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				493E60576C7E4FA78C50E88F /* PBXTargetDependency */,
 			);
 			name = HabitTracker;
 			productName = HabitTracker;
 			productReference = 13B07F961A680F5B00A75B9A /* HabitTracker.app */;
 			productType = "com.apple.product-type.application";
+		};
+		DF30D0D675A04A139BF374E4 /* HabitTrackerLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B08721473ADB4977B2182ED5 /* Build configuration list for PBXNativeTarget "HabitTrackerLiveActivity" */;
+			buildPhases = (
+				C869AF06D53E4283A7A896B3 /* Sources */,
+				9C6D7991743B4C589B327A99 /* Frameworks */,
+				D37064DE5AA34825A6710AB7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HabitTrackerLiveActivity;
+			productName = HabitTrackerLiveActivity;
+			productReference = F9FD248445F84F1F825A85C2 /* HabitTrackerLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -166,6 +260,9 @@
 				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
+						LastSwiftMigration = 1250;
+					};
+					DF30D0D675A04A139BF374E4 = {
 						LastSwiftMigration = 1250;
 					};
 				};
@@ -184,6 +281,7 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* HabitTracker */,
+				DF30D0D675A04A139BF374E4 /* HabitTrackerLiveActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -196,7 +294,15 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				58C4FDE1607578D9F72295C1 /* PrivacyInfo.xcprivacy in Resources */,
+				31C4CC7C5FABC3028DE18E7D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D37064DE5AA34825A6710AB7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5E351F5E531746B09D67EBB7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,29 +348,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		20267FD4CB256086ECE85261 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-HabitTracker/Pods-HabitTracker-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HabitTracker/Pods-HabitTracker-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		7D9CA37D16440DA59296861E /* [Expo] Configure project */ = {
+		790C192E85191D160FC79010 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -302,6 +386,8 @@
 				"${PODS_CONFIGURATION_BUILD_DIR}/RNSVG/RNSVGFilters.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-Core/React-Core_privacy.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/React-cxxreact/React-cxxreact_privacy.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-launcher/EXDevLauncher.bundle",
+				"${PODS_CONFIGURATION_BUILD_DIR}/expo-dev-menu/EXDevMenu.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/lottie-ios/LottiePrivacyInfo.bundle",
 				"${PODS_CONFIGURATION_BUILD_DIR}/lottie-react-native/Lottie_React_Native_Privacy.bundle",
 			);
@@ -314,12 +400,36 @@
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/RNSVGFilters.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-Core_privacy.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/React-cxxreact_privacy.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevLauncher.bundle",
+				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/EXDevMenu.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/LottiePrivacyInfo.bundle",
 				"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/Lottie_React_Native_Privacy.bundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HabitTracker/Pods-HabitTracker-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		E18FB248C1419EB348960A48 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-HabitTracker/Pods-HabitTracker-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/React-Core-prebuilt/React.framework/React",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/ReactNativeDependencies/ReactNativeDependencies.framework/ReactNativeDependencies",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/React.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/ReactNativeDependencies.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-HabitTracker/Pods-HabitTracker-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -330,21 +440,46 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				F85C0221F0A0CBEC49798CD6 /* ExpoModulesProvider.swift in Sources */,
+				5C7BF3380758104BADA2C6FB /* ExpoModulesProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C869AF06D53E4283A7A896B3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C55D46BC02E942F78DD28440 /* Color+hex.swift in Sources */,
+				C41F143F3B2C4451968D53CB /* Date+toTimerInterval.swift in Sources */,
+				42AEE1BDDFE943638F537052 /* Image+dynamic.swift in Sources */,
+				77A9B46A1A76443F9C0CC4D1 /* LiveActivityView.swift in Sources */,
+				5505ACF5F64F420396ED119E /* LiveActivityWidget.swift in Sources */,
+				75A3664A9EC541748F6836D8 /* LiveActivityWidgetBundle.swift in Sources */,
+				B7BCA276DE264A3296DA130D /* View+applyIfPresent.swift in Sources */,
+				9C72651A9D7D4ABABDD4EF37 /* View+applyWidgetURL.swift in Sources */,
+				08688D89BB8548C49E10AC05 /* ViewHelpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		493E60576C7E4FA78C50E88F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DF30D0D675A04A139BF374E4 /* HabitTrackerLiveActivity */;
+			targetProxy = 51395E23F06049F2A9269E1A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 28AA97205C8E9D9665BCE974 /* Pods-HabitTracker.debug.xcconfig */;
+			baseConfigurationReference = 1C47DEB0150DAC8BC6995267 /* Pods-HabitTracker.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = HabitTracker/HabitTracker.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SPJZZKVU87;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -375,12 +510,13 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1D68BCD2623EC20BBF368013 /* Pods-HabitTracker.release.xcconfig */;
+			baseConfigurationReference = A192B229ABF0C673A050DD14 /* Pods-HabitTracker.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = HabitTracker/HabitTracker.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SPJZZKVU87;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -521,6 +657,50 @@
 			};
 			name = Release;
 		};
+		E03DE8E9AD6E49108A92617C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitTrackerLiveActivity/HabitTrackerLiveActivity.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SPJZZKVU87;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTrackerLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HabitTrackerLiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MARKETING_VERSION = 1.0.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
+				PRODUCT_BUNDLE_IDENTIFIER = com.habittracker.app.HabitTrackerLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		FE6C632BF25D4710A0D7732A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HabitTrackerLiveActivity/HabitTrackerLiveActivity.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = SPJZZKVU87;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTrackerLiveActivity/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HabitTrackerLiveActivity;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				MARKETING_VERSION = 1.0.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
+				PRODUCT_BUNDLE_IDENTIFIER = com.habittracker.app.HabitTrackerLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -538,6 +718,15 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B08721473ADB4977B2182ED5 /* Build configuration list for PBXNativeTarget "HabitTrackerLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE6C632BF25D4710A0D7732A /* Debug */,
+				E03DE8E9AD6E49108A92617C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

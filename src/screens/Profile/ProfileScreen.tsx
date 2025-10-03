@@ -19,6 +19,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   updateNotificationSettings,
   updatePrivacySettings,
+  updateFeatureFlags,
   resetSettings,
 } from '@/store/slices/settingsSlice';
 import { supabase } from '@/services/supabase';
@@ -52,7 +53,7 @@ interface ProfileScreenProps {
 export default function ProfileScreen({ navigation }: ProfileScreenProps): React.JSX.Element {
   const { user, signOut } = useAuth();
   const dispatch = useAppDispatch();
-  const { notifications, preferences, privacy } = useAppSelector(state => state.settings);
+  const { notifications, preferences, privacy, featureFlags } = useAppSelector(state => state.settings);
   
   // UI state
   const [showSettings, setShowSettings] = useState(false);
@@ -310,6 +311,10 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
     dispatch(updatePrivacySettings({ [key]: value }));
   };
 
+  const handleFeatureFlagChange = (value: boolean) => {
+    dispatch(updateFeatureFlags({ sync: { useSystemSurfaces: value } }));
+  };
+
   const handleComingSoon = (feature: string) => {
     Alert.alert(
       'Coming Soon!',
@@ -519,6 +524,25 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
               onValueChange={(val) => handlePrivacyChange('dataAnalytics', val)}
               trackColor={{ false: '#E5E7EB', true: '#111827' }}
               thumbColor={privacy.dataAnalytics ? '#FFFFFF' : '#9CA3AF'}
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Advanced */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Advanced</Text>
+        <View style={styles.settingsList}>
+          <View style={styles.settingItem}>
+            <View style={styles.settingContent}>
+              <Text style={styles.settingLabel}>System Sync Surfaces</Text>
+              <Text style={styles.settingSubtitle}>Use Dynamic Island (iOS) / Ongoing Notification (Android)</Text>
+            </View>
+            <Switch
+              value={featureFlags?.sync?.useSystemSurfaces ?? false}
+              onValueChange={handleFeatureFlagChange}
+              trackColor={{ false: '#E5E7EB', true: '#111827' }}
+              thumbColor={(featureFlags?.sync?.useSystemSurfaces ?? false) ? '#FFFFFF' : '#9CA3AF'}
             />
           </View>
         </View>

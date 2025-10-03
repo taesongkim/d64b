@@ -25,6 +25,7 @@ import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
 import { since } from '@/_shared/perf';
+import SyncIndicator from '@/components/SyncIndicator/SyncIndicator';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
@@ -471,6 +472,7 @@ export default function DashboardScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SyncIndicator />
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
