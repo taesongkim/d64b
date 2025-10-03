@@ -10,7 +10,6 @@ import {
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
-import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -472,8 +471,7 @@ export default function DashboardScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
-      <NetworkStatusBanner />
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}

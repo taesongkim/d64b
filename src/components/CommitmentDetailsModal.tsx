@@ -111,12 +111,6 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
     );
   };
 
-  const getDeletedDaysAgo = () => {
-    if (!commitment?.deletedAt) return 0;
-    return Math.floor((Date.now() - new Date(commitment.deletedAt).getTime()) / (24 * 60 * 60 * 1000));
-  };
-
-
   const getTargetDisplay = () => {
     if (!commitment || commitment.commitmentType !== 'measurement') return '';
     
@@ -246,30 +240,9 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
               )}
             </View>
 
-            {/* Status and Actions Section */}
+            {/* Actions Section */}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Actions</Text>
-
-              {/* Status indicator */}
-              <View style={styles.statusSection}>
-                {isActive && (
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>Active</Text>
-                  </View>
-                )}
-                {isArchived && (
-                  <View style={[styles.statusBadge, styles.archivedBadge]}>
-                    <Text style={[styles.statusText, styles.archivedText]}>Archived</Text>
-                  </View>
-                )}
-                {isRecentlyDeleted && (
-                  <View style={[styles.statusBadge, styles.deletedBadge]}>
-                    <Text style={[styles.statusText, styles.deletedText]}>
-                      Deleted {getDeletedDaysAgo()} days ago
-                    </Text>
-                  </View>
-                )}
-              </View>
 
               {/* Action buttons */}
               <View style={styles.actionsSection}>
@@ -441,33 +414,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#9CA3AF',
     fontStyle: 'italic',
-  },
-  statusSection: {
-    marginBottom: 16,
-  },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#10B981',
-  },
-  archivedBadge: {
-    backgroundColor: '#F59E0B',
-  },
-  deletedBadge: {
-    backgroundColor: '#EF4444',
-  },
-  statusText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'white',
-  },
-  archivedText: {
-    color: 'white',
-  },
-  deletedText: {
-    color: 'white',
   },
   actionsSection: {
     gap: 12,
