@@ -136,8 +136,6 @@ export default function SyncIndicatorBanner({ state }: SyncIndicatorBannerProps)
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginTop: 8,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 8,

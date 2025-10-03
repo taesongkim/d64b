@@ -6,16 +6,18 @@ import type { RootStackParamList } from './types';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import NetworkStatusBanner from '@/components/NetworkStatusBanner';
+import SyncIndicatorOverlay from '@/components/SyncIndicator/SyncIndicatorOverlay';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-// Wrapper component for MainTabs with global NetworkStatusBanner
+// Wrapper component for MainTabs with global overlays
 function MainTabsWithBanner(): React.JSX.Element {
   return (
     <View style={styles.mainTabsContainer}>
       <MainTabs />
       <NetworkStatusBanner />
+      <SyncIndicatorOverlay />
     </View>
   );
 }
