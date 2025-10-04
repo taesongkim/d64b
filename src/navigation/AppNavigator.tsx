@@ -5,7 +5,6 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import type { RootStackParamList } from './types';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
-import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import SyncIndicatorOverlay from '@/components/SyncIndicator/SyncIndicatorOverlay';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,7 +15,6 @@ function MainTabsWithBanner(): React.JSX.Element {
   return (
     <View style={styles.mainTabsContainer}>
       <MainTabs />
-      <NetworkStatusBanner />
       <SyncIndicatorOverlay />
     </View>
   );

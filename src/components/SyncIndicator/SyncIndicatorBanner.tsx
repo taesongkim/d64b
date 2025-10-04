@@ -57,15 +57,15 @@ export default function SyncIndicatorBanner({ state }: SyncIndicatorBannerProps)
   const getLabel = () => {
     switch (state.phase) {
       case 'syncing':
-        return `Syncing ${state.queueCount}…`;
+        return state.queueCount > 0 ? `Syncing` : 'Syncing';
       case 'offline':
-        return `Offline — queued ${state.queueCount}`;
+        return state.queueCount > 0 ? `Offline • ${state.queueCount} pending` : 'Offline';
       case 'error':
-        return 'Sync error — tap to retry';
+        return state.lastError ? `Sync error: ${state.lastError}` : 'Sync error';
       case 'done':
         return 'All caught up';
       default:
-        return '';
+        return state.queueCount > 0 ? `${state.queueCount} pending sync` : '';
     }
   };
 
@@ -86,6 +86,11 @@ export default function SyncIndicatorBanner({ state }: SyncIndicatorBannerProps)
 
   if (state.phase === 'idle' && state.queueCount === 0) {
     return null;
+  }
+
+  // Handle pending sync state (when queue has items but not actively syncing)
+  if (state.phase === 'idle' && state.queueCount > 0) {
+    // This will show via the default case in getLabel()
   }
 
   const isError = state.phase === 'error';
