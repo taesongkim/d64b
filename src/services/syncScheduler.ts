@@ -176,8 +176,47 @@ class SyncScheduler {
           deletedAt: c.deleted_at || null,
         }));
 
-        // Update Redux store
-        store.dispatch(setCommitments(convertedCommitments));
+        // Smart merge with existing Redux state to respect local changes
+        const currentState = store.getState();
+        const currentCommitments = currentState.commitments.commitments;
+        const syncQueue = currentState.sync.queue;
+
+        // Create a map of commitments that have pending sync operations
+        const pendingSyncCommitmentIds = new Set(
+          syncQueue
+            .filter(item => item.entity === 'commitment')
+            .map(item => item.entityId)
+        );
+
+        // Merge logic: prefer local state for items with pending sync operations
+        const mergedCommitments = convertedCommitments.map(dbCommitment => {
+          const hasPendingSync = pendingSyncCommitmentIds.has(dbCommitment.id);
+          const localCommitment = currentCommitments.find(c => c.id === dbCommitment.id);
+
+          if (hasPendingSync && localCommitment) {
+            // Keep local state for items that have pending sync operations
+            // But update non-conflicting fields from database
+            return {
+              ...dbCommitment,
+              archived: localCommitment.archived,
+              deletedAt: localCommitment.deletedAt,
+              isActive: localCommitment.isActive,
+            };
+          }
+
+          return dbCommitment;
+        });
+
+        // Add any local-only commitments that might not exist in database yet
+        const dbCommitmentIds = new Set(convertedCommitments.map(c => c.id));
+        const localOnlyCommitments = currentCommitments.filter(
+          c => !dbCommitmentIds.has(c.id)
+        );
+
+        const finalCommitments = [...mergedCommitments, ...localOnlyCommitments];
+
+        // Update Redux store with smart-merged data
+        store.dispatch(setCommitments(finalCommitments));
 
         console.log('✅ SyncScheduler: Commitments synced');
       }

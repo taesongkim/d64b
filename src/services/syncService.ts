@@ -159,16 +159,16 @@ export class SyncService {
         const data = item.data;
 
         if (data.idempotencyKey?.includes(':archive')) {
-          await commitmentService.setArchived(item.entityId, data.archived);
-          console.log(`✅ Synced archive status for commitment ${item.entityId}:`, data.archived);
+          await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
+          console.log(`✅ Synced archive status for commitment ${item.entityId}:`, { archived: data.archived, is_active: data.is_active });
         } else if (data.idempotencyKey?.includes(':restore')) {
-          await commitmentService.setArchived(item.entityId, data.archived);
-          await commitmentService.setDeletedAt(item.entityId, data.deletedAt);
-          console.log(`✅ Synced restore for commitment ${item.entityId}`);
+          await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
+          await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
+          console.log(`✅ Synced restore for commitment ${item.entityId}:`, { archived: data.archived, deletedAt: data.deletedAt, is_active: data.is_active });
         } else if (data.idempotencyKey?.includes(':deletedAt:')) {
-          await commitmentService.setDeletedAt(item.entityId, data.deletedAt);
-          await commitmentService.setArchived(item.entityId, data.archived);
-          console.log(`✅ Synced soft delete for commitment ${item.entityId}:`, data.deletedAt);
+          await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
+          await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
+          console.log(`✅ Synced soft delete for commitment ${item.entityId}:`, { deletedAt: data.deletedAt, archived: data.archived, is_active: data.is_active });
         } else {
           // Regular update
           console.log('Would sync UPDATE commitment:', item.data);
