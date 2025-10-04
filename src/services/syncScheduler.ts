@@ -106,25 +106,28 @@ class SyncScheduler {
     }
   }
 
+  private currentUserId: string | null = null;
+
+  public setUserId(userId: string | null) {
+    this.currentUserId = userId;
+  }
+
   private async performSync() {
     if (!this.isOnline) {
       console.log('🔄 SyncScheduler: Skipping sync - offline');
       return;
     }
 
+    if (!this.currentUserId) {
+      console.log('🔄 SyncScheduler: No authenticated user, skipping sync');
+      return;
+    }
+
     try {
       console.log('🔄 SyncScheduler: Starting sync operations...');
 
-      const state = store.getState();
-      const userId = state.auth?.user?.id;
-
-      if (!userId) {
-        console.log('🔄 SyncScheduler: No authenticated user, skipping sync');
-        return;
-      }
-
       // Sync commitments data
-      await this.syncCommitments(userId);
+      await this.syncCommitments(this.currentUserId);
 
       // Refresh friends charts
       triggerFriendsChartsRefresh();
@@ -205,3 +208,4 @@ export const startSync = () => syncScheduler.start();
 export const stopSync = () => syncScheduler.stop();
 export const configureSync = (config: Partial<SyncSchedulerConfig>) => syncScheduler.configure(config);
 export const triggerManualSync = () => syncScheduler.triggerManualSync();
+export const setSyncUserId = (userId: string | null) => syncScheduler.setUserId(userId);
