@@ -168,6 +168,7 @@ export const archiveCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
     data: {
       id,
       archived: true,
+      is_active: false, // Ensure friends can't see archived commitments
       idempotencyKey: `${commitment.userId}:${id}:archive`
     }
   }));
@@ -190,6 +191,7 @@ export const restoreCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
       id,
       archived: false,
       deletedAt: null,
+      is_active: true, // Restore visibility to friends
       idempotencyKey: `${commitment.userId}:${id}:restore`
     }
   }));
@@ -215,6 +217,7 @@ export const softDeleteCommitmentThunk = (id: string) => (dispatch: AppDispatch,
       id,
       archived: false,
       deletedAt,
+      is_active: false, // Ensure friends can't see deleted commitments
       idempotencyKey: `${commitment.userId}:${id}:deletedAt:${today}`
     }
   }));
