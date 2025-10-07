@@ -25,7 +25,7 @@ import { getUserCommitments, createCommitment, updateCommitment as updateCommitm
 import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
-import { triggerManualSync } from '@/services/syncScheduler';
+import { triggerManualSync, setSyncUserId } from '@/services/syncScheduler';
 import { since } from '@/_shared/perf';
 
 export default function DashboardScreen(): React.JSX.Element {
@@ -249,6 +249,10 @@ export default function DashboardScreen(): React.JSX.Element {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
+      // Ensure sync scheduler has current user ID before triggering sync
+      if (user?.id) {
+        setSyncUserId(user.id);
+      }
       await triggerManualSync();
       console.log('🔄 Manual sync completed');
     } catch (error) {

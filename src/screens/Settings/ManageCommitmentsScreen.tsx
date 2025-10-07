@@ -16,8 +16,10 @@ import {
   softDeleteCommitmentThunk,
   permanentDeleteCommitmentThunk,
   purgeExpiredDeleted,
+  loadAllCommitmentsThunk,
   type Commitment,
 } from '@/store/slices/commitmentsSlice';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ManageCommitmentsScreenProps {
   navigation: any;
@@ -25,13 +27,17 @@ interface ManageCommitmentsScreenProps {
 
 const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navigation }) => {
   const dispatch = useAppDispatch();
+  const { user } = useAuth();
   const archivedCommitments = useAppSelector(selectArchivedCommitments);
   const recentlyDeletedCommitments = useAppSelector(selectRecentlyDeletedCommitments);
 
-  // Purge expired deleted items on mount
+  // Load all commitments (including archived and deleted) on mount
   useEffect(() => {
+    if (user?.id) {
+      dispatch(loadAllCommitmentsThunk(user.id));
+    }
     dispatch(purgeExpiredDeleted());
-  }, [dispatch]);
+  }, [dispatch, user?.id]);
 
   const handleRestore = (id: string) => {
     dispatch(restoreCommitmentThunk(id));

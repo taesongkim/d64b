@@ -35,6 +35,24 @@ export async function getUserCommitments(userId: string) {
   return { commitments: data, error };
 }
 
+export async function getAllUserCommitments(userId: string) {
+  console.log('🔍 getAllUserCommitments called for userId:', userId);
+
+  const { data, error } = await supabase
+    .from('commitments')
+    .select('*, archived, deleted_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  console.log('🔍 getAllUserCommitments result:', {
+    dataCount: data?.length || 0,
+    error: error?.message || 'No error',
+    firstCommitment: data?.[0]?.id || 'None'
+  });
+
+  return { commitments: data, error };
+}
+
 export async function updateCommitment(id: string, updates: CommitmentUpdate) {
   const { data, error } = await supabase
     .from('commitments')
@@ -59,7 +77,9 @@ export async function deleteCommitment(id: string) {
 
 // Archive/Delete operations
 export async function setArchived(id: string, archived: boolean, options?: { is_active?: boolean }) {
-  const updates: any = { archived };
+  const updates: any = {
+    archived
+  };
 
   // When archiving, set is_active to false by default (unless explicitly overridden)
   // When unarchiving (archived: false), set is_active to true by default

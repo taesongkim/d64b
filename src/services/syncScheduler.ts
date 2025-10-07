@@ -4,6 +4,7 @@ import { store } from '@/store';
 import { triggerFriendsChartsRefresh } from '@/hooks/useFriendsCharts';
 import { getUserCommitments } from './commitments';
 import { setCommitments } from '@/store/slices/commitmentsSlice';
+import { setSyncing } from '@/store/slices/syncSlice';
 
 export interface SyncSchedulerConfig {
   periodicInterval: number; // milliseconds
@@ -125,6 +126,7 @@ class SyncScheduler {
 
     try {
       console.log('🔄 SyncScheduler: Starting sync operations...');
+      store.dispatch(setSyncing(true));
 
       // Sync commitments data
       await this.syncCommitments(this.currentUserId);
@@ -136,6 +138,8 @@ class SyncScheduler {
 
     } catch (error) {
       console.error('❌ SyncScheduler: Sync failed:', error);
+    } finally {
+      store.dispatch(setSyncing(false));
     }
   }
 

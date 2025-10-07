@@ -36,6 +36,17 @@ export const useFriendsCharts = (userId: string | undefined) => {
           count: data.length,
           friends: data.map(f => ({ id: f.friend.id, name: f.friend.full_name || f.friend.email, commitments: f.commitments.length }))
         });
+
+        // 🔍 DETAILED DEBUG: Log all commitment IDs for friend 8a1e7367-9995-4ae4-983a-519936ce7b87
+        const targetFriend = data.find(f => f.friend.id === '8a1e7367-9995-4ae4-983a-519936ce7b87');
+        if (targetFriend) {
+          console.log('🔍 HOOK DEBUG - Friend 8a1e7367 commitments:', {
+            count: targetFriend.commitments.length,
+            commitmentIds: targetFriend.commitments.map(c => c.id),
+            hasArchivedCommitment: targetFriend.commitments.some(c => c.id === 'd77e7fcb-47b6-41b3-ae5c-206944154596')
+          });
+        }
+
         setFriendsCharts(data);
       }
     } catch (error) {
