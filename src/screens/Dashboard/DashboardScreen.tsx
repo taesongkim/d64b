@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  ScrollView
+  ScrollView,
+  RefreshControl
 } from 'react-native';
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
-import NetworkStatusBanner from '@/components/NetworkStatusBanner';
 import CompletionAnimation from '@/components/CompletionAnimation';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -25,6 +25,7 @@ import { getUserCommitments, createCommitment, updateCommitment as updateCommitm
 import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
+import { triggerManualSync, setSyncUserId } from '@/services/syncScheduler';
 import { since } from '@/_shared/perf';
 
 export default function DashboardScreen(): React.JSX.Element {
@@ -239,9 +240,27 @@ export default function DashboardScreen(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
   const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Use the friends charts hook for global state management
   const { friendsCharts, friendsChartsLoading } = useFriendsCharts(user?.id);
+
+  // Handle pull-to-refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Ensure sync scheduler has current user ID before triggering sync
+      if (user?.id) {
+        setSyncUserId(user.id);
+      }
+      await triggerManualSync();
+      console.log('🔄 Manual sync completed');
+    } catch (error) {
+      console.error('❌ Manual sync failed:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
   
   const handleCellPress = (commitmentId: string, date: string) => {
     // Check if record currently exists to determine which status to set
@@ -472,11 +491,17 @@ export default function DashboardScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container}>
-      <NetworkStatusBanner />
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#111827"
+          />
+        }
       >
         <View style={styles.header}>
           <View>

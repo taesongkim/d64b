@@ -33,12 +33,11 @@
       "assets/fonts/*"
     ],
     "extra": {
-      "eas": {
-        "projectId": "1c50e79d-08ec-4bfb-9c13-66461c84b249"
-      }
+      "eas": {}
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-live-activity"
     ]
   }
 }

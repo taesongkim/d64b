@@ -85,7 +85,7 @@ export class SyncService {
    */
   private static async processSyncQueue(): Promise<void> {
     const state = store.getState();
-    
+
     if (!state.sync.isOnline || state.sync.isSyncing || state.sync.queue.length === 0) {
       return;
     }
@@ -147,7 +147,7 @@ export class SyncService {
    * Sync commitment with server
    */
   private static async syncCommitment(item: SyncAction): Promise<void> {
-    console.log(`🔄 Syncing commitment ${item.type}:`, { entityId: item.entityId, data: item.data });
+    console.log(`Syncing commitment ${item.type}:`, { entityId: item.entityId });
 
     switch (item.type) {
       case 'CREATE':
@@ -159,26 +159,29 @@ export class SyncService {
         const data = item.data;
 
         if (data.idempotencyKey?.includes(':archive')) {
-          await commitmentService.setArchived(item.entityId, data.archived);
-          console.log(`✅ Synced archive status for commitment ${item.entityId}:`, data.archived);
+          const result = await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
+          if (result.error) {
+            throw new Error(`setArchived failed: ${result.error.message}`);
+          }
+          console.log(`Synced archive status for commitment ${item.entityId}`);
         } else if (data.idempotencyKey?.includes(':restore')) {
-          await commitmentService.setArchived(item.entityId, data.archived);
-          await commitmentService.setDeletedAt(item.entityId, data.deletedAt);
-          console.log(`✅ Synced restore for commitment ${item.entityId}`);
+          await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
+          await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
+          console.log(`Synced restore for commitment ${item.entityId}`);
         } else if (data.idempotencyKey?.includes(':deletedAt:')) {
-          await commitmentService.setDeletedAt(item.entityId, data.deletedAt);
-          await commitmentService.setArchived(item.entityId, data.archived);
-          console.log(`✅ Synced soft delete for commitment ${item.entityId}:`, data.deletedAt);
+          await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
+          await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
+          console.log(`Synced soft delete for commitment ${item.entityId}`);
         } else {
           // Regular update
-          console.log('Would sync UPDATE commitment:', item.data);
+          console.log('No matching idempotency pattern for UPDATE');
         }
         break;
 
       case 'DELETE':
         if (item.data?.idempotencyKey?.includes(':permaDelete:')) {
           await commitmentService.permanentDelete(item.entityId);
-          console.log(`✅ Synced permanent delete for commitment ${item.entityId}`);
+          console.log(`Synced permanent delete for commitment ${item.entityId}`);
         } else {
           console.log('Would sync DELETE commitment:', item.entityId);
         }

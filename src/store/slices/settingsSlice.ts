@@ -23,10 +23,17 @@ export interface PrivacySettings {
   dataAnalytics: boolean;
 }
 
+export interface FeatureFlags {
+  sync: {
+    useSystemSurfaces: boolean;
+  };
+}
+
 interface SettingsState {
   notifications: NotificationSettings;
   preferences: AppPreferences;
   privacy: PrivacySettings;
+  featureFlags: FeatureFlags;
   isLoading: boolean;
   error: string | null;
 }
@@ -52,6 +59,11 @@ const initialState: SettingsState = {
     allowFriendRequests: true,
     dataAnalytics: true,
   },
+  featureFlags: {
+    sync: {
+      useSystemSurfaces: false,
+    },
+  },
   isLoading: false,
   error: null,
 };
@@ -75,16 +87,21 @@ const settingsSlice = createSlice({
     updatePrivacySettings: (state, action: PayloadAction<Partial<PrivacySettings>>) => {
       state.privacy = { ...state.privacy, ...action.payload };
     },
+    updateFeatureFlags: (state, action: PayloadAction<Partial<FeatureFlags>>) => {
+      state.featureFlags = { ...state.featureFlags, ...action.payload };
+    },
     resetSettings: (state) => {
       state.notifications = initialState.notifications;
       state.preferences = initialState.preferences;
       state.privacy = initialState.privacy;
+      state.featureFlags = initialState.featureFlags;
     },
     importSettings: (state, action: PayloadAction<Partial<SettingsState>>) => {
-      const { notifications, preferences, privacy } = action.payload;
+      const { notifications, preferences, privacy, featureFlags } = action.payload;
       if (notifications) state.notifications = { ...state.notifications, ...notifications };
       if (preferences) state.preferences = { ...state.preferences, ...preferences };
       if (privacy) state.privacy = { ...state.privacy, ...privacy };
+      if (featureFlags) state.featureFlags = { ...state.featureFlags, ...featureFlags };
     },
   },
 });
@@ -95,6 +112,7 @@ export const {
   updateNotificationSettings,
   updateAppPreferences,
   updatePrivacySettings,
+  updateFeatureFlags,
   resetSettings,
   importSettings,
 } = settingsSlice.actions;

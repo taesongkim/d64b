@@ -4,6 +4,7 @@ import { supabase } from '@/services/supabase';
 import { generateUsernameSuggestion, checkUsernameAvailability } from '@/utils/usernameValidation';
 import { store, persistor, logoutGlobal } from '@/store';
 import { SyncService } from '@/services/syncService';
+import { syncScheduler, setSyncUserId } from '@/services/syncScheduler';
 import { purgeExpiredDeleted } from '@/store/slices/commitmentsSlice';
 
 interface AuthContextType {
@@ -46,6 +47,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
           store.dispatch(purgeExpiredDeleted());
           console.log('🧹 Purged expired deleted commitments');
 
+          // Set user ID for sync scheduler and start it
+          setSyncUserId(session.user.id);
+          syncScheduler.start();
+          console.log('🔄 Started sync scheduler with user ID');
+
           // Check if profile exists, create if it doesn't
           const { data: profile } = await supabase
             .from('profiles')
@@ -68,6 +74,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
           setSession(null);
           (async () => {
             try { SyncService.stop(); } catch (e) { console.warn('SyncService.stop failed', e); }
+            try { setSyncUserId(null); } catch (e) { console.warn('setSyncUserId(null) failed', e); }
+            try { syncScheduler.stop(); } catch (e) { console.warn('syncScheduler.stop failed', e); }
             try { store.dispatch(logoutGlobal()); } catch (e) { console.warn('logoutGlobal dispatch failed', e); }
             try { await persistor.purge(); } catch (e) { console.warn('persistor.purge failed', e); }
           })();
@@ -160,6 +168,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
     // Idempotent fallback if SIGNED_OUT event is delayed or missed
     (async () => {
       try { SyncService.stop(); } catch {}
+      try { setSyncUserId(null); } catch {}
+      try { syncScheduler.stop(); } catch {}
       try { store.dispatch(logoutGlobal()); } catch {}
       try { await persistor.purge(); } catch {}
     })();

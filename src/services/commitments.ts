@@ -35,6 +35,24 @@ export async function getUserCommitments(userId: string) {
   return { commitments: data, error };
 }
 
+export async function getAllUserCommitments(userId: string) {
+  console.log('🔍 getAllUserCommitments called for userId:', userId);
+
+  const { data, error } = await supabase
+    .from('commitments')
+    .select('*, archived, deleted_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  console.log('🔍 getAllUserCommitments result:', {
+    dataCount: data?.length || 0,
+    error: error?.message || 'No error',
+    firstCommitment: data?.[0]?.id || 'None'
+  });
+
+  return { commitments: data, error };
+}
+
 export async function updateCommitment(id: string, updates: CommitmentUpdate) {
   const { data, error } = await supabase
     .from('commitments')
@@ -58,10 +76,22 @@ export async function deleteCommitment(id: string) {
 }
 
 // Archive/Delete operations
-export async function setArchived(id: string, archived: boolean) {
+export async function setArchived(id: string, archived: boolean, options?: { is_active?: boolean }) {
+  const updates: any = {
+    archived
+  };
+
+  // When archiving, set is_active to false by default (unless explicitly overridden)
+  // When unarchiving (archived: false), set is_active to true by default
+  if (options?.is_active !== undefined) {
+    updates.is_active = options.is_active;
+  } else {
+    updates.is_active = !archived; // archived = true -> is_active = false, and vice versa
+  }
+
   const { data, error } = await supabase
     .from('commitments')
-    .update({ archived })
+    .update(updates)
     .eq('id', id)
     .select()
     .single();
@@ -69,10 +99,20 @@ export async function setArchived(id: string, archived: boolean) {
   return { data, error };
 }
 
-export async function setDeletedAt(id: string, deletedAt: string | null) {
+export async function setDeletedAt(id: string, deletedAt: string | null, options?: { is_active?: boolean }) {
+  const updates: any = { deleted_at: deletedAt };
+
+  // When soft deleting (setting timestamp), set is_active to false by default
+  // When restoring (setting null), set is_active to true by default
+  if (options?.is_active !== undefined) {
+    updates.is_active = options.is_active;
+  } else {
+    updates.is_active = deletedAt === null; // deleted_at = null -> is_active = true, and vice versa
+  }
+
   const { data, error } = await supabase
     .from('commitments')
-    .update({ deleted_at: deletedAt })
+    .update(updates)
     .eq('id', id)
     .select()
     .single();

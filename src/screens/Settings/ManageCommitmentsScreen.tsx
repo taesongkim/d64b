@@ -16,8 +16,10 @@ import {
   softDeleteCommitmentThunk,
   permanentDeleteCommitmentThunk,
   purgeExpiredDeleted,
+  loadAllCommitmentsThunk,
   type Commitment,
 } from '@/store/slices/commitmentsSlice';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ManageCommitmentsScreenProps {
   navigation: any;
@@ -25,13 +27,17 @@ interface ManageCommitmentsScreenProps {
 
 const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navigation }) => {
   const dispatch = useAppDispatch();
+  const { user } = useAuth();
   const archivedCommitments = useAppSelector(selectArchivedCommitments);
   const recentlyDeletedCommitments = useAppSelector(selectRecentlyDeletedCommitments);
 
-  // Purge expired deleted items on mount
+  // Load all commitments (including archived and deleted) on mount
   useEffect(() => {
+    if (user?.id) {
+      dispatch(loadAllCommitmentsThunk(user.id));
+    }
     dispatch(purgeExpiredDeleted());
-  }, [dispatch]);
+  }, [dispatch, user?.id]);
 
   const handleRestore = (id: string) => {
     dispatch(restoreCommitmentThunk(id));
@@ -75,14 +81,12 @@ const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navig
           style={[styles.actionButton, styles.restoreButton]}
           onPress={() => handleRestore(item.id)}
         >
-          <Text style={styles.actionIcon}>↩️</Text>
           <Text style={[styles.actionText, styles.restoreText]}>Restore</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleSoftDelete(item.id, item.title)}
         >
-          <Text style={styles.actionIcon}>🗑️</Text>
           <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
         </TouchableOpacity>
       </View>
@@ -103,14 +107,12 @@ const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navig
           style={[styles.actionButton, styles.restoreButton]}
           onPress={() => handleRestore(item.id)}
         >
-          <Text style={styles.actionIcon}>↩️</Text>
           <Text style={[styles.actionText, styles.restoreText]}>Undelete</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, styles.permanentDeleteButton]}
           onPress={() => handlePermanentDelete(item.id, item.title)}
         >
-          <Text style={styles.actionIcon}>🗑️</Text>
           <Text style={[styles.actionText, styles.permanentDeleteText]}>Delete Forever</Text>
         </TouchableOpacity>
       </View>
@@ -250,16 +252,16 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   actions: {
-    flexDirection: 'row',
-    gap: 8,
+    flexDirection: 'column',
+    gap: 6,
   },
   actionButton: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
-    gap: 4,
+    minWidth: 80,
   },
   restoreButton: {
     backgroundColor: '#ECFDF5',
@@ -275,10 +277,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FECACA',
-  },
-  actionIcon: {
-    fontSize: 14,
-    marginRight: 4,
   },
   actionText: {
     fontSize: 14,

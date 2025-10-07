@@ -5,9 +5,20 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import type { RootStackParamList } from './types';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
+import SyncIndicatorOverlay from '@/components/SyncIndicator/SyncIndicatorOverlay';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// Wrapper component for MainTabs with global overlays
+function MainTabsWithBanner(): React.JSX.Element {
+  return (
+    <View style={styles.mainTabsContainer}>
+      <MainTabs />
+      <SyncIndicatorOverlay />
+    </View>
+  );
+}
 
 export default function AppNavigator(): React.JSX.Element {
   const { user, loading } = useAuth();
@@ -39,7 +50,7 @@ export default function AppNavigator(): React.JSX.Element {
         }}
       >
         {user ? (
-          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="MainTabs" component={MainTabsWithBanner} />
         ) : (
           <Stack.Screen name="AuthStack" component={AuthStack} />
         )}
@@ -54,5 +65,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FAFAFA',
+  },
+  mainTabsContainer: {
+    flex: 1,
   },
 });

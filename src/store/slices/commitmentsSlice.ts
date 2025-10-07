@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import type { RootState, AppDispatch } from '../index';
 import { addToQueue } from './syncSlice';
+import { getAllUserCommitments } from '@/services/commitments';
 
 export interface Commitment {
   id: string;
@@ -52,6 +53,9 @@ const commitmentsSlice = createSlice({
     setCommitments: (state, action: PayloadAction<Commitment[]>) => {
       state.commitments = action.payload;
     },
+    setAllCommitments: (state, action: PayloadAction<Commitment[]>) => {
+      state.commitments = action.payload;
+    },
     addCommitment: (state, action: PayloadAction<Commitment>) => {
       state.commitments.push(action.payload);
     },
@@ -85,6 +89,7 @@ const commitmentsSlice = createSlice({
       const commitment = state.commitments.find(c => c.id === action.payload);
       if (commitment) {
         commitment.archived = true;
+        commitment.isActive = false; // Update isActive to match database
         commitment.deletedAt = null; // Ensure mutual exclusivity
       }
     },
@@ -92,6 +97,7 @@ const commitmentsSlice = createSlice({
       const commitment = state.commitments.find(c => c.id === action.payload);
       if (commitment) {
         commitment.archived = false;
+        commitment.isActive = true; // Update isActive to match database
         commitment.deletedAt = null;
       }
     },
@@ -99,6 +105,7 @@ const commitmentsSlice = createSlice({
       const commitment = state.commitments.find(c => c.id === action.payload);
       if (commitment) {
         commitment.archived = false; // Ensure mutual exclusivity
+        commitment.isActive = false; // Update isActive to match database
         commitment.deletedAt = new Date().toISOString();
       }
     },
@@ -120,6 +127,7 @@ export const {
   setLoading,
   setError,
   setCommitments,
+  setAllCommitments,
   addCommitment,
   updateCommitment,
   deleteCommitment,
@@ -135,7 +143,7 @@ export const {
 // Memoized selectors
 export const selectActiveCommitments = createSelector(
   (state: RootState) => state.commitments.commitments,
-  (commitments) => commitments.filter(c => !c.archived && !c.deletedAt)
+  (commitments) => commitments.filter(c => c.isActive)
 );
 
 export const selectArchivedCommitments = createSelector(
@@ -168,6 +176,7 @@ export const archiveCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
     data: {
       id,
       archived: true,
+      is_active: false, // Ensure friends can't see archived commitments
       idempotencyKey: `${commitment.userId}:${id}:archive`
     }
   }));
@@ -190,6 +199,7 @@ export const restoreCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
       id,
       archived: false,
       deletedAt: null,
+      is_active: true, // Restore visibility to friends
       idempotencyKey: `${commitment.userId}:${id}:restore`
     }
   }));
@@ -215,6 +225,7 @@ export const softDeleteCommitmentThunk = (id: string) => (dispatch: AppDispatch,
       id,
       archived: false,
       deletedAt,
+      is_active: false, // Ensure friends can't see deleted commitments
       idempotencyKey: `${commitment.userId}:${id}:deletedAt:${today}`
     }
   }));
@@ -240,6 +251,52 @@ export const permanentDeleteCommitmentThunk = (id: string) => (dispatch: AppDisp
       idempotencyKey: `${commitment.userId}:${id}:permaDelete:${timestamp}`
     }
   }));
+};
+
+// Thunk to load all commitments (including archived and deleted) for management page
+export const loadAllCommitmentsThunk = (userId: string) => async (dispatch: AppDispatch) => {
+  try {
+    dispatch(setLoading(true));
+    const { commitments, error } = await getAllUserCommitments(userId);
+
+    if (error) {
+      dispatch(setError(error.message || 'Failed to load commitments'));
+      return;
+    }
+
+    if (commitments) {
+      // Convert to Redux format
+      const convertedCommitments = commitments.map(c => ({
+        id: c.id,
+        userId: c.user_id,
+        title: c.title,
+        description: c.description || undefined,
+        color: c.color,
+        commitmentType: c.commitment_type || 'checkbox',
+        target: c.target,
+        unit: c.unit,
+        requirements: c.requirements,
+        ratingRange: c.rating_range,
+        type: c.commitment_type === 'checkbox' && !c.requirements ? 'binary' as const :
+              c.commitment_type === 'checkbox' && c.requirements ? 'binary' as const :
+              c.commitment_type === 'measurement' && c.rating_range ? 'counter' as const : 'timer' as const,
+        streak: 0, // Will be calculated from records
+        bestStreak: 0, // Will be calculated from records
+        isActive: c.is_active,
+        isPrivate: c.is_private || false,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        archived: c.archived || false,
+        deletedAt: c.deleted_at || null,
+      }));
+
+      dispatch(setAllCommitments(convertedCommitments));
+    }
+  } catch (error) {
+    dispatch(setError(error instanceof Error ? error.message : 'Failed to load commitments'));
+  } finally {
+    dispatch(setLoading(false));
+  }
 };
 
 export default commitmentsSlice.reducer;
