@@ -11,11 +11,11 @@ import {
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
-import CompletionAnimation from '@/components/CompletionAnimation';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
 import { toggleRecord, setRecordStatus, setRecords, type RecordStatus } from '@/store/slices/recordsSlice';
+import { addToQueue } from '@/store/slices/syncSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
@@ -236,7 +236,6 @@ export default function DashboardScreen(): React.JSX.Element {
   }, [user?.id, commitments.length, dispatch]);
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
   const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
@@ -273,67 +272,53 @@ export default function DashboardScreen(): React.JSX.Element {
       handleSetRecordStatus(commitmentId, date, 'none');
     } else {
       // If no record exists, mark as completed
-      setShowCompletionAnimation(true);
       handleSetRecordStatus(commitmentId, date, 'completed');
     }
   };
 
-  const handleSetRecordStatus = async (commitmentId: string, date: string, status: RecordStatus, value?: any) => {
+  const handleSetRecordStatus = (commitmentId: string, date: string, status: RecordStatus, value?: any) => {
     if (!user?.id) {
       console.error('❌ Cannot update record: No authenticated user');
       return;
     }
 
-    console.log('📝 Updating record status:', { commitmentId, date, status, userId: user.id });
+    console.log('📝 Updating record status (optimistic):', { commitmentId, date, status, userId: user.id });
 
-    try {
-      // Handle database operations based on status
-      if (status !== 'none') {
-        // Save/update record to Supabase
-        const recordData = {
+    // STEP 1: Optimistic update - immediately update Redux state for instant UI feedback
+    dispatch(setRecordStatus({ commitmentId, date, status, value }));
+
+    // STEP 2: Add to sync queue for background database sync
+    const recordData = status !== 'none' ? {
+      commitment_id: commitmentId,
+      completed_at: `${date}T12:00:00Z`,
+      notes: null,
+      user_id: user.id,
+      status: status === 'completed' ? 'complete' : status,
+      value: value || null,
+    } : null;
+
+    if (status !== 'none') {
+      // CREATE/UPDATE record
+      dispatch(addToQueue({
+        type: 'CREATE',
+        entity: 'record',
+        entityId: `${commitmentId}_${date}`,
+        data: recordData
+      }));
+    } else {
+      // DELETE record
+      dispatch(addToQueue({
+        type: 'DELETE',
+        entity: 'record',
+        entityId: `${commitmentId}_${date}`,
+        data: {
           commitment_id: commitmentId,
-          completed_at: `${date}T12:00:00Z`, // Use noon UTC for the date
-          notes: null,
-          user_id: user.id,
-          status: status === 'completed' ? 'complete' : status,
-          value: value || null, // Include the value for non-binary commitments
-        };
-
-        console.log('💾 Saving record to Supabase...');
-        const { data, error } = await upsertCommitmentRecord(recordData);
-        
-        if (error) {
-          console.error('❌ Failed to save record to database:', error);
-          // Still update Redux for offline functionality
-        } else {
-          console.log('✅ Record saved to database:', data?.id);
+          completed_at: `${date}T12:00:00Z`
         }
-      } else {
-        // Delete record from Supabase when status is 'none'
-        console.log('🗑️ Deleting record from Supabase...');
-        const { error } = await deleteCommitmentRecordByDate(commitmentId, `${date}T12:00:00Z`);
-        
-        if (error) {
-          console.error('❌ Failed to delete record from database:', error);
-          // Still update Redux for offline functionality
-        } else {
-          console.log('✅ Record deleted from database');
-        }
-      }
-
-      // Update Redux state
-      dispatch(setRecordStatus({ commitmentId, date, status, value }));
-
-      // Handle completion animation
-      if (status === 'completed') {
-        setShowCompletionAnimation(true);
-      }
-      
-    } catch (error) {
-      console.error('💥 Unexpected error saving record:', error);
-      // Still update Redux for offline functionality
-      dispatch(setRecordStatus({ commitmentId, date, status, value }));
+      }));
     }
+
+    console.log('✅ Record update queued for sync');
   };
 
   const handleAddCommitment = async (commitmentData: Omit<Commitment, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
@@ -624,11 +609,7 @@ export default function DashboardScreen(): React.JSX.Element {
         onPermanentDelete={handlePermanentDeleteCommitment}
       />
 
-      
-      <CompletionAnimation
-        visible={showCompletionAnimation}
-        onComplete={() => setShowCompletionAnimation(false)}
-      />
+
     </SafeAreaView>
   );
 }

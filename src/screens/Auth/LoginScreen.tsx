@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   TextInput,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '@/navigation/types';
@@ -24,6 +25,7 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [showResendConfirmation, setShowResendConfirmation] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [showTestLoginModal, setShowTestLoginModal] = useState(false);
   const { signIn } = useAuth();
 
   const handleLogin = async (): Promise<void> => {
@@ -100,6 +102,31 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
   const handleSocialLogin = (provider: string): void => {
     console.log(`Login with ${provider}`);
     // TODO: Implement social login
+  };
+
+  const handleTestLogin = async (testUser: 'taesongkim' | 'shapes' | 'orikiri'): Promise<void> => {
+    const credentials = {
+      taesongkim: { email: 'justin@taesongkim.com', password: 'taes0ngA,' },
+      shapes: { email: 'justin@shapeswithsoul.com', password: 'taes0ngA,' },
+      orikiri: { email: 'justin@orikiri.com', password: 'taes0ngA,' },
+    };
+
+    const { email: testEmail, password: testPassword } = credentials[testUser];
+
+    setShowTestLoginModal(false);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await signIn(testEmail, testPassword);
+      if (error) {
+        setError(error.message);
+      }
+    } catch (err) {
+      setError('Test login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -205,15 +232,61 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
           </Text>
         </TouchableOpacity>
 
-        {/* Dev Mode Bypass - Remove in production */}
+        {/* Dev Mode Test Logins - Remove in production */}
         {__DEV__ && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.devBypassButton}
-            onPress={() => navigation.getParent()?.navigate('MainTabs')}
+            onPress={() => setShowTestLoginModal(true)}
           >
-            <Text style={styles.devBypassText}>👨‍💻 Dev Mode: Skip Login</Text>
+            <Text style={styles.devBypassText}>Dev Mode: Test Logins</Text>
           </TouchableOpacity>
         )}
+
+        {/* Test Login Modal */}
+        <Modal
+          visible={showTestLoginModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowTestLoginModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Test User Logins</Text>
+
+              <TouchableOpacity
+                style={styles.testLoginButton}
+                onPress={() => handleTestLogin('taesongkim')}
+                disabled={loading}
+              >
+                <Text style={styles.testLoginButtonText}>taesongkim</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.testLoginButton}
+                onPress={() => handleTestLogin('shapes')}
+                disabled={loading}
+              >
+                <Text style={styles.testLoginButtonText}>shapes</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.testLoginButton}
+                onPress={() => handleTestLogin('orikiri')}
+                disabled={loading}
+              >
+                <Text style={styles.testLoginButtonText}>orikiri</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => setShowTestLoginModal(false)}
+                disabled={loading}
+              >
+                <Text style={styles.modalCancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </View>
     </KeyboardAvoidingView>
   );
@@ -360,5 +433,51 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    minWidth: 280,
+    maxWidth: 320,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  testLoginButton: {
+    backgroundColor: '#111827',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  testLoginButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontFamily: 'Manrope_500Medium',
+  },
+  modalCancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  modalCancelButtonText: {
+    color: '#6B7280',
+    fontSize: 16,
+    fontFamily: 'Manrope_500Medium',
   },
 });

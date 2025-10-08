@@ -10,6 +10,7 @@ import {
   type SyncAction
 } from '@/store/slices/syncSlice';
 import * as commitmentService from './commitments';
+import { addRecord } from '@/store/slices/recordsSlice';
 // import { DatabaseService } from './database'; // Disabled - using Supabase
 
 const MAX_RETRY_COUNT = 3;
@@ -193,36 +194,73 @@ export class SyncService {
    * Sync record with server
    */
   private static async syncRecord(item: SyncAction): Promise<void> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+    console.log(`Syncing record ${item.type}:`, { entityId: item.entityId });
 
-    // TODO: Replace with actual API endpoints
-    const apiEndpoint = process.env.EXPO_PUBLIC_API_URL || 'https://api.example.com';
-    
     switch (item.type) {
       case 'CREATE':
-        // await fetch(`${apiEndpoint}/records`, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(item.data)
-        // });
-        console.log('Would sync CREATE record:', item.data);
+        // Use Supabase upsert for records
+        const { upsertCommitmentRecord } = await import('./commitments');
+        const result = await upsertCommitmentRecord(item.data);
+        if (result.error) {
+          throw new Error(`upsertCommitmentRecord failed: ${result.error.message}`);
+        }
+
+        // Update Redux with the real database record (with proper ID)
+        if (result.data) {
+          const updatedRecord = {
+            id: result.data.id,
+            userId: result.data.user_id,
+            commitmentId: result.data.commitment_id,
+            date: result.data.completed_at.split('T')[0], // Extract date part
+            status: result.data.status === 'complete' ? 'completed' as const : result.data.status,
+            value: result.data.value,
+            notes: result.data.notes,
+            createdAt: result.data.created_at,
+            updatedAt: result.data.updated_at,
+          };
+          store.dispatch(addRecord(updatedRecord));
+        }
+        console.log(`✅ Synced CREATE record for ${item.entityId}`);
         break;
-        
+
       case 'UPDATE':
-        // await fetch(`${apiEndpoint}/records/${item.entityId}`, {
-        //   method: 'PUT',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify(item.data)
-        // });
-        console.log('Would sync UPDATE record:', item.data);
+        // For records, UPDATE is the same as CREATE (upsert)
+        const { upsertCommitmentRecord: upsertUpdate } = await import('./commitments');
+        const updateResult = await upsertUpdate(item.data);
+        if (updateResult.error) {
+          throw new Error(`upsertCommitmentRecord failed: ${updateResult.error.message}`);
+        }
+
+        // Update Redux with the real database record (with proper ID)
+        if (updateResult.data) {
+          const updatedRecord = {
+            id: updateResult.data.id,
+            userId: updateResult.data.user_id,
+            commitmentId: updateResult.data.commitment_id,
+            date: updateResult.data.completed_at.split('T')[0], // Extract date part
+            status: updateResult.data.status === 'complete' ? 'completed' as const : updateResult.data.status,
+            value: updateResult.data.value,
+            notes: updateResult.data.notes,
+            createdAt: updateResult.data.created_at,
+            updatedAt: updateResult.data.updated_at,
+          };
+          store.dispatch(addRecord(updatedRecord));
+        }
+        console.log(`✅ Synced UPDATE record for ${item.entityId}`);
         break;
-        
+
       case 'DELETE':
-        // await fetch(`${apiEndpoint}/records/${item.entityId}`, {
-        //   method: 'DELETE'
-        // });
-        console.log('Would sync DELETE record:', item.entityId);
+        // Delete record by commitment_id and date
+        const { deleteCommitmentRecordByDate } = await import('./commitments');
+        const deleteResult = await deleteCommitmentRecordByDate(
+          item.data.commitment_id,
+          item.data.completed_at
+        );
+        if (deleteResult.error) {
+          throw new Error(`deleteCommitmentRecordByDate failed: ${deleteResult.error.message}`);
+        }
+        // Note: For DELETE, we don't need to update Redux since the record should already be removed
+        console.log(`✅ Synced DELETE record for ${item.entityId}`);
         break;
     }
   }
