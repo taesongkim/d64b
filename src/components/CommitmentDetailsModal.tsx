@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   View,
@@ -11,7 +11,6 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { Commitment } from '@/store/slices/commitmentsSlice';
-import { Icon } from './icons';
 
 interface CommitmentDetailsModalProps {
   visible: boolean;
@@ -36,8 +35,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   onSoftDelete,
   onPermanentDelete,
 }) => {
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
 
@@ -52,36 +50,47 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
       setEditedTitle(commitment.title);
       setEditedDescription(commitment.description || '');
     }
+    setIsEditing(false);
   }, [commitment, visible]);
 
-  const handleSaveTitle = () => {
+  const handleEdit = useCallback(() => {
+    setIsEditing(true);
+  }, []);
+
+  const handleCancel = useCallback(() => {
+    if (commitment) {
+      setEditedTitle(commitment.title);
+      setEditedDescription(commitment.description || '');
+    }
+    setIsEditing(false);
+  }, [commitment]);
+
+  const handleSave = useCallback(() => {
     if (!commitment || !editedTitle.trim()) return;
-    
-    onUpdateCommitment(commitment.id, { title: editedTitle.trim() });
-    setIsEditingTitle(false);
-  };
 
-  const handleSaveDescription = () => {
-    if (!commitment) return;
+    const updates: Partial<Commitment> = {
+      title: editedTitle.trim(),
+      description: editedDescription.trim() || undefined,
+    };
 
-    onUpdateCommitment(commitment.id, { description: editedDescription.trim() || undefined });
-    setIsEditingDescription(false);
-  };
+    onUpdateCommitment(commitment.id, updates);
+    setIsEditing(false);
+  }, [commitment, editedTitle, editedDescription, onUpdateCommitment]);
 
   // Archive/Delete handlers
-  const handleArchive = () => {
+  const handleArchive = useCallback(() => {
     if (!commitment) return;
     onArchive(commitment.id);
     onClose();
-  };
+  }, [commitment, onArchive, onClose]);
 
-  const handleRestore = () => {
+  const handleRestore = useCallback(() => {
     if (!commitment) return;
     onRestore(commitment.id);
     onClose();
-  };
+  }, [commitment, onRestore, onClose]);
 
-  const handleSoftDelete = () => {
+  const handleSoftDelete = useCallback(() => {
     if (!commitment) return;
     Alert.alert(
       'Delete Commitment',
@@ -94,9 +103,9 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
         }},
       ]
     );
-  };
+  }, [commitment, onSoftDelete, onClose]);
 
-  const handlePermanentDelete = () => {
+  const handlePermanentDelete = useCallback(() => {
     if (!commitment) return;
     Alert.alert(
       'Delete Permanently',
@@ -109,17 +118,19 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
         }},
       ]
     );
-  };
+  }, [commitment, onPermanentDelete, onClose]);
 
   const getTargetDisplay = () => {
     if (!commitment || commitment.commitmentType !== 'measurement') return '';
-    
+
     return `${commitment.target} ${commitment.unit}`;
   };
 
   const filteredNotes = notes.filter(note => note.notes && note.notes.trim().length > 0);
 
   if (!commitment) return null;
+
+  const isSaveDisabled = !editedTitle.trim();
 
   return (
     <Modal
@@ -133,161 +144,179 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Commitment Details</Text>
+          <Text style={styles.headerTitle}>Commitment Details</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Commitment Name */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Name</Text>
-              {isEditingTitle ? (
-                <View style={styles.editContainer}>
-                  <TextInput
-                    style={styles.textInput}
-                    value={editedTitle}
-                    onChangeText={setEditedTitle}
-                    placeholder="Enter commitment name"
-                    autoFocus
-                    onSubmitEditing={handleSaveTitle}
-                    onBlur={handleSaveTitle}
-                  />
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.viewContainer}
-                  onPress={() => setIsEditingTitle(true)}
-                >
-                  <Text style={styles.viewText}>{commitment.title}</Text>
-                  <Icon name="edit" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Description */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Description</Text>
-              {isEditingDescription ? (
-                <View style={styles.editContainer}>
-                  <TextInput
-                    style={[styles.textInput, styles.textArea]}
-                    value={editedDescription}
-                    onChangeText={setEditedDescription}
-                    placeholder="Enter description (optional)"
-                    multiline
-                    numberOfLines={3}
-                    textAlignVertical="top"
-                    onSubmitEditing={handleSaveDescription}
-                    onBlur={handleSaveDescription}
-                  />
-                </View>
-              ) : (
-                <TouchableOpacity
-                  style={styles.viewContainer}
-                  onPress={() => setIsEditingDescription(true)}
-                >
-                  <Text style={styles.viewText}>
-                    {commitment.description || 'No description'}
-                  </Text>
-                  <Icon name="edit" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-
-            {/* Target (for measurement types) */}
-            {commitment.commitmentType === 'measurement' && commitment.target && (
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Target</Text>
-                <View style={styles.viewContainer}>
-                  <Text style={styles.viewText}>{getTargetDisplay()}</Text>
-                </View>
-              </View>
-            )}
-
-            {/* Requirements (for checkbox types with multiple tasks) */}
-            {commitment.commitmentType === 'checkbox' && commitment.requirements && commitment.requirements.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Tasks</Text>
-                <View style={styles.viewContainer}>
-                  {commitment.requirements.map((requirement, index) => (
-                    <Text key={index} style={styles.requirementText}>
-                      • {requirement}
+          {/* Title and Description - Read-first with Edit mode */}
+          <View style={styles.titleDescriptionSection}>
+            {isEditing ? (
+              <>
+                {/* Edit Mode */}
+                <View style={styles.editActionsContainer}>
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleCancel}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.saveButton, isSaveDisabled && styles.saveButtonDisabled]}
+                    onPress={handleSave}
+                    disabled={isSaveDisabled}
+                  >
+                    <Text style={[styles.saveButtonText, isSaveDisabled && styles.saveButtonTextDisabled]}>
+                      Save
                     </Text>
-                  ))}
+                  </TouchableOpacity>
                 </View>
+
+                <TextInput
+                  style={styles.titleInput}
+                  value={editedTitle}
+                  onChangeText={setEditedTitle}
+                  placeholder="Enter commitment title"
+                  multiline
+                  maxLength={100}
+                />
+
+                <TextInput
+                  style={styles.descriptionInput}
+                  value={editedDescription}
+                  onChangeText={setEditedDescription}
+                  placeholder="Add a description (optional)"
+                  multiline
+                  textAlignVertical="top"
+                  maxLength={500}
+                />
+              </>
+            ) : (
+              <>
+                {/* Read Mode */}
+                <View style={styles.readActionsContainer}>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={handleEdit}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Title - Primary Typography */}
+                <Text
+                  style={styles.primaryTitle}
+                  numberOfLines={2}
+                  allowFontScaling
+                >
+                  {commitment.title}
+                </Text>
+
+                {/* Description - Secondary Typography */}
+                {commitment.description ? (
+                  <Text
+                    style={styles.secondaryDescription}
+                    numberOfLines={5}
+                    allowFontScaling
+                  >
+                    {commitment.description}
+                  </Text>
+                ) : null}
+              </>
+            )}
+          </View>
+
+          {/* Meta Information - Tertiary Typography */}
+          {(commitment.commitmentType === 'measurement' && commitment.target) && (
+            <View style={styles.metaSection}>
+              <Text style={styles.metaLabel}>TARGET</Text>
+              <Text style={styles.metaValue}>{getTargetDisplay()}</Text>
+            </View>
+          )}
+
+          {/* Requirements (for checkbox types with multiple tasks) */}
+          {commitment.commitmentType === 'checkbox' && commitment.requirements && commitment.requirements.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Tasks</Text>
+              <View style={styles.viewContainer}>
+                {commitment.requirements.map((requirement, index) => (
+                  <Text key={index} style={styles.requirementText}>
+                    • {requirement}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Notes Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Notes</Text>
+            {filteredNotes.length > 0 ? (
+              <View style={styles.notesContainer}>
+                {filteredNotes.map((note, index) => (
+                  <View key={index} style={styles.noteItem}>
+                    <Text style={styles.noteDate}>
+                      {new Date(note.date).toLocaleDateString()}
+                    </Text>
+                    <Text style={styles.noteText}>{note.notes}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.viewContainer}>
+                <Text style={styles.emptyText}>No notes yet</Text>
               </View>
             )}
+          </View>
 
-            {/* Notes Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Notes</Text>
-              {filteredNotes.length > 0 ? (
-                <View style={styles.notesContainer}>
-                  {filteredNotes.map((note, index) => (
-                    <View key={index} style={styles.noteItem}>
-                      <Text style={styles.noteDate}>
-                        {new Date(note.date).toLocaleDateString()}
-                      </Text>
-                      <Text style={styles.noteText}>{note.notes}</Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={styles.viewContainer}>
-                  <Text style={styles.emptyText}>No notes yet</Text>
-                </View>
+          {/* Actions Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Actions</Text>
+
+            {/* Action buttons */}
+            <View style={styles.actionsSection}>
+              {isActive && (
+                <>
+                  <TouchableOpacity style={styles.actionButton} onPress={handleArchive}>
+                    <Text style={[styles.actionIcon, styles.archiveIcon]}>📦</Text>
+                    <Text style={styles.actionText}>Archive</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
+                    <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
+                    <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {isArchived && (
+                <>
+                  <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
+                    <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
+                    <Text style={[styles.actionText, styles.restoreText]}>Restore</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
+                    <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
+                    <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {isRecentlyDeleted && (
+                <>
+                  <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
+                    <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
+                    <Text style={[styles.actionText, styles.restoreText]}>Undelete</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButton} onPress={handlePermanentDelete}>
+                    <Text style={[styles.actionIcon, styles.permanentDeleteIcon]}>🗑️</Text>
+                    <Text style={[styles.actionText, styles.permanentDeleteText]}>Delete Permanently</Text>
+                  </TouchableOpacity>
+                </>
               )}
             </View>
-
-            {/* Actions Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Actions</Text>
-
-              {/* Action buttons */}
-              <View style={styles.actionsSection}>
-                {isActive && (
-                  <>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleArchive}>
-                      <Text style={[styles.actionIcon, styles.archiveIcon]}>📦</Text>
-                      <Text style={styles.actionText}>Archive</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
-                      <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
-                      <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-
-                {isArchived && (
-                  <>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
-                      <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
-                      <Text style={[styles.actionText, styles.restoreText]}>Restore</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
-                      <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
-                      <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-
-                {isRecentlyDeleted && (
-                  <>
-                    <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
-                      <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
-                      <Text style={[styles.actionText, styles.restoreText]}>Undelete</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton} onPress={handlePermanentDelete}>
-                      <Text style={[styles.actionIcon, styles.permanentDeleteIcon]}>🗑️</Text>
-                      <Text style={[styles.actionText, styles.permanentDeleteText]}>Delete Permanently</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
-          </ScrollView>
-        </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -295,19 +324,17 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
 const styles = StyleSheet.create({
   fullScreenContainer: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FAFAFA',
   },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '90%',
-    minHeight: '60%',
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 8,
@@ -317,29 +344,141 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontWeight: '400',
   },
-  headerSpacer: {
-    width: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  title: {
-    fontSize: 20,
+  headerTitle: {
+    fontSize: 18,
     fontWeight: '600',
     color: '#111827',
   },
-  closeButton: {
-    padding: 4,
+  headerSpacer: {
+    width: 40,
   },
   content: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
   },
+
+  // Title and Description Section
+  titleDescriptionSection: {
+    paddingTop: 24,
+    paddingBottom: 32,
+  },
+
+  // Read Mode - Typography Hierarchy
+  readActionsContainer: {
+    alignItems: 'flex-end',
+    marginBottom: 16,
+  },
+  editButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+
+  // Primary Typography - Title (H1-ish)
+  primaryTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    lineHeight: 36,
+    marginBottom: 16,
+  },
+
+  // Secondary Typography - Description (body)
+  secondaryDescription: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#6B7280',
+    lineHeight: 24,
+  },
+
+  // Edit Mode
+  editActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 16,
+    gap: 12,
+  },
+  cancelButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
+  },
+  saveButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#111827',
+    borderRadius: 8,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  saveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  saveButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+  titleInput: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
+    lineHeight: 36,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minHeight: 72,
+  },
+  descriptionInput: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: '#6B7280',
+    lineHeight: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    minHeight: 100,
+  },
+
+  // Meta Information - Tertiary Typography
+  metaSection: {
+    marginBottom: 32,
+  },
+  metaLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  metaValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+
+  // Legacy sections maintained
   section: {
     marginBottom: 24,
   },
@@ -350,36 +489,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   viewContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-  },
-  viewText: {
-    fontSize: 16,
-    color: '#111827',
-    flex: 1,
-    marginRight: 8,
-  },
-  editContainer: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  textInput: {
-    fontSize: 16,
-    color: '#111827',
-    padding: 12,
-    backgroundColor: 'transparent',
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
   },
   requirementText: {
     fontSize: 16,
@@ -387,7 +501,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   notesContainer: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -423,7 +537,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },

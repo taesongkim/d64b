@@ -299,4 +299,9 @@ export const loadAllCommitmentsThunk = (userId: string) => async (dispatch: AppD
   }
 };
 
+export const selectCommitmentById = createSelector(
+  [(state: RootState) => state.commitments.commitments, (_: RootState, id: string) => id],
+  (commitments, id) => commitments.find(c => c.id === id)
+);
+
 export default commitmentsSlice.reducer;
