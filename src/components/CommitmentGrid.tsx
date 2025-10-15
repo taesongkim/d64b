@@ -26,7 +26,9 @@ import {
   isWeekend,
   formatDateRangeLabel
 } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState, type ColorScheme } from './grids/gridPalette';
+import { getCellVisualTreatment, determineCellState } from './grids/gridPalette';
+import CellShimmerOverlay from './grids/CellShimmerOverlay';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -207,7 +209,7 @@ export default function CommitmentGrid({
   }, [viewMode, earliestDate, minRecordDate, getTodayISO()]);
 
   const todayISO = getTodayISO();
-  const colorScheme = useColorScheme() as ColorScheme ?? 'light';
+  const reduceMotion = useReduceMotion();
   const todayIndex = useMemo(() => {
     if (!dates || dates.length === 0) return 0;
     const idx = dates.indexOf(todayISO);
@@ -418,7 +420,7 @@ export default function CommitmentGrid({
               {/* Date header */}
               {renderDateHeader()}
               {/* Grid rows */}
-              {commitments.map((c) => (
+              {commitments.map((c, rowIndex) => (
                 <View key={c.id} style={{ flexDirection: 'row', marginBottom: getRowSpacing(viewMode) }}>
                   {dates.map((date) => {
                     const record = records.find(r => r.commitmentId === c.id && r.date === date);
@@ -428,9 +430,12 @@ export default function CommitmentGrid({
 
                     // Determine cell state and visual treatment using centralized palette
                     const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-                    const visualTreatment = getCellVisualTreatment(cellState, isTodayDate, colorScheme);
+                    const visualTreatment = getCellVisualTreatment(cellState);
 
-                    // Create dynamic cell style with neutral today ring and transparent base borders
+                    const cellSize = getCellSize(viewMode);
+                    const cellRadius = getCellBorderRadius(viewMode);
+
+                    // Create dynamic cell style
                     const cellStyleOverrides = {
                       backgroundColor: visualTreatment.backgroundColor,
                       borderWidth: visualTreatment.borderWidth,
@@ -456,6 +461,14 @@ export default function CommitmentGrid({
                         delayLongPress={500}
                       >
                         {cellContent}
+                        <CellShimmerOverlay
+                          size={cellSize}
+                          radius={cellRadius}
+                          rowIndex={rowIndex}
+                          isToday={isTodayDate}
+                          isVisible={true}
+                          reduceMotion={reduceMotion}
+                        />
                       </TouchableOpacity>
                     );
                   })}
