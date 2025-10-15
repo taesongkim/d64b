@@ -2,7 +2,8 @@
  * Centralized grid palette and visual treatment helpers
  * Single source of truth for all grid cell colors and styling
  *
- * Note: Neutral today ring; column highlight removed by design
+ * Note: Today cells use shimmer overlay animation; column highlight removed by design
+ * Shimmer uses full-white PNG asset (assets/ui/shimmer-diagonal.png) with 50% opacity applied at runtime
  */
 
 export type CellState = 'completed' | 'skipped' | 'failed' | 'weekend' | 'today' | 'idle';
@@ -15,7 +16,7 @@ export const GRID_COLORS = {
   skipped: '#10B981',    // Intentionally same as completed per product decision
   failed: '#EF4444',
   weekend: '#E5E7EB',
-  today: '#F3F4F6',      // Base color for today (will have ring styling)
+  today: '#F3F4F6',      // Base color for today (shimmer overlay applied separately)
 } as const;
 
 

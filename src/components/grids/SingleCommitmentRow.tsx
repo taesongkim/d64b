@@ -5,7 +5,6 @@ import {
   StyleSheet,
   StyleProp,
   ViewStyle,
-  useColorScheme,
 } from 'react-native';
 import CustomXIcon from '../CustomXIcon';
 import CustomCheckmarkIcon from '../CustomCheckmarkIcon';

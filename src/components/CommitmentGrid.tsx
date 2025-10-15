@@ -9,7 +9,6 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  useColorScheme,
 } from 'react-native';
 import ReactionPopup from './ReactionPopup';
 import CustomXIcon from './CustomXIcon';
