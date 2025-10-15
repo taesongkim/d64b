@@ -126,6 +126,7 @@ export default function CommitmentGrid({
   viewMode: externalViewMode,
 }: CommitmentGridProps): React.JSX.Element {
   const fontStyle = useFontStyle();
+  const boldFontStyle = useFontStyle(styles.dateTextToday, 'semiBold');
   // const scrollRef = useRef<FlatList>(null); // Unused
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>('daily');
   
@@ -325,9 +326,12 @@ export default function CommitmentGrid({
         <View style={{ flexDirection: 'row' }}>
           {dates.map((date, index) => {
             const isTodayHeader = isToday(date);
+            const textStyle = isTodayHeader
+              ? boldFontStyle
+              : [styles.dateText, fontStyle];
             return (
               <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
-                <Text style={[styles.dateText, isTodayHeader && styles.dateTextToday, fontStyle]}>
+                <Text style={textStyle}>
                   {formatDateLabel(date)}
                 </Text>
               </View>
@@ -585,7 +589,8 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   dateTextToday: {
-    fontWeight: '700',
+    fontSize: 12,
+    color: '#111827',
     lineHeight: 16,
   },
   row: {

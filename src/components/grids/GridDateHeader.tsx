@@ -35,6 +35,7 @@ export default function GridDateHeader({
   viewMode,
 }: GridDateHeaderProps): React.JSX.Element {
   const fontStyle = useFontStyle();
+  const boldFontStyle = useFontStyle(styles.todayDateText, 'semiBold');
 
   const dynamicStyles = {
     dateCell: {
@@ -56,9 +57,12 @@ export default function GridDateHeader({
       <View style={styles.dateRow}>
         {dates.map((date, index) => {
           const isTodayDate = isToday(date);
+          const textStyle = isTodayDate
+            ? boldFontStyle
+            : [styles.dateText, fontStyle];
           return (
             <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
-              <Text style={[styles.dateText, isTodayDate && styles.dateTextToday, fontStyle]}>
+              <Text style={textStyle}>
                 {formatDateLabel(date)}
               </Text>
             </View>
@@ -84,8 +88,9 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     lineHeight: 16,
   },
-  dateTextToday: {
-    fontWeight: '700',
+  todayDateText: {
+    fontSize: 12,
+    color: '#111827',
     lineHeight: 16,
   },
 });

@@ -49,7 +49,7 @@ export default function CellShimmerOverlay({
       { rotate: '45deg' },
       { translateX },
     ],
-    opacity,
+    opacity: Animated.multiply(opacity, 0.9),
   }), [size, translateX, opacity]);
 
   useEffect(() => {
@@ -63,8 +63,8 @@ export default function CellShimmerOverlay({
     }
 
     const cascadeDelay = rowIndex * 100;
-    const animationDuration = 1200;
-    const cyclePause = 2000;
+    const animationDuration = 800;
+    const cyclePause = 500;
 
     const startAnimation = () => {
       translateX.setValue(-size * 1.5);
