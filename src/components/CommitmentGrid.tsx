@@ -9,7 +9,6 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  useColorScheme,
 } from 'react-native';
 import ReactionPopup from './ReactionPopup';
 import CustomXIcon from './CustomXIcon';
@@ -24,6 +23,7 @@ import {
   parseLocalISODate,
   formatDateForDisplay,
   isWeekend,
+  isToday,
   formatDateRangeLabel
 } from '@/utils/timeUtils';
 import { getCellVisualTreatment, determineCellState } from './grids/gridPalette';
@@ -324,10 +324,10 @@ export default function CommitmentGrid({
         <View style={{ marginBottom: 4 }} />
         <View style={{ flexDirection: 'row' }}>
           {dates.map((date, index) => {
-            // const isTodayHeader = isToday(date); // Unused
+            const isTodayHeader = isToday(date);
             return (
               <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
-                <Text style={[styles.dateText, fontStyle]}>
+                <Text style={[styles.dateText, isTodayHeader && styles.dateTextToday, fontStyle]}>
                   {formatDateLabel(date)}
                 </Text>
               </View>
@@ -582,6 +582,11 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: '#6B7280',
+    lineHeight: 16,
+  },
+  dateTextToday: {
+    fontWeight: '700',
+    lineHeight: 16,
   },
   row: {
     flexDirection: 'row',

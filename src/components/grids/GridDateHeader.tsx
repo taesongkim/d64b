@@ -5,7 +5,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useFontStyle } from '@/hooks/useFontStyle';
-import { formatDateForDisplay } from '@/utils/timeUtils';
+import { formatDateForDisplay, isToday } from '@/utils/timeUtils';
 
 export type ViewMode = 'daily' | 'weekly';
 
@@ -54,13 +54,16 @@ export default function GridDateHeader({
     <View style={styles.container}>
       <View style={styles.spacer} />
       <View style={styles.dateRow}>
-        {dates.map((date, index) => (
-          <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
-            <Text style={[styles.dateText, fontStyle]}>
-              {formatDateLabel(date)}
-            </Text>
-          </View>
-        ))}
+        {dates.map((date, index) => {
+          const isTodayDate = isToday(date);
+          return (
+            <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
+              <Text style={[styles.dateText, isTodayDate && styles.dateTextToday, fontStyle]}>
+                {formatDateLabel(date)}
+              </Text>
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -79,5 +82,10 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: '#6B7280',
+    lineHeight: 16,
+  },
+  dateTextToday: {
+    fontWeight: '700',
+    lineHeight: 16,
   },
 });
