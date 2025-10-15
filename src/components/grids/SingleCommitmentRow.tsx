@@ -5,12 +5,13 @@ import {
   StyleSheet,
   StyleProp,
   ViewStyle,
+  useColorScheme,
 } from 'react-native';
 import CustomXIcon from '../CustomXIcon';
 import CustomCheckmarkIcon from '../CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { isWeekend, getTodayISO } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState } from './gridPalette';
+import { getCellVisualTreatment, determineCellState, type ColorScheme } from './gridPalette';
 
 export type ViewMode = 'daily' | 'weekly';
 
@@ -83,6 +84,7 @@ export default function SingleCommitmentRow({
   onLongPress,
 }: SingleCommitmentRowProps): React.JSX.Element {
   const todayISO = getTodayISO();
+  const colorScheme = useColorScheme() as ColorScheme ?? 'light';
 
   const rowContainerStyle = useMemo((): StyleProp<ViewStyle> => [
     styles.rowContainer,
@@ -115,7 +117,7 @@ export default function SingleCommitmentRow({
 
         // Determine cell state and visual treatment using centralized palette
         const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-        const visualTreatment = getCellVisualTreatment(cellState, isTodayDate);
+        const visualTreatment = getCellVisualTreatment(cellState, isTodayDate, colorScheme);
 
         const dynamicCellStyle: ViewStyle = {
           width: getCellSize(viewMode),
@@ -125,11 +127,9 @@ export default function SingleCommitmentRow({
           backgroundColor: visualTreatment.backgroundColor,
           justifyContent: 'center',
           alignItems: 'center',
-          // Today ring styling
-          ...(visualTreatment.hasTodayRing && {
-            borderWidth: visualTreatment.todayRingWidth,
-            borderColor: visualTreatment.todayRingColor,
-          }),
+          // Neutral today ring with transparent base borders
+          borderWidth: visualTreatment.borderWidth,
+          borderColor: visualTreatment.borderColor,
         };
 
         const cellStyle: StyleProp<ViewStyle> = StyleSheet.compose(styles.cell, dynamicCellStyle);

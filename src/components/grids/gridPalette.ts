@@ -1,9 +1,12 @@
 /**
  * Centralized grid palette and visual treatment helpers
  * Single source of truth for all grid cell colors and styling
+ *
+ * Note: Neutral today ring; column highlight removed by design
  */
 
 export type CellState = 'completed' | 'skipped' | 'failed' | 'weekend' | 'today' | 'idle';
+export type ColorScheme = 'light' | 'dark';
 
 // Core color palette for grid cells
 export const GRID_COLORS = {
@@ -15,37 +18,48 @@ export const GRID_COLORS = {
   today: '#F3F4F6',      // Base color for today (will have ring styling)
 } as const;
 
-// Today ring styling constants
+// Neutral today ring styling constants - light/dark aware
 export const TODAY_RING = {
-  color: '#3B82F6',      // Blue ring for today indication
+  light: '#71717A',      // Zinc-500 for light mode - neutral, subtle
+  dark: '#A1A1AA',       // Zinc-400 for dark mode - slightly lighter for contrast
   width: 2,              // Border width in pixels
+  transparent: 'transparent', // For base borders to prevent layout jitter
 } as const;
 
 // Visual treatment interface for cell styling
 export interface CellVisualTreatment {
   backgroundColor: string;
-  hasTodayRing: boolean;
-  todayRingColor?: string;
-  todayRingWidth?: number;
+  borderColor: string;
+  borderWidth: number;
+}
+
+/**
+ * Helper to get neutral today ring color based on color scheme
+ * @param colorScheme - Current color scheme (light/dark)
+ * @returns Appropriate neutral ring color
+ */
+export function getTodayRingColor(colorScheme: ColorScheme = 'light'): string {
+  return TODAY_RING[colorScheme];
 }
 
 /**
  * Pure helper function to resolve cell visual treatment
  * @param cellState - The current state of the cell
  * @param isToday - Whether this cell represents today's date
+ * @param colorScheme - Current color scheme for neutral ring color
  * @returns Visual treatment configuration for the cell
  */
 export function getCellVisualTreatment(
   cellState: CellState,
-  isToday: boolean = false
+  isToday: boolean = false,
+  colorScheme: ColorScheme = 'light'
 ): CellVisualTreatment {
   const backgroundColor = GRID_COLORS[cellState];
 
   return {
     backgroundColor,
-    hasTodayRing: isToday,
-    todayRingColor: isToday ? TODAY_RING.color : undefined,
-    todayRingWidth: isToday ? TODAY_RING.width : undefined,
+    borderColor: isToday ? getTodayRingColor(colorScheme) : TODAY_RING.transparent,
+    borderWidth: TODAY_RING.width, // Always 2px to prevent layout jitter
   };
 }
 

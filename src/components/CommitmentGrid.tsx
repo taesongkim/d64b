@@ -9,6 +9,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  useColorScheme,
 } from 'react-native';
 import ReactionPopup from './ReactionPopup';
 import CustomXIcon from './CustomXIcon';
@@ -25,7 +26,7 @@ import {
   isWeekend,
   formatDateRangeLabel
 } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState } from './grids/gridPalette';
+import { getCellVisualTreatment, determineCellState, type ColorScheme } from './grids/gridPalette';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -206,6 +207,7 @@ export default function CommitmentGrid({
   }, [viewMode, earliestDate, minRecordDate, getTodayISO()]);
 
   const todayISO = getTodayISO();
+  const colorScheme = useColorScheme() as ColorScheme ?? 'light';
   const todayIndex = useMemo(() => {
     if (!dates || dates.length === 0) return 0;
     const idx = dates.indexOf(todayISO);
@@ -411,18 +413,7 @@ export default function CommitmentGrid({
             }}
           >
             <View style={{ position: 'relative' }}>
-              {/* Today column highlight bar - positioned within the scrollable content */}
-              <View 
-                  style={[
-                    styles.todayColumnBar,
-                    {
-                      left: (todayIndex * (getCellSize(viewMode) + getCellMargin(viewMode) * 2)) + (getCellMargin(viewMode) / 4),
-                      width: getCellSize(viewMode) + (getCellMargin(viewMode) * 1.5),
-                      borderRadius: getCellBorderRadius(viewMode),
-                    }
-                  ]} 
-                  pointerEvents="none"
-                />
+              {/* Today column highlight bar removed by design */}
               
               {/* Date header */}
               {renderDateHeader()}
@@ -437,15 +428,13 @@ export default function CommitmentGrid({
 
                     // Determine cell state and visual treatment using centralized palette
                     const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-                    const visualTreatment = getCellVisualTreatment(cellState, isTodayDate);
+                    const visualTreatment = getCellVisualTreatment(cellState, isTodayDate, colorScheme);
 
-                    // Create dynamic cell style with today ring support
+                    // Create dynamic cell style with neutral today ring and transparent base borders
                     const cellStyleOverrides = {
                       backgroundColor: visualTreatment.backgroundColor,
-                      ...(visualTreatment.hasTodayRing && {
-                        borderWidth: visualTreatment.todayRingWidth,
-                        borderColor: visualTreatment.todayRingColor,
-                      }),
+                      borderWidth: visualTreatment.borderWidth,
+                      borderColor: visualTreatment.borderColor,
                     };
 
                     const cellStyle = [dynamicStyles.cell, cellStyleOverrides];
@@ -604,13 +593,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   // Cell colors now managed by centralized grid palette
-  todayColumnBar: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    zIndex: 0,
-  },
+  // Today column highlight removed by design
   skipMark: {
     color: 'white',
     fontSize: 14,
