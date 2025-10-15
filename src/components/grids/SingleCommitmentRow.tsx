@@ -5,13 +5,14 @@ import {
   StyleSheet,
   StyleProp,
   ViewStyle,
-  useColorScheme,
 } from 'react-native';
 import CustomXIcon from '../CustomXIcon';
 import CustomCheckmarkIcon from '../CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { isWeekend, getTodayISO } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState, type ColorScheme } from './gridPalette';
+import { getCellVisualTreatment, determineCellState } from './gridPalette';
+import CellShimmerOverlay from './CellShimmerOverlay';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 export type ViewMode = 'daily' | 'weekly';
 
@@ -39,6 +40,7 @@ interface SingleCommitmentRowProps {
   dates: string[];
   records: DayRecord[];
   viewMode: ViewMode;
+  rowIndex: number;
   onCellPress: (commitmentId: string, date: string) => void;
   onLongPress: (commitmentId: string, date: string, event: any) => void;
 }
@@ -80,11 +82,12 @@ export default function SingleCommitmentRow({
   dates,
   records,
   viewMode,
+  rowIndex,
   onCellPress,
   onLongPress,
 }: SingleCommitmentRowProps): React.JSX.Element {
   const todayISO = getTodayISO();
-  const colorScheme = useColorScheme() as ColorScheme ?? 'light';
+  const reduceMotion = useReduceMotion();
 
   const rowContainerStyle = useMemo((): StyleProp<ViewStyle> => [
     styles.rowContainer,
@@ -117,17 +120,19 @@ export default function SingleCommitmentRow({
 
         // Determine cell state and visual treatment using centralized palette
         const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-        const visualTreatment = getCellVisualTreatment(cellState, isTodayDate, colorScheme);
+        const visualTreatment = getCellVisualTreatment(cellState);
+
+        const cellSize = getCellSize(viewMode);
+        const cellRadius = getCellBorderRadius(viewMode);
 
         const dynamicCellStyle: ViewStyle = {
-          width: getCellSize(viewMode),
-          height: getCellSize(viewMode),
+          width: cellSize,
+          height: cellSize,
           marginHorizontal: getCellMargin(viewMode),
-          borderRadius: getCellBorderRadius(viewMode),
+          borderRadius: cellRadius,
           backgroundColor: visualTreatment.backgroundColor,
           justifyContent: 'center',
           alignItems: 'center',
-          // Neutral today ring with transparent base borders
           borderWidth: visualTreatment.borderWidth,
           borderColor: visualTreatment.borderColor,
         };
@@ -150,6 +155,14 @@ export default function SingleCommitmentRow({
             delayLongPress={500}
           >
             {cellContent}
+            <CellShimmerOverlay
+              size={cellSize}
+              radius={cellRadius}
+              rowIndex={rowIndex}
+              isToday={isTodayDate}
+              isVisible={true}
+              reduceMotion={reduceMotion}
+            />
           </TouchableOpacity>
         );
       })}

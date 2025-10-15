@@ -352,6 +352,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
                     dates={dates}
                     records={records}
                     viewMode={viewMode}
+                    rowIndex={0}
                     onCellPress={handleGridCellPress}
                     onLongPress={handleGridLongPress}
                   />
