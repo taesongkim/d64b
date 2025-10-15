@@ -10,12 +10,14 @@ import {
   Alert,
   SafeAreaView,
 } from 'react-native';
-import { Commitment } from '@/store/slices/commitmentsSlice';
+import { Commitment, selectCommitmentById } from '@/store/slices/commitmentsSlice';
+import { useAppSelector } from '@/store/hooks';
+import Icon from './icons/Icon';
 
 interface CommitmentDetailsModalProps {
   visible: boolean;
   onClose: () => void;
-  commitment: Commitment | null;
+  commitmentId: string | null;
   onUpdateCommitment: (id: string, updates: Partial<Commitment>) => void;
   notes: Array<{ date: string; notes: string | null }>; // Notes from commitment_records
   onArchive: (id: string) => void;
@@ -27,7 +29,7 @@ interface CommitmentDetailsModalProps {
 const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   visible,
   onClose,
-  commitment,
+  commitmentId,
   onUpdateCommitment,
   notes,
   onArchive,
@@ -35,6 +37,9 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   onSoftDelete,
   onPermanentDelete,
 }) => {
+  const commitment = useAppSelector(state =>
+    commitmentId ? selectCommitmentById(state, commitmentId) : null
+  );
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
@@ -194,15 +199,6 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
             ) : (
               <>
                 {/* Read Mode */}
-                <View style={styles.readActionsContainer}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={handleEdit}
-                  >
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                </View>
-
                 {/* Title - Primary Typography */}
                 <Text
                   style={styles.primaryTitle}
@@ -275,43 +271,47 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
 
             {/* Action buttons */}
             <View style={styles.actionsSection}>
-              {isActive && (
-                <>
-                  <TouchableOpacity style={styles.actionButton} onPress={handleArchive}>
-                    <Text style={[styles.actionIcon, styles.archiveIcon]}>📦</Text>
-                    <Text style={styles.actionText}>Archive</Text>
+              {!isEditing && isActive && (
+                <View style={styles.horizontalActions}>
+                  <TouchableOpacity style={styles.horizontalActionButton} onPress={handleEdit}>
+                    <Icon name="edit" size={16} color="#374151" style={styles.actionIcon} />
+                    <Text style={styles.horizontalActionText}>Edit</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
-                    <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
-                    <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
+                  <TouchableOpacity style={styles.horizontalActionButton} onPress={handleArchive}>
+                    <Icon name="archive" size={16} color="#374151" style={styles.actionIcon} />
+                    <Text style={styles.horizontalActionText}>Archive</Text>
                   </TouchableOpacity>
-                </>
+                  <TouchableOpacity style={styles.horizontalActionButton} onPress={handleSoftDelete}>
+                    <Icon name="delete" size={16} color="#374151" style={styles.actionIcon} />
+                    <Text style={styles.horizontalActionText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               {isArchived && (
-                <>
-                  <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
-                    <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
-                    <Text style={[styles.actionText, styles.restoreText]}>Restore</Text>
+                <View style={styles.horizontalActions}>
+                  <TouchableOpacity style={styles.horizontalActionButton} onPress={handleRestore}>
+                    <Icon name="restore" size={16} color="#059669" style={styles.actionIcon} />
+                    <Text style={[styles.horizontalActionText, styles.restoreText]}>Restore</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton} onPress={handleSoftDelete}>
-                    <Text style={[styles.actionIcon, styles.deleteIcon]}>🗑️</Text>
-                    <Text style={[styles.actionText, styles.destructiveText]}>Delete</Text>
+                  <TouchableOpacity style={styles.horizontalActionButton} onPress={handleSoftDelete}>
+                    <Icon name="delete" size={16} color="#374151" style={styles.actionIcon} />
+                    <Text style={styles.horizontalActionText}>Delete</Text>
                   </TouchableOpacity>
-                </>
+                </View>
               )}
 
               {isRecentlyDeleted && (
-                <>
-                  <TouchableOpacity style={styles.actionButton} onPress={handleRestore}>
-                    <Text style={[styles.actionIcon, styles.restoreIcon]}>↩️</Text>
-                    <Text style={[styles.actionText, styles.restoreText]}>Undelete</Text>
+                <View style={styles.horizontalActions}>
+                  <TouchableOpacity style={styles.horizontalActionButton} onPress={handleRestore}>
+                    <Icon name="restore" size={16} color="#059669" style={styles.actionIcon} />
+                    <Text style={[styles.horizontalActionText, styles.restoreText]}>Undelete</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.actionButton} onPress={handlePermanentDelete}>
-                    <Text style={[styles.actionIcon, styles.permanentDeleteIcon]}>🗑️</Text>
-                    <Text style={[styles.actionText, styles.permanentDeleteText]}>Delete Permanently</Text>
+                  <TouchableOpacity style={styles.horizontalActionButton} onPress={handlePermanentDelete}>
+                    <Icon name="delete" size={16} color="#374151" style={styles.actionIcon} />
+                    <Text style={styles.horizontalActionText}>Delete Permanently</Text>
                   </TouchableOpacity>
-                </>
+                </View>
               )}
             </View>
           </View>
@@ -363,30 +363,13 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
 
-  // Read Mode - Typography Hierarchy
-  readActionsContainer: {
-    alignItems: 'flex-end',
-    marginBottom: 16,
-  },
-  editButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
-
   // Primary Typography - Title (H1-ish)
   primaryTitle: {
     fontSize: 28,
     fontWeight: '700',
     color: '#111827',
     lineHeight: 36,
-    marginBottom: 16,
+    marginBottom: 8,
   },
 
   // Secondary Typography - Description (body)
@@ -532,6 +515,21 @@ const styles = StyleSheet.create({
   actionsSection: {
     gap: 12,
   },
+  horizontalActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  horizontalActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -542,23 +540,15 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   actionIcon: {
-    fontSize: 16,
     marginRight: 8,
-  },
-  archiveIcon: {
-    opacity: 0.8,
-  },
-  deleteIcon: {
-    opacity: 0.8,
-  },
-  restoreIcon: {
-    opacity: 0.8,
-  },
-  permanentDeleteIcon: {
-    opacity: 0.8,
   },
   actionText: {
     fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  horizontalActionText: {
+    fontSize: 14,
     fontWeight: '500',
     color: '#374151',
   },

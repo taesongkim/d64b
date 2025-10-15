@@ -238,7 +238,7 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
-  const [selectedCommitment, setSelectedCommitment] = useState<Commitment | null>(null);
+  const [selectedCommitmentId, setSelectedCommitmentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
   // Use the friends charts hook for global state management
@@ -385,11 +385,8 @@ export default function DashboardScreen(): React.JSX.Element {
   };
 
   const handleCommitmentTitlePress = (commitmentId: string) => {
-    const commitment = commitments.find(c => c.id === commitmentId);
-    if (commitment) {
-      setSelectedCommitment(commitment);
-      setShowCommitmentDetailsModal(true);
-    }
+    setSelectedCommitmentId(commitmentId);
+    setShowCommitmentDetailsModal(true);
   };
 
   const handleUpdateCommitment = async (id: string, updates: Partial<Commitment>) => {
@@ -464,10 +461,10 @@ export default function DashboardScreen(): React.JSX.Element {
 
   // Get notes for the selected commitment
   const getCommitmentNotes = () => {
-    if (!selectedCommitment) return [];
-    
+    if (!selectedCommitmentId) return [];
+
     return records
-      .filter(r => r.commitmentId === selectedCommitment.id && r.notes)
+      .filter(r => r.commitmentId === selectedCommitmentId && r.notes)
       .map(r => ({
         date: r.date,
         notes: r.notes || null,
@@ -598,9 +595,9 @@ export default function DashboardScreen(): React.JSX.Element {
         visible={showCommitmentDetailsModal}
         onClose={() => {
           setShowCommitmentDetailsModal(false);
-          setSelectedCommitment(null);
+          setSelectedCommitmentId(null);
         }}
-        commitment={selectedCommitment}
+        commitmentId={selectedCommitmentId}
         onUpdateCommitment={handleUpdateCommitment}
         notes={getCommitmentNotes()}
         onArchive={handleArchiveCommitment}
