@@ -19,8 +19,9 @@ interface CellShimmerOverlayProps {
 // eslint-disable-next-line no-undef
 const shimmerAsset = require('../../../assets/ui/shimmer-diagonal.png');
 
-const SHIMMER_OPACITY = 0.5;
-const ANIMATION_DURATION = 1500;
+const SHIMMER_OPACITY = 0.9;
+const SHIMMER_DURATION_MS = 1500;
+const SHIMMER_PAUSE_MS = 700;
 const CASCADE_DELAY = 100; // ms per row
 
 export default function CellShimmerOverlay({
@@ -31,9 +32,8 @@ export default function CellShimmerOverlay({
   isVisible,
   reduceMotion,
 }: CellShimmerOverlayProps): React.JSX.Element | null {
-  // Dual band animated values
-  const translateXA = useRef(new Animated.Value(0)).current;
-  const translateXB = useRef(new Animated.Value(0)).current;
+  // Single band animated value
+  const translateX = useRef(new Animated.Value(0)).current;
 
   // Calculate travel span with overscan for continuous coverage
   const cellDiagonal = size * 1.4142;
@@ -58,23 +58,14 @@ export default function CellShimmerOverlay({
     height: size * 2,
   }), [size]);
 
-  const bandAStyle = useMemo((): Animated.AnimatedProps<ImageStyle> => ({
+  const bandStyle = useMemo((): Animated.AnimatedProps<ImageStyle> => ({
     ...bandBaseStyle,
     opacity: SHIMMER_OPACITY,
     transform: [
       { rotate: '45deg' },
-      { translateX: translateXA },
+      { translateX: translateX },
     ],
-  }), [bandBaseStyle, translateXA]);
-
-  const bandBStyle = useMemo((): Animated.AnimatedProps<ImageStyle> => ({
-    ...bandBaseStyle,
-    opacity: SHIMMER_OPACITY,
-    transform: [
-      { rotate: '45deg' },
-      { translateX: translateXB },
-    ],
-  }), [bandBaseStyle, translateXB]);
+  }), [bandBaseStyle, translateX]);
 
   const staticBandStyle = useMemo((): ViewStyle => ({
     ...bandBaseStyle,
@@ -91,63 +82,43 @@ export default function CellShimmerOverlay({
     }
 
     if (reduceMotion) {
-      // Static band at 50% opacity for reduce motion
-      translateXA.setValue(0);
-      translateXB.setValue(0);
+      // Static band at 90% opacity for reduce motion
+      translateX.setValue(0);
       return;
     }
 
-    // Continuous loop setup
+    // Single band with pause between loops
     const initialDelay = rowIndex * CASCADE_DELAY;
-    const halfPhaseDelay = initialDelay + (ANIMATION_DURATION / 2);
 
-    // Set initial positions
-    translateXA.setValue(-span);
-    translateXB.setValue(-span);
+    // Set initial position
+    translateX.setValue(-span);
 
-    // Band A animation (starts at cascade delay)
-    const animationA = Animated.loop(
-      Animated.timing(translateXA, {
-        toValue: span,
-        duration: ANIMATION_DURATION,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
+    // Create timing + delay sequence
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(translateX, {
+          toValue: span,
+          duration: SHIMMER_DURATION_MS,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+        Animated.delay(SHIMMER_PAUSE_MS),
+      ]),
       { resetBeforeIteration: true }
     );
 
-    // Band B animation (starts at half-phase offset)
-    const animationB = Animated.loop(
-      Animated.timing(translateXB, {
-        toValue: span,
-        duration: ANIMATION_DURATION,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }),
-      { resetBeforeIteration: true }
-    );
-
-    // Start Band A after initial cascade delay
+    // Start animation after initial cascade delay
     // eslint-disable-next-line no-undef
-    const timeoutA = setTimeout(() => {
-      animationA.start();
+    const timeout = setTimeout(() => {
+      animation.start();
     }, initialDelay);
-
-    // Start Band B after half-phase delay
-    // eslint-disable-next-line no-undef
-    const timeoutB = setTimeout(() => {
-      animationB.start();
-    }, halfPhaseDelay);
 
     return () => {
       // eslint-disable-next-line no-undef
-      clearTimeout(timeoutA);
-      // eslint-disable-next-line no-undef
-      clearTimeout(timeoutB);
-      animationA.stop();
-      animationB.stop();
+      clearTimeout(timeout);
+      animation.stop();
     };
-  }, [isToday, isVisible, reduceMotion, rowIndex, span, translateXA, translateXB]);
+  }, [isToday, isVisible, reduceMotion, rowIndex, span, translateX]);
 
   if (!isToday || !isVisible) {
     return null;
@@ -163,20 +134,12 @@ export default function CellShimmerOverlay({
           resizeMode="cover"
         />
       ) : (
-        <>
-          {/* Band A */}
-          <Animated.Image
-            source={shimmerAsset}
-            style={bandAStyle}
-            resizeMode="cover"
-          />
-          {/* Band B - Half phase offset for continuous coverage */}
-          <Animated.Image
-            source={shimmerAsset}
-            style={bandBStyle}
-            resizeMode="cover"
-          />
-        </>
+        // Single animated band with pause sequence
+        <Animated.Image
+          source={shimmerAsset}
+          style={bandStyle}
+          resizeMode="cover"
+        />
       )}
     </Animated.View>
   );

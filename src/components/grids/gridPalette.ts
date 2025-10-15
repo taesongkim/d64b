@@ -3,7 +3,8 @@
  * Single source of truth for all grid cell colors and styling
  *
  * Note: Today cells use shimmer overlay animation; column highlight removed by design
- * Shimmer uses full-white PNG asset (assets/ui/shimmer-diagonal.png) with 50% opacity applied at runtime
+ * Shimmer uses full-white PNG asset (assets/ui/shimmer-diagonal.png) with 90% opacity applied at runtime
+ * Animation sequence: 1500ms sweep + 700ms pause, with 100ms cascade delay per row
  */
 
 export type CellState = 'completed' | 'skipped' | 'failed' | 'weekend' | 'today' | 'idle';
