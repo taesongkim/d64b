@@ -10,20 +10,9 @@ import CustomXIcon from '../CustomXIcon';
 import CustomCheckmarkIcon from '../CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { isWeekend, getTodayISO } from '@/utils/timeUtils';
+import { getCellVisualTreatment, determineCellState } from './gridPalette';
 
 export type ViewMode = 'daily' | 'weekly';
-
-// Color constants matching CommitmentGrid
-const COLORS = {
-  idle: '#F3F4F6',
-  completed: '#10B981',
-  skipped: '#10B981',
-  failed: '#EF4444',
-  weekend: '#E5E7EB',
-  today: '#F3F4F6', // Same as idle for now
-} as const;
-
-type CellState = 'completed' | 'skipped' | 'failed' | 'weekend' | 'today' | 'idle';
 
 interface Commitment {
   id: string;
@@ -124,26 +113,23 @@ export default function SingleCommitmentRow({
         const isWeekendDay = isWeekend(date);
         const isTodayDate = date === todayISO;
 
-        // Determine cell state based on priority: status > weekend > today > idle
-        const cellState: CellState = (() => {
-          if (status === 'completed') return 'completed';
-          if (status === 'skipped') return 'skipped';
-          if (status === 'failed') return 'failed';
-          if (isWeekendDay) return 'weekend';
-          if (isTodayDate) return 'today';
-          return 'idle';
-        })();
-
-        const bgColor = COLORS[cellState];
+        // Determine cell state and visual treatment using centralized palette
+        const cellState = determineCellState(status, isWeekendDay, isTodayDate);
+        const visualTreatment = getCellVisualTreatment(cellState, isTodayDate);
 
         const dynamicCellStyle: ViewStyle = {
           width: getCellSize(viewMode),
           height: getCellSize(viewMode),
           marginHorizontal: getCellMargin(viewMode),
           borderRadius: getCellBorderRadius(viewMode),
-          backgroundColor: bgColor,
+          backgroundColor: visualTreatment.backgroundColor,
           justifyContent: 'center',
           alignItems: 'center',
+          // Today ring styling
+          ...(visualTreatment.hasTodayRing && {
+            borderWidth: visualTreatment.todayRingWidth,
+            borderColor: visualTreatment.todayRingColor,
+          }),
         };
 
         const cellStyle: StyleProp<ViewStyle> = StyleSheet.compose(styles.cell, dynamicCellStyle);

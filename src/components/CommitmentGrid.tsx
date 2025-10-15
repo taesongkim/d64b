@@ -25,6 +25,7 @@ import {
   isWeekend,
   formatDateRangeLabel
 } from '@/utils/timeUtils';
+import { getCellVisualTreatment, determineCellState } from './grids/gridPalette';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -432,23 +433,30 @@ export default function CommitmentGrid({
                     const record = records.find(r => r.commitmentId === c.id && r.date === date);
                     const status = record?.status || 'none';
                     const isWeekendDay = isWeekend(date);
-                    
-                    // Determine cell styling based on status
-                    let cellStyle = [dynamicStyles.cell];
+                    const isTodayDate = date === todayISO;
+
+                    // Determine cell state and visual treatment using centralized palette
+                    const cellState = determineCellState(status, isWeekendDay, isTodayDate);
+                    const visualTreatment = getCellVisualTreatment(cellState, isTodayDate);
+
+                    // Create dynamic cell style with today ring support
+                    const cellStyleOverrides = {
+                      backgroundColor: visualTreatment.backgroundColor,
+                      ...(visualTreatment.hasTodayRing && {
+                        borderWidth: visualTreatment.todayRingWidth,
+                        borderColor: visualTreatment.todayRingColor,
+                      }),
+                    };
+
+                    const cellStyle = [dynamicStyles.cell, cellStyleOverrides];
                     let cellContent = null;
-                    
+
                     if (status === 'completed') {
-                      cellStyle = [dynamicStyles.cell, styles.completedCell];
                       cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
-                    } else if (status === 'skipped') {
-                      cellStyle = [dynamicStyles.cell, styles.skippedCell];
-                      cellContent = null; // Empty green square, no icon
                     } else if (status === 'failed') {
-                      cellStyle = [dynamicStyles.cell, styles.failedCell];
                       cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
-                    } else if (isWeekendDay) {
-                      cellStyle = [dynamicStyles.cell, styles.weekendCell];
                     }
+                    // skipped cells have no content (empty colored square)
                     
                     return (
                       <TouchableOpacity
@@ -595,22 +603,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  weekendCell: {
-    backgroundColor: '#E5E7EB',
-  },
-  todayCell: {
-    borderWidth: 2,
-    borderColor: '#10B981',
-  },
-  completedCell: {
-    backgroundColor: '#10B981',
-  },
-  skippedCell: {
-    backgroundColor: '#10B981',
-  },
-  failedCell: {
-    backgroundColor: '#EF4444',
-  },
+  // Cell colors now managed by centralized grid palette
   todayColumnBar: {
     position: 'absolute',
     top: 0,
