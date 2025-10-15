@@ -11,7 +11,9 @@ import CustomXIcon from '../CustomXIcon';
 import CustomCheckmarkIcon from '../CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { isWeekend, getTodayISO } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState, type ColorScheme } from './gridPalette';
+import { getCellVisualTreatment, determineCellState, getRingBaseColor, type ColorScheme } from './gridPalette';
+import TodayRingShimmer from './TodayRingShimmer';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
 
 export type ViewMode = 'daily' | 'weekly';
 
@@ -85,6 +87,7 @@ export default function SingleCommitmentRow({
 }: SingleCommitmentRowProps): React.JSX.Element {
   const todayISO = getTodayISO();
   const colorScheme = useColorScheme() as ColorScheme ?? 'light';
+  const reduceMotion = useReduceMotion();
 
   const rowContainerStyle = useMemo((): StyleProp<ViewStyle> => [
     styles.rowContainer,
@@ -117,7 +120,7 @@ export default function SingleCommitmentRow({
 
         // Determine cell state and visual treatment using centralized palette
         const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-        const visualTreatment = getCellVisualTreatment(cellState, isTodayDate, colorScheme);
+        const visualTreatment = getCellVisualTreatment(cellState);
 
         const dynamicCellStyle: ViewStyle = {
           width: getCellSize(viewMode),
@@ -127,7 +130,7 @@ export default function SingleCommitmentRow({
           backgroundColor: visualTreatment.backgroundColor,
           justifyContent: 'center',
           alignItems: 'center',
-          // Neutral today ring with transparent base borders
+          // Transparent base borders for layout stability
           borderWidth: visualTreatment.borderWidth,
           borderColor: visualTreatment.borderColor,
         };
@@ -150,6 +153,18 @@ export default function SingleCommitmentRow({
             delayLongPress={500}
           >
             {cellContent}
+            {/* Today ring shimmer overlay */}
+            {isTodayDate && (
+              <TodayRingShimmer
+                size={getCellSize(viewMode)}
+                radius={getCellBorderRadius(viewMode)}
+                ringColor={getRingBaseColor(cellState, colorScheme)}
+                isVisible={true} // Modal row is always visible when modal is open
+                rowIndex={0} // Single row in modal
+                reduceMotion={reduceMotion}
+                colorScheme={colorScheme}
+              />
+            )}
           </TouchableOpacity>
         );
       })}

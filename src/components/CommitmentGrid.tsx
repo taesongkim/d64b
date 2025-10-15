@@ -26,7 +26,10 @@ import {
   isWeekend,
   formatDateRangeLabel
 } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState, type ColorScheme } from './grids/gridPalette';
+import { getCellVisualTreatment, determineCellState, getRingBaseColor, type ColorScheme } from './grids/gridPalette';
+import TodayRingShimmer from './grids/TodayRingShimmer';
+import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { useRowVisibility } from '@/hooks/useRowVisibility';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -208,6 +211,9 @@ export default function CommitmentGrid({
 
   const todayISO = getTodayISO();
   const colorScheme = useColorScheme() as ColorScheme ?? 'light';
+  const reduceMotion = useReduceMotion();
+  const { isRowVisible } = useRowVisibility();
+
   const todayIndex = useMemo(() => {
     if (!dates || dates.length === 0) return 0;
     const idx = dates.indexOf(todayISO);
@@ -418,7 +424,7 @@ export default function CommitmentGrid({
               {/* Date header */}
               {renderDateHeader()}
               {/* Grid rows */}
-              {commitments.map((c) => (
+              {commitments.map((c, commitmentIndex) => (
                 <View key={c.id} style={{ flexDirection: 'row', marginBottom: getRowSpacing(viewMode) }}>
                   {dates.map((date) => {
                     const record = records.find(r => r.commitmentId === c.id && r.date === date);
@@ -428,9 +434,9 @@ export default function CommitmentGrid({
 
                     // Determine cell state and visual treatment using centralized palette
                     const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-                    const visualTreatment = getCellVisualTreatment(cellState, isTodayDate, colorScheme);
+                    const visualTreatment = getCellVisualTreatment(cellState);
 
-                    // Create dynamic cell style with neutral today ring and transparent base borders
+                    // Create dynamic cell style with transparent base borders
                     const cellStyleOverrides = {
                       backgroundColor: visualTreatment.backgroundColor,
                       borderWidth: visualTreatment.borderWidth,
@@ -456,6 +462,18 @@ export default function CommitmentGrid({
                         delayLongPress={500}
                       >
                         {cellContent}
+                        {/* Today ring shimmer overlay */}
+                        {isTodayDate && (
+                          <TodayRingShimmer
+                            size={getCellSize(viewMode)}
+                            radius={getCellBorderRadius(viewMode)}
+                            ringColor={getRingBaseColor(cellState, colorScheme)}
+                            isVisible={isRowVisible()}
+                            rowIndex={commitmentIndex}
+                            reduceMotion={reduceMotion}
+                            colorScheme={colorScheme}
+                          />
+                        )}
                       </TouchableOpacity>
                     );
                   })}
