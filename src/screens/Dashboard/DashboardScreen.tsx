@@ -604,6 +604,10 @@ export default function DashboardScreen(): React.JSX.Element {
         onRestore={handleRestoreCommitment}
         onSoftDelete={handleSoftDeleteCommitment}
         onPermanentDelete={handlePermanentDeleteCommitment}
+        records={records}
+        onCellPress={handleCellPress}
+        onSetRecordStatus={handleSetRecordStatus}
+        earliestDate={user?.created_at ? user.created_at.split('T')[0] : undefined}
       />
 
 

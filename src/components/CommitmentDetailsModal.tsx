@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Modal,
   View,
@@ -12,7 +12,22 @@ import {
 } from 'react-native';
 import { Commitment, selectCommitmentById } from '@/store/slices/commitmentsSlice';
 import { useAppSelector } from '@/store/hooks';
+import { RecordStatus } from '@/store/slices/recordsSlice';
 import Icon from './icons/Icon';
+import GridMonthHeader from './grids/GridMonthHeader';
+import GridDateHeader from './grids/GridDateHeader';
+import SingleCommitmentRow from './grids/SingleCommitmentRow';
+import ReactionPopup from './ReactionPopup';
+import CommitmentCellModal from './CommitmentCellModal';
+import { useGridDates } from '@/hooks/useGridDates';
+import { useGridVisibleRange, type ViewMode } from '@/hooks/useGridVisibleRange';
+
+interface DayRecord {
+  date: string;
+  commitmentId: string;
+  status: RecordStatus;
+  value?: any;
+}
 
 interface CommitmentDetailsModalProps {
   visible: boolean;
@@ -24,6 +39,11 @@ interface CommitmentDetailsModalProps {
   onRestore: (id: string) => void;
   onSoftDelete: (id: string) => void;
   onPermanentDelete: (id: string) => void;
+  // Grid-related props
+  records: DayRecord[];
+  onCellPress: (commitmentId: string, date: string) => void;
+  onSetRecordStatus: (commitmentId: string, date: string, status: RecordStatus, value?: any) => void;
+  earliestDate?: string;
 }
 
 const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
@@ -36,6 +56,10 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   onRestore,
   onSoftDelete,
   onPermanentDelete,
+  records,
+  onCellPress,
+  onSetRecordStatus,
+  earliestDate,
 }) => {
   const commitment = useAppSelector(state =>
     commitmentId ? selectCommitmentById(state, commitmentId) : null
@@ -43,6 +67,35 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
+
+  // Grid state
+  const [viewMode] = useState<ViewMode>('daily'); // Fixed to daily for modal
+  const [scrollX, setScrollX] = useState(0);
+  const gridScrollRef = useRef<ScrollView>(null);
+
+  // Popup state for grid interactions
+  const [popupVisible, setPopupVisible] = useState(false);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+  const [selectedCell, setSelectedCell] = useState<{ commitmentId: string; date: string } | null>(null);
+
+  // Cell modal state for grid
+  const [cellModalVisible, setCellModalVisible] = useState(false);
+  const [selectedCommitmentForCell, setSelectedCommitmentForCell] = useState<Commitment | null>(null);
+  const [selectedDate, setSelectedDate] = useState('');
+
+  // Grid hooks
+  const minRecordDate = records.length > 0 ? records.reduce((min, r) => r.date < min ? r.date : min, records[0].date) : null;
+  const { dates, todayIndex, appendFutureDates } = useGridDates({
+    viewMode,
+    earliestDate,
+    minRecordDate,
+  });
+  const { monthLabel, columnWidth } = useGridVisibleRange({
+    scrollX,
+    dates,
+    viewMode,
+    includeLeftCol: false, // Modal has no left column
+  });
 
   // Archive/Delete state logic
   const isActive = commitment && !commitment.archived && !commitment.deletedAt;
@@ -124,6 +177,63 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
       ]
     );
   }, [commitment, onPermanentDelete, onClose]);
+
+  // Grid handlers
+  const handleGridCellPress = useCallback((commitmentId: string, date: string) => {
+    if (!commitment) return;
+
+    // For binary commitments (Yes/No type), use the original simple toggle behavior
+    if (commitment.commitmentType === 'checkbox' && !commitment.requirements) {
+      onCellPress(commitmentId, date);
+      return;
+    }
+
+    // For non-binary commitments (Multiple Requirements, Rating, Measure), open the cell modal
+    setSelectedCommitmentForCell(commitment);
+    setSelectedDate(date);
+    setCellModalVisible(true);
+  }, [commitment, onCellPress]);
+
+  const handleGridLongPress = useCallback((commitmentId: string, date: string, event: any) => {
+    const { pageX, pageY } = event.nativeEvent;
+    setSelectedCell({ commitmentId, date });
+    setPopupPosition({ x: pageX, y: pageY });
+    setPopupVisible(true);
+  }, []);
+
+  const handlePopupSelect = useCallback((status: RecordStatus) => {
+    if (selectedCell) {
+      onSetRecordStatus(selectedCell.commitmentId, selectedCell.date, status);
+    }
+    setPopupVisible(false);
+    setSelectedCell(null);
+  }, [selectedCell, onSetRecordStatus]);
+
+  const handlePopupDismiss = useCallback(() => {
+    setPopupVisible(false);
+    setSelectedCell(null);
+  }, []);
+
+  const handleCellModalSave = useCallback((commitmentId: string, date: string, status: RecordStatus, value?: any) => {
+    onSetRecordStatus(commitmentId, date, status, value);
+    setCellModalVisible(false);
+  }, [onSetRecordStatus]);
+
+  const handleScrollChange = useCallback((e: any) => {
+    const x = e.nativeEvent.contentOffset.x;
+    setScrollX(x);
+  }, []);
+
+  const handleMomentumScrollEnd = useCallback((e: any) => {
+    const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+    if (contentOffset.x + layoutMeasurement.width >= contentSize.width - columnWidth * 2) {
+      appendFutureDates();
+    }
+  }, [columnWidth, appendFutureDates]);
+
+  const handleCellModalClose = useCallback(() => {
+    setCellModalVisible(false);
+  }, []);
 
   const getTargetDisplay = () => {
     if (!commitment || commitment.commitmentType !== 'measurement') return '';
@@ -222,6 +332,34 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
             )}
           </View>
 
+          {/* Commitment Grid - Single Row */}
+          {commitment && (
+            <View style={styles.gridSection}>
+              <GridMonthHeader monthLabel={monthLabel} />
+              <ScrollView
+                ref={gridScrollRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentOffset={{ x: todayIndex * columnWidth, y: 0 }}
+                onScroll={handleScrollChange}
+                scrollEventThrottle={16}
+                onMomentumScrollEnd={handleMomentumScrollEnd}
+              >
+                <View>
+                  <GridDateHeader dates={dates} viewMode={viewMode} />
+                  <SingleCommitmentRow
+                    commitment={commitment}
+                    dates={dates}
+                    records={records}
+                    viewMode={viewMode}
+                    onCellPress={handleGridCellPress}
+                    onLongPress={handleGridLongPress}
+                  />
+                </View>
+              </ScrollView>
+            </View>
+          )}
+
           {/* Meta Information - Tertiary Typography */}
           {(commitment.commitmentType === 'measurement' && commitment.target) && (
             <View style={styles.metaSection}>
@@ -317,6 +455,26 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Grid Reaction Popup */}
+      <ReactionPopup
+        visible={popupVisible}
+        onSelect={handlePopupSelect}
+        onDismiss={handlePopupDismiss}
+        position={popupPosition}
+      />
+
+      {/* Grid Cell Modal for Non-Binary Commitments */}
+      <CommitmentCellModal
+        visible={cellModalVisible}
+        onClose={handleCellModalClose}
+        commitment={selectedCommitmentForCell}
+        date={selectedDate}
+        existingRecord={selectedCommitmentForCell ? records.find(r =>
+          r.commitmentId === selectedCommitmentForCell.id && r.date === selectedDate
+        ) : null}
+        onSave={handleCellModalSave}
+      />
     </Modal>
   );
 };
@@ -441,6 +599,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E5E7EB',
     minHeight: 100,
+  },
+
+  // Grid Section
+  gridSection: {
+    marginBottom: 32,
+    marginTop: 8,
   },
 
   // Meta Information - Tertiary Typography
