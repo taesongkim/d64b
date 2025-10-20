@@ -8,15 +8,23 @@ import { RecordStatus } from '@/store/slices/recordsSlice';
 interface ReactionPopupProps {
   visible: boolean;
   onSelect: (status: RecordStatus) => void;
+  onOpenDetails?: () => void;
   onDismiss: () => void;
   position: { x: number; y: number };
 }
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export default function ReactionPopup({ visible, onSelect, onDismiss, position }: ReactionPopupProps) {
+export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDismiss, position }: ReactionPopupProps) {
   const handleSelect = (status: RecordStatus) => {
     onSelect(status);
+    onDismiss();
+  };
+
+  const handleOpenDetails = () => {
+    if (onOpenDetails) {
+      onOpenDetails();
+    }
     onDismiss();
   };
 
@@ -52,12 +60,22 @@ export default function ReactionPopup({ visible, onSelect, onDismiss, position }
             <CustomCircleDashIcon size={18} color="white" />
           </TouchableOpacity>
           
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.option, { backgroundColor: '#EF4444' }]}
             onPress={() => handleSelect('failed')}
           >
             <CustomXIcon size={14} color="white" />
           </TouchableOpacity>
+
+          {onOpenDetails && (
+            <TouchableOpacity
+              style={[styles.option, { backgroundColor: '#9CA3AF' }]}
+              onPress={handleOpenDetails}
+              accessibilityLabel="Open details"
+            >
+              <Text style={styles.detailsIcon}>⋯</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     </Modal>
@@ -99,6 +117,11 @@ const styles = StyleSheet.create({
   skipIcon: {
     fontSize: 18,
     color: '#111827',
+    fontWeight: 'bold',
+  },
+  detailsIcon: {
+    fontSize: 16,
+    color: 'white',
     fontWeight: 'bold',
   },
 });

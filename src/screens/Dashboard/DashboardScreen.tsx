@@ -261,19 +261,10 @@ export default function DashboardScreen(): React.JSX.Element {
     }
   };
   
-  const handleCellPress = (commitmentId: string, date: string) => {
-    // Check if record currently exists to determine which status to set
-    const existingRecord = records.find(
-      r => r.commitmentId === commitmentId && r.date === date
-    );
-    
-    if (existingRecord) {
-      // If record exists, remove it (set to 'none')
-      handleSetRecordStatus(commitmentId, date, 'none');
-    } else {
-      // If no record exists, mark as completed
-      handleSetRecordStatus(commitmentId, date, 'completed');
-    }
+  const handleCellPress = (commitmentId: string, date: string, event: any) => {
+    // This handler is now used by CommitmentGrid for showing quick options popup
+    // The actual gesture handling is delegated to CommitmentGrid component
+    console.log('📱 Cell press delegated to CommitmentGrid for quick options');
   };
 
   const handleSetRecordStatus = (commitmentId: string, date: string, status: RecordStatus, value?: any) => {

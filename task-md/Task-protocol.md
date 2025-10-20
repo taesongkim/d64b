@@ -68,6 +68,59 @@ Lessons Learned: [notes]
 
 ---
 
+## Cell Gesture Remap — COMPLETE ✅
+
+**Date/Time (ET):** 2025-10-20 [Time TBD]
+**Branch:** main (direct implementation)
+**Status:** COMPLETE
+**Summary:** Unified cell interaction gestures across all commitment types
+
+### What We Implemented
+
+1. **Gesture Unification**
+   - **Press (quick tap)**: Shows ReactionPopup with quick options (Complete/Skip/Failed/Open Details)
+   - **Long-press (500ms+ hold)**: Opens CommitmentCellModal directly for detailed logging
+   - Applied consistently to all commitment types (binary, measurement, rating)
+
+2. **ReactionPopup Enhancements**
+   - Added "Open Details" button with light gray background (#9CA3AF) and "⋯" icon
+   - Added `onOpenDetails` prop and handler for bridging to CommitmentCellModal
+   - Maintains existing Complete/Skip/Failed quick actions
+
+3. **Binary Auto-Toggle Removal**
+   - Removed special-case binary toggle behavior from DashboardScreen handleCellPress
+   - All commitment types now use unified gesture pattern
+   - No more commitment-type-specific interaction logic
+
+4. **Gesture Mutual Exclusivity**
+   - TouchableOpacity with `delayLongPress={500}` ensures proper gesture separation
+   - Consistent timing across CommitmentGrid and SingleCommitmentRow components
+   - React Native handles mutual exclusivity automatically
+
+5. **Modal Architecture Verification**
+   - Confirmed CommitmentCellModal serves as shared base for all commitment types
+   - Supports checkbox (binary + requirements), measurement (with/without rating), and all status types
+   - Single source of truth for detailed commitment logging
+
+### Files Modified
+- `/src/components/ReactionPopup.tsx` - Added Open Details button and handler
+- `/src/components/CommitmentGrid.tsx` - Swapped press/long-press gesture behavior
+- `/src/components/grids/SingleCommitmentRow.tsx` - Updated prop types and gesture handlers
+- `/src/screens/Dashboard/DashboardScreen.tsx` - Removed binary auto-toggle logic
+
+### Gesture Flow
+1. **Quick tap** → ReactionPopup → Quick status selection or "Open Details" → CommitmentCellModal
+2. **Long-press** → CommitmentCellModal directly (bypasses popup)
+3. **Mutual exclusivity** → Only one gesture fires per interaction (no double-triggering)
+
+### Technical Implementation
+- Gesture timing: 500ms threshold for long-press detection
+- Event handling: Press receives `event` parameter for popup positioning, long-press does not
+- Component architecture: Maintained existing modal and popup structure
+- TypeScript safety: Updated interface signatures for gesture handler consistency
+
+---
+
 ## Pre-TestFlight Guardrails — COMPLETE ✅
 
 **Date/Time (ET):** 2025-09-25 18:48 EDT

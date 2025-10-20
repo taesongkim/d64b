@@ -29,6 +29,8 @@ import {
 import { getCellVisualTreatment, determineCellState } from './grids/gridPalette';
 import CellShimmerOverlay from './grids/CellShimmerOverlay';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
+import { GRID_DEBUG } from '@/_shared/debug';
+import { getPressPoint } from './grids/getPressPoint';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -134,6 +136,7 @@ export default function CommitmentGrid({
   const viewMode = externalViewMode || internalViewMode;
   
   // Reaction popup state
+  const popupOpenRef = useRef(false);
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [selectedCell, setSelectedCell] = useState<{ commitmentId: string; date: string } | null>(null);
@@ -238,15 +241,37 @@ export default function CommitmentGrid({
   };
 
   // Popup handlers
-  const handleLongPress = (commitmentId: string, date: string, event: any) => {
-    const { pageX, pageY } = event.nativeEvent;
-    setSelectedCell({ commitmentId, date });
-    setPopupPosition({ x: pageX, y: pageY });
-    setPopupVisible(true);
+  const handleLongPress = (commitmentId: string, date: string) => {
+    // DEV instrumentation
+    if (GRID_DEBUG) {
+      console.log('[cell-gesture]', {
+        surface: 'home',
+        type: 'longPress',
+        hasEvent: false,
+        hasNative: false
+      });
+    }
+
+    const commitment = commitments.find(c => c.id === commitmentId);
+    if (!commitment) return;
+
+    setSelectedCommitment(commitment);
+    setSelectedDate(date);
+    setCellModalVisible(true);
+
+    if (GRID_DEBUG) {
+      console.log('[cell-gesture] cell modal opened for commitment', commitmentId);
+    }
   };
 
   const handlePopupSelect = (status: RecordStatus) => {
     if (selectedCell) {
+      // Dev-only logging to verify offline queue idempotency
+      if (__DEV__) {
+        const idempotencyKey = `${selectedCell.commitmentId}_${selectedCell.date}`;
+        console.log(`🔄 ReactionPopup → Queue enqueue: ${status} [${idempotencyKey}]`);
+      }
+
       onSetRecordStatus(selectedCell.commitmentId, selectedCell.date, status);
     }
   };
@@ -255,25 +280,63 @@ export default function CommitmentGrid({
     onSetRecordStatus(commitmentId, date, status, value);
   };
 
-  const handleCellPress = (commitmentId: string, date: string) => {
-    const commitment = commitments.find(c => c.id === commitmentId);
-    if (!commitment) return;
-
-    // For binary commitments (Yes/No type), use the original simple toggle behavior
-    if (commitment.commitmentType === 'checkbox' && !commitment.requirements) {
-      onCellPress(commitmentId, date);
-      return;
+  const handleCellPress = (commitmentId: string, date: string, event: any) => {
+    // DEV instrumentation
+    if (GRID_DEBUG) {
+      console.log('[cell-gesture]', {
+        surface: 'home',
+        type: 'press',
+        popupVisible,
+        hasEvent: !!event,
+        hasNative: !!event?.nativeEvent
+      });
     }
 
-    // For non-binary commitments (Multiple Requirements, Rating, Measure), open the cell modal
-    setSelectedCommitment(commitment);
-    setSelectedDate(date);
-    setCellModalVisible(true);
+    // Prevent opening new popup if one is already visible
+    if (popupOpenRef.current) return;
+
+    // Capture event fields before any async work
+    const pressPoint = getPressPoint(event, null);
+    event?.persist?.();
+
+    if (pressPoint) {
+      setSelectedCell({ commitmentId, date });
+      setPopupPosition(pressPoint);
+      setPopupVisible(true);
+      popupOpenRef.current = true;
+
+      if (GRID_DEBUG) {
+        console.log('[cell-gesture] popup opened at', pressPoint);
+      }
+    } else {
+      // Fallback to center of screen if no coordinates available
+      const fallbackPosition = { x: screenWidth / 2, y: 300 };
+      setSelectedCell({ commitmentId, date });
+      setPopupPosition(fallbackPosition);
+      setPopupVisible(true);
+      popupOpenRef.current = true;
+
+      if (GRID_DEBUG) {
+        console.log('[cell-gesture] popup opened at fallback position', fallbackPosition);
+      }
+    }
   };
 
   const handlePopupDismiss = () => {
     setPopupVisible(false);
     setSelectedCell(null);
+    popupOpenRef.current = false;
+  };
+
+  const handleOpenDetails = () => {
+    if (selectedCell) {
+      const commitment = commitments.find(c => c.id === selectedCell.commitmentId);
+      if (commitment) {
+        setSelectedCommitment(commitment);
+        setSelectedDate(selectedCell.date);
+        setCellModalVisible(true);
+      }
+    }
   };
   
   // Unused function - removed to fix TypeScript errors
@@ -460,9 +523,9 @@ export default function CommitmentGrid({
                       <TouchableOpacity
                         key={`${c.id}-${date}`}
                         style={cellStyle}
-                        onPress={() => handleCellPress(c.id, date)}
-                        onLongPress={(event) => handleLongPress(c.id, date, event)}
-                        delayLongPress={500}
+                        onPress={(event) => handleCellPress(c.id, date, event)}
+                        onLongPress={() => handleLongPress(c.id, date)}
+                        delayLongPress={400}
                       >
                         {cellContent}
                         <CellShimmerOverlay
@@ -487,6 +550,7 @@ export default function CommitmentGrid({
       <ReactionPopup
         visible={popupVisible}
         onSelect={handlePopupSelect}
+        onOpenDetails={handleOpenDetails}
         onDismiss={handlePopupDismiss}
         position={popupPosition}
       />

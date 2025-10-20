@@ -77,6 +77,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [selectedCell, setSelectedCell] = useState<{ commitmentId: string; date: string } | null>(null);
+  const popupOpenRef = useRef(false);
 
   // Cell modal state for grid
   const [cellModalVisible, setCellModalVisible] = useState(false);
@@ -179,39 +180,45 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   }, [commitment, onPermanentDelete, onClose]);
 
   // Grid handlers
-  const handleGridCellPress = useCallback((commitmentId: string, date: string) => {
-    if (!commitment) return;
+  const handleGridCellPress = useCallback((commitmentId: string, date: string, event: any) => {
+    // Prevent opening new popup if one is already visible
+    if (popupOpenRef.current) return;
 
-    // For binary commitments (Yes/No type), use the original simple toggle behavior
-    if (commitment.commitmentType === 'checkbox' && !commitment.requirements) {
-      onCellPress(commitmentId, date);
-      return;
-    }
-
-    // For non-binary commitments (Multiple Requirements, Rating, Measure), open the cell modal
-    setSelectedCommitmentForCell(commitment);
-    setSelectedDate(date);
-    setCellModalVisible(true);
-  }, [commitment, onCellPress]);
-
-  const handleGridLongPress = useCallback((commitmentId: string, date: string, event: any) => {
     const { pageX, pageY } = event.nativeEvent;
     setSelectedCell({ commitmentId, date });
     setPopupPosition({ x: pageX, y: pageY });
     setPopupVisible(true);
+    popupOpenRef.current = true;
   }, []);
+
+  const handleGridLongPress = useCallback((commitmentId: string, date: string) => {
+    if (!commitment) return;
+
+    // Open CommitmentCellModal for long-press
+    setSelectedCommitmentForCell(commitment);
+    setSelectedDate(date);
+    setCellModalVisible(true);
+  }, [commitment]);
 
   const handlePopupSelect = useCallback((status: RecordStatus) => {
     if (selectedCell) {
+      // Dev-only logging to verify offline queue idempotency
+      if (__DEV__) {
+        const idempotencyKey = `${selectedCell.commitmentId}_${selectedCell.date}`;
+        console.log(`🔄 ReactionPopup → Queue enqueue: ${status} [${idempotencyKey}]`);
+      }
+
       onSetRecordStatus(selectedCell.commitmentId, selectedCell.date, status);
     }
     setPopupVisible(false);
     setSelectedCell(null);
+    popupOpenRef.current = false;
   }, [selectedCell, onSetRecordStatus]);
 
   const handlePopupDismiss = useCallback(() => {
     setPopupVisible(false);
     setSelectedCell(null);
+    popupOpenRef.current = false;
   }, []);
 
   const handleCellModalSave = useCallback((commitmentId: string, date: string, status: RecordStatus, value?: any) => {
@@ -355,6 +362,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
                     rowIndex={0}
                     onCellPress={handleGridCellPress}
                     onLongPress={handleGridLongPress}
+                    gridContext="modal"
                   />
                 </View>
               </ScrollView>
