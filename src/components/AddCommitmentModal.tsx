@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Commitment } from '@/store/slices/commitmentsSlice';
 import { useFontStyle } from '@/hooks/useFontStyle';
+import { MODAL_STYLES, MODAL_SIZES } from './styles/modalStyles';
 
 interface AddCommitmentModalProps {
   visible: boolean;
@@ -162,13 +163,13 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.modalContent}>
+      <View style={MODAL_STYLES.overlay}>
+        <View style={MODAL_STYLES.modalContent}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.header}>
-              <Text style={[styles.title, fontStyle]}>New Commitment</Text>
-              <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-                <Text style={[styles.closeText, fontStyle]}>✕</Text>
+            <View style={MODAL_STYLES.header}>
+              <Text style={[MODAL_STYLES.title, fontStyle]}>New Commitment</Text>
+              <TouchableOpacity onPress={handleClose} style={MODAL_STYLES.closeButton}>
+                <Text style={[MODAL_STYLES.closeText, fontStyle]}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -355,16 +356,16 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
             </View>
 
             {/* Action Buttons */}
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
-                <Text style={[styles.cancelText, fontStyle]}>Cancel</Text>
+            <View style={MODAL_STYLES.buttonContainer}>
+              <TouchableOpacity style={MODAL_STYLES.secondaryButton} onPress={handleClose}>
+                <Text style={[MODAL_STYLES.secondaryButtonText, fontStyle]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.addButton, !title.trim() && styles.disabledButton]} 
+              <TouchableOpacity
+                style={[MODAL_STYLES.primaryButton, !title.trim() && MODAL_STYLES.disabledButton]}
                 onPress={handleAdd}
                 disabled={!title.trim()}
               >
-                <Text style={[styles.addText, fontStyle]}>Add Commitment</Text>
+                <Text style={[MODAL_STYLES.primaryButtonText, fontStyle]}>Add Commitment</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -422,7 +423,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderRadius: MODAL_SIZES.inputBorderRadius,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
   typeOption: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderRadius: MODAL_SIZES.inputBorderRadius,
     padding: 16,
     backgroundColor: '#FAFAFA',
   },
@@ -543,7 +544,7 @@ const styles = StyleSheet.create({
   removeButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: MODAL_SIZES.closeButtonBorderRadius,
     backgroundColor: '#FEE2E2',
     justifyContent: 'center',
     alignItems: 'center',
@@ -556,7 +557,7 @@ const styles = StyleSheet.create({
   addRequirementButton: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: MODAL_SIZES.buttonBorderRadius,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     marginTop: 8,

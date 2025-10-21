@@ -8,13 +8,16 @@ import {
   ScrollView,
   TextInput,
   Alert,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { Commitment } from '@/store/slices/commitmentsSlice';
 import { RecordStatus } from '@/store/slices/recordsSlice';
+import { MODAL_STYLES, MODAL_SIZES } from './styles/modalStyles';
+import CustomCheckmarkIcon from './CustomCheckmarkIcon';
+import CustomCircleDashIcon from './CustomCircleDashIcon';
+import CustomXIcon from './CustomXIcon';
 
 interface CommitmentCellModalProps {
   visible: boolean;
@@ -27,6 +30,17 @@ interface CommitmentCellModalProps {
   } | null;
   onSave: (commitmentId: string, date: string, status: RecordStatus, value?: any) => void;
 }
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  };
+  return date.toLocaleDateString('en-US', options).replace(',', ' |');
+};
 
 export default function CommitmentCellModal({
   visible,
@@ -131,22 +145,6 @@ export default function CommitmentCellModal({
     onClose();
   };
 
-  const getStatusButtonStyle = (status: RecordStatus) => {
-    const isSelected = selectedStatus === status;
-    return [
-      styles.statusButton,
-      isSelected && styles.selectedStatusButton,
-    ];
-  };
-
-  const getStatusTextStyle = (status: RecordStatus) => {
-    const isSelected = selectedStatus === status;
-    return [
-      styles.statusButtonText,
-      fontStyle,
-      isSelected && styles.selectedStatusButtonText,
-    ];
-  };
 
   if (!commitment) return null;
 
@@ -161,17 +159,55 @@ export default function CommitmentCellModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <SafeAreaView style={styles.overlay}>
-          <View style={styles.modalContent}>
+        <View style={MODAL_STYLES.overlay}>
+          <View style={MODAL_STYLES.modalContent}>
             <ScrollView showsVerticalScrollIndicator={false}>
-              <View style={styles.header}>
-                <Text style={[styles.title, fontStyle]}>{commitment.title}</Text>
-                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                  <Text style={[styles.closeText, fontStyle]}>✕</Text>
+              {/* Header with date/title group on left, close button on right */}
+              <View style={styles.headerContainer}>
+                <View style={styles.leftHeaderContent}>
+                  {/* Date Subheader - left aligned */}
+                  <Text style={[styles.dateSubheader, fontStyle]}>{formatDate(date)}</Text>
+                  {/* Title */}
+                  <Text style={[MODAL_STYLES.title, styles.titleInHeader, fontStyle]}>{commitment.title}</Text>
+                </View>
+                <TouchableOpacity onPress={onClose} style={MODAL_STYLES.closeButton}>
+                  <Text style={[MODAL_STYLES.closeText, fontStyle]}>✕</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.dateText, fontStyle]}>{date}</Text>
+              {/* Status Selection - moved up after title */}
+              <View style={styles.statusButtonsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.circularStatusButton,
+                    { backgroundColor: '#10B981' },
+                    { opacity: selectedStatus === 'completed' ? 1 : 0.3 }
+                  ]}
+                  onPress={() => setSelectedStatus('completed')}
+                >
+                  <CustomCheckmarkIcon size={16} color="white" strokeWidth={2.4} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.circularStatusButton,
+                    { backgroundColor: '#10B981' },
+                    { opacity: selectedStatus === 'skipped' ? 1 : 0.3 }
+                  ]}
+                  onPress={() => setSelectedStatus('skipped')}
+                >
+                  <CustomCircleDashIcon size={18} color="white" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.circularStatusButton,
+                    { backgroundColor: '#EF4444' },
+                    { opacity: selectedStatus === 'failed' ? 1 : 0.3 }
+                  ]}
+                  onPress={() => setSelectedStatus('failed')}
+                >
+                  <CustomXIcon size={15} color="white" strokeWidth={2.2} />
+                </TouchableOpacity>
+              </View>
 
               {/* Multiple Requirements */}
               {commitment.commitmentType === 'checkbox' && commitment.requirements && (
@@ -188,10 +224,14 @@ export default function CommitmentCellModal({
                         requirementsChecked[index] && styles.checkedCheckbox
                       ]}>
                         {requirementsChecked[index] && (
-                          <Text style={[styles.checkmark, fontStyle]}>✓</Text>
+                          <CustomCheckmarkIcon size={10} color="white" strokeWidth={2.2} />
                         )}
                       </View>
-                      <Text style={[styles.requirementText, fontStyle]}>{requirement}</Text>
+                      <Text style={[
+                        styles.requirementText,
+                        requirementsChecked[index] && styles.checkedRequirementText,
+                        fontStyle
+                      ]}>{requirement}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -233,43 +273,19 @@ export default function CommitmentCellModal({
                 </View>
               )}
 
-              {/* Status Selection */}
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, fontStyle]}>Status</Text>
-                <View style={styles.statusContainer}>
-                  <TouchableOpacity
-                    style={getStatusButtonStyle('completed')}
-                    onPress={() => setSelectedStatus('completed')}
-                  >
-                    <Text style={getStatusTextStyle('completed')}>Complete</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={getStatusButtonStyle('skipped')}
-                    onPress={() => setSelectedStatus('skipped')}
-                  >
-                    <Text style={getStatusTextStyle('skipped')}>Skipped</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={getStatusButtonStyle('failed')}
-                    onPress={() => setSelectedStatus('failed')}
-                  >
-                    <Text style={getStatusTextStyle('failed')}>Failed</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
 
               {/* Action Buttons */}
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-                  <Text style={[styles.cancelText, fontStyle]}>Cancel</Text>
+              <View style={MODAL_STYLES.buttonContainer}>
+                <TouchableOpacity style={MODAL_STYLES.secondaryButton} onPress={onClose}>
+                  <Text style={[MODAL_STYLES.secondaryButtonText, fontStyle]}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-                  <Text style={[styles.saveText, fontStyle]}>Save</Text>
+                <TouchableOpacity style={MODAL_STYLES.primaryButton} onPress={handleSave}>
+                  <Text style={[MODAL_STYLES.primaryButtonText, fontStyle]}>Save</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
-        </SafeAreaView>
+        </View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -316,9 +332,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6B7280',
   },
-  dateText: {
-    fontSize: 16,
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  leftHeaderContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  dateSubheader: {
+    fontSize: 14,
     color: '#6B7280',
+    marginBottom: 2,
+    textAlign: 'left',
+  },
+  titleInHeader: {
+    marginBottom: 0,
+  },
+  statusButtonsContainer: {
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'flex-start',
     marginBottom: 24,
   },
   section: {
@@ -332,31 +368,34 @@ const styles = StyleSheet.create({
   requirementRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
   checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    marginRight: 12,
+    width: 18,
+    height: 18,
+    borderRadius: 3,
+    borderWidth: 0,
+    backgroundColor: '#E5E7EB',
+    marginRight: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkedCheckbox: {
-    backgroundColor: '#111827',
-    borderColor: '#111827',
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
   },
   checkmark: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   requirementText: {
     fontSize: 16,
     color: '#374151',
     flex: 1,
+  },
+  checkedRequirementText: {
+    color: '#10B981',
   },
   ratingRangeText: {
     fontSize: 14,
@@ -371,7 +410,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 12,
+    borderRadius: MODAL_SIZES.inputBorderRadius,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
@@ -379,7 +418,15 @@ const styles = StyleSheet.create({
   },
   statusContainer: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
+    justifyContent: 'flex-start',
+  },
+  circularStatusButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statusButton: {
     flex: 1,
