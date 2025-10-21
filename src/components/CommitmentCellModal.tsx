@@ -174,7 +174,7 @@ export default function CommitmentCellModal({
                   <Text style={[styles.dateSubheader, fontStyle]}>{formatDate(date)}</Text>
                   {/* Title */}
                   <Text style={[MODAL_STYLES.title, styles.titleInHeader, fontStyle]}>{commitment.title}</Text>
-                  {/* Status Text */}
+                  {/* Status Text or Rating Summary */}
                   <Text style={[
                     styles.statusText,
                     {
@@ -185,10 +185,22 @@ export default function CommitmentCellModal({
                     },
                     fontStyle
                   ]}>
-                    {selectedStatus === 'none' ? 'Unknown' :
-                     selectedStatus === 'completed' ? 'Complete' :
-                     selectedStatus === 'skipped' ? 'Skipped' :
-                     selectedStatus === 'failed' ? 'Failed' : 'Unknown'}
+                    {commitment.commitmentType === 'measurement' && commitment.ratingRange && existingRecord?.value !== undefined ?
+                      `${existingRecord.value} out of ${commitment.ratingRange.max}` :
+                      commitment.commitmentType === 'measurement' && !commitment.ratingRange && existingRecord?.value !== undefined ?
+                        (() => {
+                          const value = existingRecord.value;
+                          const unit = commitment.unit || 'unit';
+                          const valueStr = value.toString();
+                          const formattedValue = value < 1 && value > 0 && !valueStr.startsWith('0.') ? `0.${valueStr.substring(valueStr.indexOf('.') + 1)}` : valueStr;
+                          const pluralUnit = value === 1 ? unit : `${unit}s`;
+                          return `${formattedValue} ${pluralUnit}`;
+                        })() :
+                        (selectedStatus === 'none' ? 'Unknown' :
+                         selectedStatus === 'completed' ? 'Complete' :
+                         selectedStatus === 'skipped' ? 'Skipped' :
+                         selectedStatus === 'failed' ? 'Failed' : 'Unknown')
+                    }
                   </Text>
                 </View>
                 <TouchableOpacity onPress={onClose} style={MODAL_STYLES.closeButton}>
@@ -199,15 +211,6 @@ export default function CommitmentCellModal({
               {/* Status Selection - moved up after title */}
               <View style={styles.statusSection}>
                 <View style={styles.statusButtonsContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.circularStatusButton,
-                    { backgroundColor: '#E5E7EB' },
-                    { opacity: selectedStatus === 'none' ? 1 : 0.3 }
-                  ]}
-                  onPress={() => setSelectedStatus('none')}
-                >
-                </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
@@ -238,13 +241,22 @@ export default function CommitmentCellModal({
                 >
                   <CustomXIcon size={15} color="white" strokeWidth={2.2} />
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.circularStatusButton,
+                    { backgroundColor: '#E5E7EB' },
+                    { opacity: selectedStatus === 'none' ? 1 : 0.3 }
+                  ]}
+                  onPress={() => setSelectedStatus('none')}
+                >
+                </TouchableOpacity>
                 </View>
                 {/* Triangle indicator below active button */}
                 <View style={styles.triangleContainer}>
-                  {selectedStatus === 'none' && <View style={[styles.triangleUp, styles.triangleGray, { marginLeft: 16 }]} />}
-                  {selectedStatus === 'completed' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 62 }]} />}
-                  {selectedStatus === 'skipped' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 108 }]} />}
-                  {selectedStatus === 'failed' && <View style={[styles.triangleUp, styles.triangleRed, { marginLeft: 154 }]} />}
+                  {selectedStatus === 'completed' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 16 }]} />}
+                  {selectedStatus === 'skipped' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 62 }]} />}
+                  {selectedStatus === 'failed' && <View style={[styles.triangleUp, styles.triangleRed, { marginLeft: 108 }]} />}
+                  {selectedStatus === 'none' && <View style={[styles.triangleUp, styles.triangleGray, { marginLeft: 154 }]} />}
                 </View>
               </View>
 
@@ -297,9 +309,12 @@ export default function CommitmentCellModal({
               {/* Measure Input */}
               {commitment.commitmentType === 'measurement' && !commitment.ratingRange && (
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, fontStyle]}>Measurement</Text>
-                  <Text style={[styles.unitText, fontStyle]}>
-                    Enter value in {commitment.unit || 'units'}
+                  <Text style={[styles.sectionTitle, fontStyle]}>
+                    Value (in {(() => {
+                      const unit = commitment.unit || 'units';
+                      const lowercaseUnit = unit.toLowerCase();
+                      return lowercaseUnit.endsWith('s') ? lowercaseUnit : `${lowercaseUnit}s`;
+                    })()})
                   </Text>
                   <TextInput
                     style={[styles.input, fontStyle]}
