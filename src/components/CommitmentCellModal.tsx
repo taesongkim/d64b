@@ -174,6 +174,22 @@ export default function CommitmentCellModal({
                   <Text style={[styles.dateSubheader, fontStyle]}>{formatDate(date)}</Text>
                   {/* Title */}
                   <Text style={[MODAL_STYLES.title, styles.titleInHeader, fontStyle]}>{commitment.title}</Text>
+                  {/* Status Text */}
+                  <Text style={[
+                    styles.statusText,
+                    {
+                      color: selectedStatus === 'none' ? '#6B7280' :
+                             selectedStatus === 'completed' ? '#10B981' :
+                             selectedStatus === 'skipped' ? '#10B981' :
+                             selectedStatus === 'failed' ? '#EF4444' : '#6B7280'
+                    },
+                    fontStyle
+                  ]}>
+                    {selectedStatus === 'none' ? 'Unknown' :
+                     selectedStatus === 'completed' ? 'Complete' :
+                     selectedStatus === 'skipped' ? 'Skipped' :
+                     selectedStatus === 'failed' ? 'Failed' : 'Unknown'}
+                  </Text>
                 </View>
                 <TouchableOpacity onPress={onClose} style={MODAL_STYLES.closeButton}>
                   <Text style={[MODAL_STYLES.closeText, fontStyle]}>✕</Text>
@@ -181,7 +197,8 @@ export default function CommitmentCellModal({
               </View>
 
               {/* Status Selection - moved up after title */}
-              <View style={styles.statusButtonsContainer}>
+              <View style={styles.statusSection}>
+                <View style={styles.statusButtonsContainer}>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
@@ -221,6 +238,14 @@ export default function CommitmentCellModal({
                 >
                   <CustomXIcon size={15} color="white" strokeWidth={2.2} />
                 </TouchableOpacity>
+                </View>
+                {/* Triangle indicator below active button */}
+                <View style={styles.triangleContainer}>
+                  {selectedStatus === 'none' && <View style={[styles.triangleUp, styles.triangleGray, { marginLeft: 16 }]} />}
+                  {selectedStatus === 'completed' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 62 }]} />}
+                  {selectedStatus === 'skipped' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 108 }]} />}
+                  {selectedStatus === 'failed' && <View style={[styles.triangleUp, styles.triangleRed, { marginLeft: 154 }]} />}
+                </View>
               </View>
 
               {/* Multiple Requirements */}
@@ -365,11 +390,44 @@ const styles = StyleSheet.create({
   titleInHeader: {
     marginBottom: 0,
   },
+  statusText: {
+    fontSize: 14,
+    marginTop: 4,
+    textAlign: 'left',
+  },
+  statusSection: {
+    marginBottom: 24,
+  },
+  triangleContainer: {
+    height: 8,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    marginTop: 4,
+  },
+  triangleUp: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderBottomWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  triangleGray: {
+    borderBottomColor: '#6B7280',
+  },
+  triangleGreen: {
+    borderBottomColor: '#10B981',
+  },
+  triangleRed: {
+    borderBottomColor: '#EF4444',
+  },
   statusButtonsContainer: {
     flexDirection: 'row',
     gap: 6,
     justifyContent: 'flex-start',
-    marginBottom: 24,
   },
   section: {
     marginBottom: 24,
