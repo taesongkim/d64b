@@ -53,7 +53,7 @@ export default function CommitmentCellModal({
   const fontStyle = useFontStyle();
   
   // State for different commitment types
-  const [selectedStatus, setSelectedStatus] = useState<RecordStatus>('completed');
+  const [selectedStatus, setSelectedStatus] = useState<RecordStatus | 'none'>('completed');
   const [ratingValue, setRatingValue] = useState('');
   const [measureValue, setMeasureValue] = useState('');
   const [requirementsChecked, setRequirementsChecked] = useState<boolean[]>([]);
@@ -65,7 +65,7 @@ export default function CommitmentCellModal({
       if (existingRecord) {
         setSelectedStatus(existingRecord.status);
       } else {
-        setSelectedStatus('completed');
+        setSelectedStatus('none');
       }
 
       // Initialize type-specific values
@@ -141,7 +141,12 @@ export default function CommitmentCellModal({
       value = checkedRequirements;
     }
 
-    onSave(commitment.id, date, selectedStatus, value);
+    // Handle clearing the record if status is 'none'
+    if (selectedStatus === 'none') {
+      onSave(commitment.id, date, 'none' as RecordStatus, undefined);
+    } else {
+      onSave(commitment.id, date, selectedStatus as RecordStatus, value);
+    }
     onClose();
   };
 
@@ -177,6 +182,15 @@ export default function CommitmentCellModal({
 
               {/* Status Selection - moved up after title */}
               <View style={styles.statusButtonsContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.circularStatusButton,
+                    { backgroundColor: '#E5E7EB' },
+                    { opacity: selectedStatus === 'none' ? 1 : 0.3 }
+                  ]}
+                  onPress={() => setSelectedStatus('none')}
+                >
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
@@ -427,6 +441,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: 'white',
+    backgroundColor: 'transparent',
   },
   statusButton: {
     flex: 1,
