@@ -630,7 +630,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
                 name={userName}
               />
               <View style={styles.cameraIcon}>
-                <Icon name="edit" size={16} color="#6B7280" />
+                <Icon name="edit" size={16} color="white" />
               </View>
             </TouchableOpacity>
             <View style={styles.userDetails}>
@@ -739,12 +739,10 @@ const styles = StyleSheet.create({
     right: 0,
     width: 24,
     height: 24,
-    borderRadius: 12,
-    backgroundColor: 'white',
+    borderRadius: 6,
+    backgroundColor: '#9CA3AF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
   },
   userDetails: {
     flex: 1,
