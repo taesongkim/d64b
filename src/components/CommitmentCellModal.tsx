@@ -18,6 +18,7 @@ import { MODAL_STYLES, MODAL_SIZES } from './styles/modalStyles';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import CustomCircleDashIcon from './CustomCircleDashIcon';
 import CustomXIcon from './CustomXIcon';
+import { parseLocalISODate } from '@/utils/timeUtils';
 
 interface CommitmentCellModalProps {
   visible: boolean;
@@ -32,7 +33,7 @@ interface CommitmentCellModalProps {
 }
 
 const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
+  const date = parseLocalISODate(dateString);
   const options: Intl.DateTimeFormatOptions = {
     weekday: 'long',
     year: 'numeric',
