@@ -19,6 +19,7 @@ import { addToQueue } from '@/store/slices/syncSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
+import { normalizeUnit } from '@/utils/unitUtils';
 import { isFeatureEnabled } from '@/config/features';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserCommitments, createCommitment, updateCommitment as updateCommitmentService, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate } from '@/services/commitments';
@@ -267,7 +268,7 @@ export default function DashboardScreen(): React.JSX.Element {
     console.log('📱 Cell press delegated to CommitmentGrid for quick options');
   };
 
-  const handleSetRecordStatus = (commitmentId: string, date: string, status: RecordStatus, value?: any) => {
+  const handleSetRecordStatus = (commitmentId: string, date: string, status: RecordStatus, value?: any, notes?: string) => {
     if (!user?.id) {
       console.error('❌ Cannot update record: No authenticated user');
       return;
@@ -278,18 +279,21 @@ export default function DashboardScreen(): React.JSX.Element {
     // STEP 1: Optimistic update - immediately update Redux state for instant UI feedback
     dispatch(setRecordStatus({ commitmentId, date, status, value }));
 
-    // STEP 2: Add to sync queue for background database sync
-    const recordData = status !== 'none' ? {
-      commitment_id: commitmentId,
-      completed_at: `${date}T12:00:00Z`,
-      notes: null,
-      user_id: user.id,
-      status: status === 'completed' ? 'complete' : status,
-      value: value || null,
-    } : null;
+    // STEP 2: Check if there's any user data worth preserving
+    const hasUserData = value !== undefined || notes !== undefined;
 
-    if (status !== 'none') {
-      // CREATE/UPDATE record
+    // STEP 3: Add to sync queue for background database sync
+    if (status !== 'none' || hasUserData) {
+      // CREATE/UPDATE record - preserve when there's a status OR any user data
+      const recordData = {
+        commitment_id: commitmentId,
+        completed_at: `${date}T12:00:00Z`,
+        notes: notes || null,
+        user_id: user.id,
+        status: status === 'completed' ? 'complete' : status,
+        value: value || null,
+      };
+
       dispatch(addToQueue({
         type: 'CREATE',
         entity: 'record',
@@ -297,7 +301,7 @@ export default function DashboardScreen(): React.JSX.Element {
         data: recordData
       }));
     } else {
-      // DELETE record
+      // DELETE record - only when status is 'none' AND no user data exists
       dispatch(addToQueue({
         type: 'DELETE',
         entity: 'record',
@@ -321,6 +325,9 @@ export default function DashboardScreen(): React.JSX.Element {
     console.log('➕ Adding commitment for user:', user.id);
     
     try {
+      // Normalize unit for consistent database storage
+      const normalizedUnit = commitmentData.unit ? normalizeUnit(commitmentData.unit) : undefined;
+
       // Save to Supabase first
       const supabaseData = {
         user_id: user.id,
@@ -333,7 +340,7 @@ export default function DashboardScreen(): React.JSX.Element {
         // New commitment type architecture
         commitment_type: commitmentData.commitmentType,
         target: commitmentData.target,
-        unit: commitmentData.unit,
+        unit: normalizedUnit,
         requirements: commitmentData.requirements,
         rating_range: commitmentData.ratingRange,
         // Note: 'type' field doesn't exist in current schema
@@ -353,6 +360,7 @@ export default function DashboardScreen(): React.JSX.Element {
       // Add to Redux (use Supabase ID if available, fallback to timestamp)
       const newCommitment: Commitment = {
         ...commitmentData,
+        unit: normalizedUnit, // Use normalized unit in Redux as well
         id: data?.id || Date.now().toString(),
         userId: user.id,
         createdAt: getCurrentTimestamp(),
@@ -366,6 +374,7 @@ export default function DashboardScreen(): React.JSX.Element {
       // Still add to Redux for offline functionality
       const newCommitment: Commitment = {
         ...commitmentData,
+        unit: normalizedUnit, // Use normalized unit in fallback case too
         id: Date.now().toString(),
         userId: user.id,
         createdAt: getCurrentTimestamp(),
@@ -405,7 +414,7 @@ export default function DashboardScreen(): React.JSX.Element {
         supabaseUpdates.target = updates.target;
       }
       if (updates.unit !== undefined) {
-        supabaseUpdates.unit = updates.unit;
+        supabaseUpdates.unit = normalizeUnit(updates.unit);
       }
       if (updates.requirements !== undefined) {
         supabaseUpdates.requirements = updates.requirements;
@@ -424,13 +433,19 @@ export default function DashboardScreen(): React.JSX.Element {
         console.log('✅ Commitment updated in database');
       }
       
-      // Update Redux state
-      dispatch(updateCommitment({ id, updates }));
+      // Update Redux state with normalized unit
+      const normalizedUpdates = updates.unit !== undefined
+        ? { ...updates, unit: normalizeUnit(updates.unit) }
+        : updates;
+      dispatch(updateCommitment({ id, updates: normalizedUpdates }));
       
     } catch (error) {
       console.error('💥 Error updating commitment:', error);
-      // Still update Redux for offline functionality
-      dispatch(updateCommitment({ id, updates }));
+      // Still update Redux for offline functionality with normalized unit
+      const normalizedUpdates = updates.unit !== undefined
+        ? { ...updates, unit: normalizeUnit(updates.unit) }
+        : updates;
+      dispatch(updateCommitment({ id, updates: normalizedUpdates }));
     }
   };
 

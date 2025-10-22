@@ -19,6 +19,7 @@ import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import CustomCircleDashIcon from './CustomCircleDashIcon';
 import CustomXIcon from './CustomXIcon';
 import { parseLocalISODate } from '@/utils/timeUtils';
+import { getDisplayUnit } from '@/utils/unitUtils';
 
 interface CommitmentCellModalProps {
   visible: boolean;
@@ -142,10 +143,11 @@ export default function CommitmentCellModal({
       value = checkedRequirements;
     }
 
-    // Handle clearing the record if status is 'none'
-    if (selectedStatus === 'none') {
+    // Handle clearing the record if status is 'none' AND no value was entered
+    if (selectedStatus === 'none' && value === undefined) {
       onSave(commitment.id, date, 'none' as RecordStatus, undefined);
     } else {
+      // Save the value regardless of status - preserves user input even for 'none' status
       onSave(commitment.id, date, selectedStatus as RecordStatus, value);
     }
     onClose();
@@ -194,8 +196,8 @@ export default function CommitmentCellModal({
                           const unit = commitment.unit || 'unit';
                           const valueStr = value.toString();
                           const formattedValue = value < 1 && value > 0 && !valueStr.startsWith('0.') ? `0.${valueStr.substring(valueStr.indexOf('.') + 1)}` : valueStr;
-                          const pluralUnit = value === 1 ? unit : `${unit}s`;
-                          return `${formattedValue} ${pluralUnit}`;
+                          const displayUnit = getDisplayUnit(unit, value);
+                          return `${formattedValue} ${displayUnit}`;
                         })() :
                         (selectedStatus === 'none' ? 'Unknown' :
                          selectedStatus === 'completed' ? 'Complete' :
@@ -311,11 +313,7 @@ export default function CommitmentCellModal({
               {commitment.commitmentType === 'measurement' && !commitment.ratingRange && (
                 <View style={styles.section}>
                   <Text style={[styles.sectionTitle, fontStyle]}>
-                    Value (in {(() => {
-                      const unit = commitment.unit || 'units';
-                      const lowercaseUnit = unit.toLowerCase();
-                      return lowercaseUnit.endsWith('s') ? lowercaseUnit : `${lowercaseUnit}s`;
-                    })()})
+                    Value (in {getDisplayUnit(commitment.unit || 'unit', 2)})
                   </Text>
                   <TextInput
                     style={[styles.input, fontStyle]}
