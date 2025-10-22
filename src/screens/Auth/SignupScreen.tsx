@@ -64,7 +64,7 @@ export default function SignupScreen({ navigation }: Props): React.JSX.Element {
     setError(null);
     
     try {
-      const { error } = await signUp(email, password, name, username);
+      const { error } = await signUp(email.trim(), password, name.trim(), username.trim());
       
       if (error) {
         setError(error.message);

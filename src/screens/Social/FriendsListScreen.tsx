@@ -188,15 +188,15 @@ export default function FriendsListScreen(): React.JSX.Element {
   };
 
   const filteredFriends = friends.filter(friend =>
-    (friend.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
+    (friend.full_name || '').toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+    friend.email.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+    friend.username.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
 
   // Use real friends if available, otherwise fallback to mock
   const displayFriends = friends.length > 0 ? filteredFriends : mockFriends.filter(friend =>
-    friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    friend.username.toLowerCase().includes(searchQuery.toLowerCase())
+    friend.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+    friend.username.toLowerCase().includes(searchQuery.trim().toLowerCase())
   );
 
   const handleSendFriendRequest = async (receiverId: string, receiverUsername: string) => {
@@ -667,7 +667,7 @@ export default function FriendsListScreen(): React.JSX.Element {
               value={newFriendEmail}
               onChangeText={(text) => {
                 setNewFriendEmail(text);
-                handleSearchUsers(text);
+                handleSearchUsers(text.trim());
               }}
               autoCapitalize="none"
               autoFocus

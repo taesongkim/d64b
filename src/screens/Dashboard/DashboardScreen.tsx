@@ -493,8 +493,10 @@ export default function DashboardScreen(): React.JSX.Element {
       >
         <View style={styles.header}>
           <View>
-            <Text style={[styles.greeting, fontStyle]}>Good morning!</Text>
-            <Text style={[styles.date, fontStyle]}>{getTodayDisplayDate()}</Text>
+            <Text style={[styles.greeting, fontStyle]}>{getTodayDisplayDate()}</Text>
+            <Text style={[styles.date, fontStyle]}>
+              {commitments.length} habit{commitments.length !== 1 ? 's' : ''} • {records.filter(r => r.date === getTodayISO() && r.status === 'completed').length} completed
+            </Text>
           </View>
           <TouchableOpacity 
             style={styles.addButton}
@@ -502,25 +504,6 @@ export default function DashboardScreen(): React.JSX.Element {
           >
             <Text style={[styles.addButtonText, fontStyle]}>+</Text>
           </TouchableOpacity>
-        </View>
-        
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, fontStyle]}>{commitments.length}</Text>
-            <Text style={[styles.statLabel, fontStyle]}>Active Habits</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, fontStyle]}>
-              {records.filter(r => r.date === getTodayISO()).length}
-            </Text>
-            <Text style={[styles.statLabel, fontStyle]}>Completed Today</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={[styles.statNumber, fontStyle]}>
-              {Math.max(...commitments.map(c => c.streak), 0)}
-            </Text>
-            <Text style={[styles.statLabel, fontStyle]}>Best Streak</Text>
-          </View>
         </View>
         
         <View style={styles.gridContainer}>

@@ -45,7 +45,7 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
     
     try {
       console.log('📞 Calling signIn function...');
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(email.trim(), password);
       console.log('📥 SignIn response:', { error: error?.message || 'No error' });
       
       if (error) {
@@ -83,7 +83,7 @@ export default function LoginScreen({ navigation }: Props): React.JSX.Element {
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: email,
+        email: email.trim(),
       });
 
       if (error) {

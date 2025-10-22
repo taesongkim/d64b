@@ -98,9 +98,6 @@ export default function FriendChart({
         />
       ) : (
         <View style={styles.emptyStateContainer}>
-          <Text style={[styles.emptyStateText, fontStyle]}>
-            No habits yet
-          </Text>
           <Text style={[styles.emptyStateSubtext, fontStyle]}>
             {friend.full_name || friend.email} hasn't added any habits yet
           </Text>
@@ -144,10 +141,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_400Regular',
   },
   emptyStateContainer: {
-    paddingVertical: 40,
+    paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 100,
+    minHeight: 40,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 8,
   },
   emptyStateText: {
     fontSize: 16,
@@ -157,7 +156,7 @@ const styles = StyleSheet.create({
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#D1D5DB',
+    color: '#9CA3AF',
     fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },

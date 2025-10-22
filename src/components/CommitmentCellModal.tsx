@@ -118,7 +118,7 @@ export default function CommitmentCellModal({
     if (commitment.commitmentType === 'measurement') {
       if (commitment.ratingRange) {
         // Rating type
-        const rating = parseFloat(ratingValue);
+        const rating = parseFloat(ratingValue.trim());
         if (isNaN(rating)) {
           Alert.alert('Error', 'Please enter a valid rating value.');
           return;
@@ -130,7 +130,7 @@ export default function CommitmentCellModal({
         value = rating;
       } else {
         // Measure type
-        const measure = parseFloat(measureValue);
+        const measure = parseFloat(measureValue.trim());
         if (isNaN(measure)) {
           Alert.alert('Error', 'Please enter a valid measurement value.');
           return;
