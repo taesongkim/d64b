@@ -98,6 +98,7 @@ export class SyncService {
       const queue = state.sync.queue;
       
       for (const item of queue) {
+
         if (item.retryCount >= MAX_RETRY_COUNT) {
           console.warn(`Max retry count reached for item ${item.id}, removing from queue`);
           store.dispatch(removeFromQueue(item.id));
@@ -107,11 +108,11 @@ export class SyncService {
         try {
           await this.syncItem(item);
           store.dispatch(removeFromQueue(item.id));
-          console.log(`Successfully synced item ${item.id}`);
+          console.log(`✅ Successfully synced item ${item.id}`);
         } catch (error) {
-          console.error(`Failed to sync item ${item.id}:`, error);
+          console.error(`❌ Failed to sync item ${item.id}:`, error);
           store.dispatch(incrementRetryCount(item.id));
-          
+
           // Add delay before next retry
           await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
         }
@@ -173,6 +174,13 @@ export class SyncService {
           await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
           await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
           console.log(`Synced soft delete for commitment ${item.entityId}`);
+        } else if (data.idempotencyKey?.includes(':showValues:')) {
+          // Handle show_values toggle update
+          const result = await commitmentService.updateCommitment(item.entityId, { show_values: data.show_values });
+          if (result.error) {
+            throw new Error(`updateCommitment show_values failed: ${result.error.message}`);
+          }
+          console.log(`Synced show_values=${data.show_values} for commitment ${item.entityId}`);
         } else {
           // Regular update
           console.log('No matching idempotency pattern for UPDATE');
@@ -194,7 +202,6 @@ export class SyncService {
    * Sync record with server
    */
   private static async syncRecord(item: SyncAction): Promise<void> {
-    console.log(`Syncing record ${item.type}:`, { entityId: item.entityId });
 
     switch (item.type) {
       case 'CREATE':

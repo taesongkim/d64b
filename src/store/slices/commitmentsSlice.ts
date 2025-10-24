@@ -15,6 +15,7 @@ export interface Commitment {
   unit?: string;
   requirements?: string[]; // For checkbox commitments with multiple tasks
   ratingRange?: { min: number; max: number }; // For rating commitments
+  showValues?: boolean; // Toggle to display numeric values in grid cells
   // Legacy fields for backward compatibility
   type: 'binary' | 'counter' | 'timer'; // Deprecated, use commitmentType
   streak: number;
@@ -277,6 +278,7 @@ export const loadAllCommitmentsThunk = (userId: string) => async (dispatch: AppD
         unit: c.unit,
         requirements: c.requirements,
         ratingRange: c.rating_range,
+        showValues: c.show_values,
         type: c.commitment_type === 'checkbox' && !c.requirements ? 'binary' as const :
               c.commitment_type === 'checkbox' && c.requirements ? 'binary' as const :
               c.commitment_type === 'measurement' && c.rating_range ? 'counter' as const : 'timer' as const,

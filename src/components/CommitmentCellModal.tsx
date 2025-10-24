@@ -10,6 +10,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { Commitment } from '@/store/slices/commitmentsSlice';
@@ -128,6 +129,7 @@ export default function CommitmentCellModal({
           return;
         }
         value = rating;
+        console.log('💾 [Modal] Rating value prepared:', value);
       } else {
         // Measure type
         const measure = parseFloat(measureValue.trim());
@@ -136,12 +138,14 @@ export default function CommitmentCellModal({
           return;
         }
         value = measure;
+        console.log('💾 [Modal] Measure value prepared:', value, 'from input:', measureValue);
       }
     } else if (commitment.commitmentType === 'checkbox' && commitment.requirements) {
       // Multiple requirements type
       const checkedRequirements = commitment.requirements.filter((_, index) => requirementsChecked[index]);
       value = checkedRequirements;
     }
+
 
     // Handle clearing the record if status is 'none' AND no value was entered
     if (selectedStatus === 'none' && value === undefined) {
@@ -325,7 +329,6 @@ export default function CommitmentCellModal({
                   />
                 </View>
               )}
-
 
               {/* Action Buttons */}
               <View style={MODAL_STYLES.buttonContainer}>

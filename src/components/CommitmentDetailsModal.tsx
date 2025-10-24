@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   SafeAreaView,
+  Switch,
 } from 'react-native';
 import { Commitment, selectCommitmentById } from '@/store/slices/commitmentsSlice';
 import { useAppSelector } from '@/store/hooks';
@@ -34,6 +35,7 @@ interface CommitmentDetailsModalProps {
   onClose: () => void;
   commitmentId: string | null;
   onUpdateCommitment: (id: string, updates: Partial<Commitment>) => void;
+  onToggleShowValues?: (commitmentId: string, showValues: boolean) => void;
   notes: Array<{ date: string; notes: string | null }>; // Notes from commitment_records
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
@@ -51,6 +53,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   onClose,
   commitmentId,
   onUpdateCommitment,
+  onToggleShowValues,
   notes,
   onArchive,
   onRestore,
@@ -250,6 +253,12 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
 
   const filteredNotes = notes.filter(note => note.notes && note.notes.trim().length > 0);
 
+  const handleToggleShowValues = useCallback((value: boolean) => {
+    if (onToggleShowValues && commitment) {
+      onToggleShowValues(commitment.id, value);
+    }
+  }, [onToggleShowValues, commitment]);
+
   if (!commitment) return null;
 
   const isSaveDisabled = !editedTitle.trim();
@@ -411,6 +420,28 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
               </View>
             )}
           </View>
+
+          {/* Display Settings Section - only for measurement commitments */}
+          {commitment.commitmentType === 'measurement' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Display Settings</Text>
+              <View style={styles.toggleContainer}>
+                <View style={styles.toggleLabelContainer}>
+                  <Text style={styles.toggleLabel}>Show Values in Grid</Text>
+                  <Text style={styles.toggleDescription}>
+                    Display numeric values instead of status icons in the grid cells
+                  </Text>
+                </View>
+                <Switch
+                  value={commitment.showValues || false}
+                  onValueChange={handleToggleShowValues}
+                  trackColor={{ false: '#E5E7EB', true: '#10B981' }}
+                  thumbColor={commitment.showValues ? '#ffffff' : '#ffffff'}
+                  ios_backgroundColor="#E5E7EB"
+                />
+              </View>
+            </View>
+          )}
 
           {/* Actions Section */}
           <View style={styles.section}>
@@ -734,6 +765,28 @@ const styles = StyleSheet.create({
   },
   restoreText: {
     color: '#059669',
+  },
+  // Toggle styles
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  toggleLabelContainer: {
+    flex: 1,
+    marginRight: 16,
+  },
+  toggleLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  toggleDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 18,
   },
 });
 

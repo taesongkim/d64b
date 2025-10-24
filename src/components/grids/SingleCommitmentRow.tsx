@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import {
   View,
+  Text,
   TouchableOpacity,
   StyleSheet,
   StyleProp,
@@ -15,6 +16,7 @@ import CellShimmerOverlay from './CellShimmerOverlay';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { GRID_DEBUG } from '@/_shared/debug';
 import { getPressPoint } from './getPressPoint';
+import { getCellDisplayText } from '@/utils/valueFormatUtils';
 
 export type ViewMode = 'daily' | 'weekly';
 
@@ -28,6 +30,7 @@ interface Commitment {
   ratingRange?: { min: number; max: number };
   unit?: string;
   streak: number;
+  showValues?: boolean;
 }
 
 interface DayRecord {
@@ -195,11 +198,53 @@ export default function SingleCommitmentRow({
 
         const cellStyle: StyleProp<ViewStyle> = StyleSheet.compose(styles.cell, dynamicCellStyle);
 
+        // Determine if we should show values or icons
+        const shouldShowValues = commitment.showValues && commitment.commitmentType === 'measurement';
+        const displayText = getCellDisplayText(status, record?.value, shouldShowValues);
+
+        // Debug logging - only for toggled commitments showing values
+        if (commitment.showValues && commitment.commitmentType === 'measurement') {
+          console.log(`📊 [${gridContext || 'home'}] ${commitment.title}:`, {
+            showValues: commitment.showValues,
+            shouldShowValues,
+            displayText,
+            status,
+            value: record?.value,
+            date: date.slice(-2) // Last 2 chars of date for brevity
+          });
+        }
+
+        // Debug ALL grids to see what's happening
+        console.log(`🔍 [${gridContext || 'UNKNOWN'}] ${commitment.title} (${date.slice(-2)}):`, {
+          gridContext,
+          showValues: commitment.showValues,
+          shouldShowValues,
+          displayText
+        });
+
         let cellContent = null;
-        if (status === 'completed') {
-          cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
-        } else if (status === 'failed') {
-          cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+        if (shouldShowValues) {
+          // When showing values, always show text (even if empty)
+          if (displayText) {
+            cellContent = (
+              <Text style={{
+                color: 'white',
+                fontSize: viewMode === 'daily' ? 12 : 10,
+                fontWeight: '600',
+                textAlign: 'center',
+              }}>
+                {displayText}
+              </Text>
+            );
+          }
+          // If shouldShowValues is true but no displayText, show nothing (no icons)
+        } else {
+          // Show icons (existing behavior)
+          if (status === 'completed') {
+            cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
+          } else if (status === 'failed') {
+            cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+          }
         }
 
         return (

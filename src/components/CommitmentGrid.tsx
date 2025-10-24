@@ -31,6 +31,7 @@ import CellShimmerOverlay from './grids/CellShimmerOverlay';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { GRID_DEBUG } from '@/_shared/debug';
 import { getPressPoint } from './grids/getPressPoint';
+import { getCellDisplayText } from '@/utils/valueFormatUtils';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -117,9 +118,9 @@ interface CommitmentGridProps {
 
 type ViewMode = 'daily' | 'weekly';
 
-export default function CommitmentGrid({ 
-  commitments, 
-  records, 
+export default function CommitmentGrid({
+  commitments,
+  records,
   onCellPress,
   onSetRecordStatus,
   onCommitmentTitlePress,
@@ -510,14 +511,49 @@ export default function CommitmentGrid({
                     };
 
                     const cellStyle = [dynamicStyles.cell, cellStyleOverrides];
-                    let cellContent = null;
+                    // Determine if we should show values or icons
+                    const shouldShowValues = c.showValues && c.commitmentType === 'measurement';
+                    const displayText = getCellDisplayText(status, record?.value, shouldShowValues);
 
-                    if (status === 'completed') {
-                      cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
-                    } else if (status === 'failed') {
-                      cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+                    // Debug logging for home grid
+                    if (c.showValues && c.commitmentType === 'measurement') {
+                      console.log(`🏠 [Grid] ${c.title} (${date.slice(-2)}):`, {
+                        showValues: c.showValues,
+                        shouldShowValues,
+                        displayText,
+                        status,
+                        value: record?.value,
+                        valueType: typeof record?.value,
+                        recordExists: !!record,
+                        recordId: record?.id
+                      });
                     }
-                    // skipped cells have no content (empty colored square)
+
+                    let cellContent = null;
+                    if (shouldShowValues) {
+                      // When showing values, always show text (even if empty)
+                      if (displayText) {
+                        cellContent = (
+                          <Text style={{
+                            color: 'white',
+                            fontSize: viewMode === 'daily' ? 12 : 10,
+                            fontWeight: '600',
+                            textAlign: 'center',
+                          }}>
+                            {displayText}
+                          </Text>
+                        );
+                      }
+                      // If shouldShowValues is true but no displayText, show nothing (no icons)
+                    } else {
+                      // Show icons (existing behavior)
+                      if (status === 'completed') {
+                        cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
+                      } else if (status === 'failed') {
+                        cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+                      }
+                      // skipped cells have no content (empty colored square)
+                    }
                     
                     return (
                       <TouchableOpacity
@@ -561,7 +597,7 @@ export default function CommitmentGrid({
         onClose={() => setCellModalVisible(false)}
         commitment={selectedCommitment}
         date={selectedDate}
-        existingRecord={selectedCommitment ? records.find(r => 
+        existingRecord={selectedCommitment ? records.find(r =>
           r.commitmentId === selectedCommitment.id && r.date === selectedDate
         ) : null}
         onSave={handleCellModalSave}

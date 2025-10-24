@@ -63,6 +63,7 @@ export interface Database {
                   unit: string | null
                   requirements: Json | null
                   rating_range: Json | null
+          show_values: boolean
           // Phase 0: New optional fields for future features
           lineage_id: string | null
           tracking_mode: string | null
@@ -91,6 +92,7 @@ export interface Database {
           unit?: string | null
           requirements?: Json | null
           rating_range?: Json | null
+          show_values?: boolean
           // Phase 0: New optional fields for future features
           lineage_id?: string | null
           tracking_mode?: string | null
@@ -119,6 +121,7 @@ export interface Database {
           unit?: string | null
           requirements?: Json | null
           rating_range?: Json | null
+          show_values?: boolean
           // Phase 0: New optional fields for future features
           lineage_id?: string | null
           tracking_mode?: string | null

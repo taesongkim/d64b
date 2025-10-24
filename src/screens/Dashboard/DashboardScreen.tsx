@@ -14,7 +14,7 @@ import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
-import { toggleRecord, setRecordStatus, setRecords, type RecordStatus } from '@/store/slices/recordsSlice';
+import { toggleRecord, setRecordStatus, setRecords, loadAllRecordsThunk, type RecordStatus } from '@/store/slices/recordsSlice';
 import { addToQueue } from '@/store/slices/syncSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { useFontStyle } from '@/hooks/useFontStyle';
@@ -74,6 +74,7 @@ export default function DashboardScreen(): React.JSX.Element {
             unit: c.unit,
             requirements: c.requirements,
             ratingRange: c.rating_range,
+            showValues: c.show_values,
             // Legacy fields for backward compatibility
             type: c.commitment_type === 'checkbox' && !c.requirements ? 'binary' as const :
                   c.commitment_type === 'checkbox' && c.requirements ? 'binary' as const :
@@ -121,17 +122,29 @@ export default function DashboardScreen(): React.JSX.Element {
             // Convert to Redux format
             const convertedRecords = allRecords.map(r => ({
               id: r.id,
+              userId: r.user_id || '',
               commitmentId: r.commitment_id,
               date: r.completed_at.split('T')[0], // Extract date part
               status: r.status === 'complete' ? 'completed' : r.status as RecordStatus,
-              value: undefined,
+              value: r.value, // Preserve the actual value from database!
               notes: r.notes || undefined,
               createdAt: r.created_at,
               updatedAt: r.updated_at || r.created_at,
             }));
 
+            // Log records with values for debugging
+            const recordsWithValues = convertedRecords.filter(r => r.value !== null && r.value !== undefined);
+            console.log('✅ User records loaded:', convertedRecords.length, 'total,', recordsWithValues.length, 'with values');
+            if (recordsWithValues.length > 0) {
+              console.log('📊 Sample records with values:', recordsWithValues.slice(0, 3).map(r => ({
+                id: r.id,
+                value: r.value,
+                valueType: typeof r.value,
+                date: r.date
+              })));
+            }
+
             dispatch(setRecords(convertedRecords));
-            console.log('✅ User records loaded:', convertedRecords.length);
             console.log('TTFS(ms)', since('app:start'));
           } catch (recordError) {
             console.error('❌ Error loading records:', recordError);
@@ -274,7 +287,6 @@ export default function DashboardScreen(): React.JSX.Element {
       return;
     }
 
-    console.log('📝 Updating record status (optimistic):', { commitmentId, date, status, userId: user.id });
 
     // STEP 1: Optimistic update - immediately update Redux state for instant UI feedback
     dispatch(setRecordStatus({ commitmentId, date, status, value }));
@@ -291,7 +303,7 @@ export default function DashboardScreen(): React.JSX.Element {
         notes: notes || null,
         user_id: user.id,
         status: status === 'completed' ? 'complete' : status,
-        value: value || null,
+        value: value === undefined ? null : value,
       };
 
       dispatch(addToQueue({
@@ -387,6 +399,25 @@ export default function DashboardScreen(): React.JSX.Element {
   const handleCommitmentTitlePress = (commitmentId: string) => {
     setSelectedCommitmentId(commitmentId);
     setShowCommitmentDetailsModal(true);
+  };
+
+  const handleToggleShowValues = (commitmentId: string, showValues: boolean) => {
+    console.log('🔄 Toggling show values for commitment:', { commitmentId, showValues });
+
+    // Update Redux store
+    dispatch(updateCommitment({ id: commitmentId, updates: { showValues } }));
+
+    // Add to sync queue for database persistence
+    dispatch(addToQueue({
+      type: 'UPDATE',
+      entity: 'commitment',
+      entityId: commitmentId,
+      data: {
+        id: commitmentId,
+        show_values: showValues,
+        idempotencyKey: `${user?.id}:${commitmentId}:showValues:${Date.now()}`
+      }
+    }));
   };
 
   const handleUpdateCommitment = async (id: string, updates: Partial<Commitment>) => {
@@ -588,6 +619,7 @@ export default function DashboardScreen(): React.JSX.Element {
         }}
         commitmentId={selectedCommitmentId}
         onUpdateCommitment={handleUpdateCommitment}
+        onToggleShowValues={handleToggleShowValues}
         notes={getCommitmentNotes()}
         onArchive={handleArchiveCommitment}
         onRestore={handleRestoreCommitment}

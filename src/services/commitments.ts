@@ -21,7 +21,7 @@ export async function getUserCommitments(userId: string) {
 
   const { data, error } = await supabase
     .from('commitments')
-    .select('*, archived, deleted_at')
+    .select('*, archived, deleted_at, show_values')
     .eq('user_id', userId)
     .eq('is_active', true)
     .order('created_at', { ascending: false });
@@ -40,7 +40,7 @@ export async function getAllUserCommitments(userId: string) {
 
   const { data, error } = await supabase
     .from('commitments')
-    .select('*, archived, deleted_at')
+    .select('*, archived, deleted_at, show_values')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -153,25 +153,14 @@ export async function createCommitmentRecord(data: CommitmentRecordInsert) {
 
 // Upsert commitment record (insert or update if exists)
 export async function upsertCommitmentRecord(data: CommitmentRecordInsert) {
-  console.log('🔄 upsertCommitmentRecord called:', { 
-    commitment_id: data.commitment_id?.substring(0, 8) + '...', 
-    completed_at: data.completed_at,
-    status: data.status 
-  });
-
   const { data: record, error } = await supabase
     .from('commitment_records')
-    .upsert([data], { 
+    .upsert([data], {
       onConflict: 'commitment_id,completed_at',
-      ignoreDuplicates: false 
+      ignoreDuplicates: false
     })
     .select()
     .single();
-
-  console.log('🔄 upsertCommitmentRecord result:', { 
-    success: !!record, 
-    error: error?.message || 'No error' 
-  });
 
   return { data: record, error };
 }
@@ -255,4 +244,23 @@ export async function getDashboardData(userId: string) {
   }));
 
   return { data: dashboardData, error: null };
+}
+
+// Get all records for a user
+export async function getAllUserRecords(userId: string) {
+  console.log('💾 [DB] getAllUserRecords called for user:', userId);
+
+  const { data, error } = await supabase
+    .from('commitment_records')
+    .select('*')
+    .eq('user_id', userId)
+    .order('completed_at', { ascending: false });
+
+  console.log('💾 [DB] getAllUserRecords result:', {
+    success: !!data,
+    recordCount: data?.length || 0,
+    error: error?.message || 'No error'
+  });
+
+  return { data, error };
 }
