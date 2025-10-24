@@ -188,9 +188,9 @@ export default function CommitmentCellModal({
                     },
                     fontStyle
                   ]}>
-                    {commitment.commitmentType === 'measurement' && commitment.ratingRange && existingRecord?.value !== undefined ?
+                    {commitment.commitmentType === 'measurement' && commitment.ratingRange && existingRecord?.value !== undefined && existingRecord?.value !== null ?
                       `${existingRecord.value} out of ${commitment.ratingRange.max}` :
-                      commitment.commitmentType === 'measurement' && !commitment.ratingRange && existingRecord?.value !== undefined ?
+                      commitment.commitmentType === 'measurement' && !commitment.ratingRange && existingRecord?.value !== undefined && existingRecord?.value !== null ?
                         (() => {
                           const value = existingRecord.value;
                           const unit = commitment.unit || 'unit';
