@@ -286,10 +286,12 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
         
         const { data: commitments, error: commitmentsError } = await supabase
           .from('commitments')
-          .select('*')
+          .select('*, order_rank')
           .eq('user_id', friend.id)
           .eq('is_active', true)
-          .order('created_at', { ascending: true });
+          .order('order_rank', { ascending: true })
+          .order('updated_at', { ascending: true })
+          .order('id', { ascending: true });
 
         console.log(`📊 Commitments query result for friend ${friend.id}:`, {
           commitmentsCount: commitments?.length || 0,
@@ -307,20 +309,38 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
           };
         }
 
-        // Convert commitments to the expected format
-        const convertedCommitments = commitments.map(c => ({
-          id: c.id,
-          title: c.title,
-          color: c.color,
-          type: 'binary' as 'binary' | 'counter' | 'timer', // Default to binary for now
-          target: c.target_days,
-          streak: 0, // Will be calculated from records
-          bestStreak: 0, // Will be calculated from records
-          isActive: c.is_active,
-          isPrivate: c.is_private || false, // Use database value, default to false
-          createdAt: c.created_at,
-          updatedAt: c.updated_at,
-        }));
+        // Convert commitments to the expected format and apply client-side ordering fallback
+        const convertedCommitments = commitments
+          .map(c => ({
+            id: c.id,
+            title: c.title,
+            color: c.color,
+            type: 'binary' as 'binary' | 'counter' | 'timer', // Default to binary for now
+            target: c.target_days,
+            streak: 0, // Will be calculated from records
+            bestStreak: 0, // Will be calculated from records
+            isActive: c.is_active,
+            isPrivate: c.is_private || false, // Use database value, default to false
+            createdAt: c.created_at,
+            updatedAt: c.updated_at,
+            order_rank: c.order_rank || '', // Include order_rank for client-side sorting
+          }))
+          .sort((a, b) => {
+            // Client-side fallback ordering (matches selectActiveOrdered logic)
+            const rankA = a.order_rank || '';
+            const rankB = b.order_rank || '';
+            const rankCompare = rankA.localeCompare(rankB);
+            if (rankCompare !== 0) return rankCompare;
+
+            const dateCompare = a.updatedAt.localeCompare(b.updatedAt);
+            if (dateCompare !== 0) return dateCompare;
+
+            return a.id.localeCompare(b.id);
+          });
+
+        if (__DEV__) {
+          console.log(`👥 friends order applied: ${friend.id}, ${commitments.length}`);
+        }
 
         // Get records for the last 30 days for all commitments
         let allRecords: any[] = [];

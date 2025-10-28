@@ -34,6 +34,7 @@ interface SettingsState {
   preferences: AppPreferences;
   privacy: PrivacySettings;
   featureFlags: FeatureFlags;
+  lexorankSeedDone: boolean;
   isLoading: boolean;
   error: string | null;
 }
@@ -64,6 +65,7 @@ const initialState: SettingsState = {
       useSystemSurfaces: false,
     },
   },
+  lexorankSeedDone: false,
   isLoading: false,
   error: null,
 };
@@ -90,11 +92,15 @@ const settingsSlice = createSlice({
     updateFeatureFlags: (state, action: PayloadAction<Partial<FeatureFlags>>) => {
       state.featureFlags = { ...state.featureFlags, ...action.payload };
     },
+    setLexorankSeedDone: (state, action: PayloadAction<boolean>) => {
+      state.lexorankSeedDone = action.payload;
+    },
     resetSettings: (state) => {
       state.notifications = initialState.notifications;
       state.preferences = initialState.preferences;
       state.privacy = initialState.privacy;
       state.featureFlags = initialState.featureFlags;
+      state.lexorankSeedDone = initialState.lexorankSeedDone;
     },
     importSettings: (state, action: PayloadAction<Partial<SettingsState>>) => {
       const { notifications, preferences, privacy, featureFlags } = action.payload;
@@ -113,6 +119,7 @@ export const {
   updateAppPreferences,
   updatePrivacySettings,
   updateFeatureFlags,
+  setLexorankSeedDone,
   resetSettings,
   importSettings,
 } = settingsSlice.actions;

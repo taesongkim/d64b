@@ -104,6 +104,12 @@ const commitmentsSlice = createSlice({
         commitment.archived = false;
         commitment.isActive = true; // Update isActive to match database
         commitment.deletedAt = null;
+
+        // Restore to previous position if available
+        if (commitment.last_active_rank) {
+          commitment.order_rank = commitment.last_active_rank;
+          commitment.last_active_rank = null; // Clear stored position
+        }
       }
     },
     softDeleteCommitment: (state, action: PayloadAction<string>) => {

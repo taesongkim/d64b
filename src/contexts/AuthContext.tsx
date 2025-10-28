@@ -6,6 +6,7 @@ import { store, persistor, logoutGlobal } from '@/store';
 import { SyncService } from '@/services/syncService';
 import { syncScheduler, setSyncUserId } from '@/services/syncScheduler';
 import { purgeExpiredDeleted } from '@/store/slices/commitmentsSlice';
+import { seedOrderRanksOnce } from '@/utils/seedOrderRanks';
 
 interface AuthContextType {
   user: User | null;
@@ -65,6 +66,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }): React
           } else {
             console.log('✅ Profile already exists');
           }
+
+          // Run one-shot order rank seeding
+          await seedOrderRanksOnce(session.user.id);
         }
 
         // Handle sign out
