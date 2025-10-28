@@ -69,11 +69,18 @@ export async function updateCommitment(id: string, updates: CommitmentUpdate) {
 }
 
 // Update only the order rank for reordering operations
-export async function updateOrderRank(id: string, order_rank: string) {
-  const { data, error } = await supabase
+export async function updateOrderRank(id: string, order_rank: string, options?: { onlyIfBlank?: boolean }) {
+  let query = supabase
     .from('commitments')
     .update({ order_rank })
-    .eq('id', id)
+    .eq('id', id);
+
+  // Add condition to only update if order_rank is blank when onlyIfBlank is true
+  if (options?.onlyIfBlank) {
+    query = query.or('order_rank.is.null,order_rank.eq.');
+  }
+
+  const { data, error } = await query
     .select()
     .single();
 

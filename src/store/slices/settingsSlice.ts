@@ -34,7 +34,7 @@ interface SettingsState {
   preferences: AppPreferences;
   privacy: PrivacySettings;
   featureFlags: FeatureFlags;
-  lexorankSeedDone: boolean;
+  lexorankSeedDoneByUser: Record<string, boolean>;
   isLoading: boolean;
   error: string | null;
 }
@@ -65,7 +65,7 @@ const initialState: SettingsState = {
       useSystemSurfaces: false,
     },
   },
-  lexorankSeedDone: false,
+  lexorankSeedDoneByUser: {},
   isLoading: false,
   error: null,
 };
@@ -92,15 +92,16 @@ const settingsSlice = createSlice({
     updateFeatureFlags: (state, action: PayloadAction<Partial<FeatureFlags>>) => {
       state.featureFlags = { ...state.featureFlags, ...action.payload };
     },
-    setLexorankSeedDone: (state, action: PayloadAction<boolean>) => {
-      state.lexorankSeedDone = action.payload;
+    setLexorankSeedDoneForUser: (state, action: PayloadAction<{ userId: string; done: boolean }>) => {
+      const { userId, done } = action.payload;
+      state.lexorankSeedDoneByUser[userId] = done;
     },
     resetSettings: (state) => {
       state.notifications = initialState.notifications;
       state.preferences = initialState.preferences;
       state.privacy = initialState.privacy;
       state.featureFlags = initialState.featureFlags;
-      state.lexorankSeedDone = initialState.lexorankSeedDone;
+      state.lexorankSeedDoneByUser = initialState.lexorankSeedDoneByUser;
     },
     importSettings: (state, action: PayloadAction<Partial<SettingsState>>) => {
       const { notifications, preferences, privacy, featureFlags } = action.payload;
@@ -119,7 +120,7 @@ export const {
   updateAppPreferences,
   updatePrivacySettings,
   updateFeatureFlags,
-  setLexorankSeedDone,
+  setLexorankSeedDoneForUser,
   resetSettings,
   importSettings,
 } = settingsSlice.actions;

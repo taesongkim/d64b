@@ -105,10 +105,10 @@ const commitmentsSlice = createSlice({
         commitment.isActive = true; // Update isActive to match database
         commitment.deletedAt = null;
 
-        // Restore to previous position if available
+        // Restore to previous position if available, but keep last_active_rank for history
         if (commitment.last_active_rank) {
           commitment.order_rank = commitment.last_active_rank;
-          commitment.last_active_rank = null; // Clear stored position
+          // Keep last_active_rank for future reference instead of clearing it
         }
       }
     },

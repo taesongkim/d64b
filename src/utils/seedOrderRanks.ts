@@ -7,7 +7,7 @@ import { supabase } from '@/services/supabase';
 import { updateOrderRank } from '@/services/commitments';
 import { rankAfter } from '@/utils/rank';
 import { store } from '@/store';
-import { setLexorankSeedDone } from '@/store/slices/settingsSlice';
+import { setLexorankSeedDoneForUser } from '@/store/slices/settingsSlice';
 
 /**
  * Seeds empty order_rank values for current user's active commitments
@@ -18,8 +18,8 @@ export async function seedOrderRanksOnce(userId: string): Promise<void> {
 
   const state = store.getState();
 
-  // Exit if already seeded
-  if (state.settings.lexorankSeedDone === true) {
+  // Exit if already seeded for this user
+  if (state.settings.lexorankSeedDoneByUser[userId] === true) {
     return;
   }
 
@@ -46,7 +46,7 @@ export async function seedOrderRanksOnce(userId: string): Promise<void> {
         console.log('✅ All commitments already have order ranks');
       }
       // Set flag even if no seeding needed
-      store.dispatch(setLexorankSeedDone(true));
+      store.dispatch(setLexorankSeedDoneForUser({ userId, done: true }));
       return;
     }
 
@@ -67,7 +67,7 @@ export async function seedOrderRanksOnce(userId: string): Promise<void> {
       const newRank = rankAfter(lastRank);
 
       try {
-        await updateOrderRank(commitment.id, newRank);
+        await updateOrderRank(commitment.id, newRank, { onlyIfBlank: true });
         lastRank = newRank;
         seededCount++;
       } catch (error) {
@@ -77,7 +77,7 @@ export async function seedOrderRanksOnce(userId: string): Promise<void> {
     }
 
     // Set flag to prevent future runs
-    store.dispatch(setLexorankSeedDone(true));
+    store.dispatch(setLexorankSeedDoneForUser({ userId, done: true }));
 
     if (__DEV__) {
       console.log(`🧭 lexorank seed: ${seededCount}`);

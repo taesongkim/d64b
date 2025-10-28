@@ -289,6 +289,8 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
           .select('*, order_rank')
           .eq('user_id', friend.id)
           .eq('is_active', true)
+          .eq('archived', false)
+          .is('deleted_at', null)
           .order('order_rank', { ascending: true })
           .order('updated_at', { ascending: true })
           .order('id', { ascending: true });
