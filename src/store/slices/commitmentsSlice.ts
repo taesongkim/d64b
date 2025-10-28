@@ -2,6 +2,7 @@ import { createSlice, PayloadAction, createSelector } from '@reduxjs/toolkit';
 import type { RootState, AppDispatch } from '../index';
 import { addToQueue } from './syncSlice';
 import { getAllUserCommitments } from '@/services/commitments';
+import { rankBetween } from '@/utils/rank';
 
 export interface Commitment {
   id: string;
@@ -27,6 +28,9 @@ export interface Commitment {
   // Archive and soft delete fields
   archived?: boolean;           // default false
   deletedAt?: string | null;    // ISO date when soft-deleted; null otherwise
+  // Order ranking fields
+  order_rank: string;           // Lexicographic rank for stable ordering
+  last_active_rank?: string | null; // Stored rank before archival
 }
 
 interface CommitmentsState {
@@ -121,6 +125,13 @@ const commitmentsSlice = createSlice({
         return new Date(c.deletedAt).getTime() >= cutoff;
       });
     },
+    reorderCommitment: (state, action: PayloadAction<{ id: string; newRank: string }>) => {
+      const { id, newRank } = action.payload;
+      const commitment = state.commitments.find(c => c.id === id);
+      if (commitment) {
+        commitment.order_rank = newRank;
+      }
+    },
   },
 });
 
@@ -139,6 +150,7 @@ export const {
   softDeleteCommitment,
   permanentDeleteCommitment,
   purgeExpiredDeleted,
+  reorderCommitment,
 } = commitmentsSlice.actions;
 
 // Memoized selectors
@@ -178,6 +190,7 @@ export const archiveCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
       id,
       archived: true,
       is_active: false, // Ensure friends can't see archived commitments
+      last_active_rank: commitment.order_rank, // Store current position for restoration
       idempotencyKey: `${commitment.userId}:${id}:archive`
     }
   }));
@@ -254,6 +267,55 @@ export const permanentDeleteCommitmentThunk = (id: string) => (dispatch: AppDisp
   }));
 };
 
+// Reordering thunk actions
+export const reorderCommitmentBetween = (params: {
+  id: string;
+  prevRank?: string | null;
+  nextRank?: string | null;
+}) => (dispatch: AppDispatch, getState: () => RootState) => {
+  const { id, prevRank, nextRank } = params;
+  const state = getState();
+  const commitment = state.commitments.commitments.find(c => c.id === id);
+  if (!commitment) return;
+
+  const newRank = rankBetween(prevRank || null, nextRank || null);
+
+  // Optimistic update
+  dispatch(reorderCommitment({ id, newRank }));
+
+  // Add to sync queue
+  dispatch(addToQueue({
+    type: 'UPDATE',
+    entity: 'commitment',
+    entityId: id,
+    data: {
+      id,
+      order_rank: newRank,
+      idempotencyKey: `move:${id}:${newRank}`
+    }
+  }));
+
+  if (__DEV__) {
+    console.log('🧪 reorder →', id, 'rank=', newRank);
+  }
+};
+
+export const reorderCommitmentToIndex = (params: {
+  id: string;
+  targetIndex: number;
+}) => (dispatch: AppDispatch, getState: () => RootState) => {
+  const { id, targetIndex } = params;
+  const state = getState();
+  const activeCommitments = state.commitments.commitments
+    .filter(c => c.isActive && !c.archived && !c.deletedAt)
+    .sort((a, b) => a.order_rank.localeCompare(b.order_rank));
+
+  const prevRank = targetIndex > 0 ? activeCommitments[targetIndex - 1]?.order_rank : null;
+  const nextRank = targetIndex < activeCommitments.length ? activeCommitments[targetIndex]?.order_rank : null;
+
+  dispatch(reorderCommitmentBetween({ id, prevRank, nextRank }));
+};
+
 // Thunk to load all commitments (including archived and deleted) for management page
 export const loadAllCommitmentsThunk = (userId: string) => async (dispatch: AppDispatch) => {
   try {
@@ -290,6 +352,8 @@ export const loadAllCommitmentsThunk = (userId: string) => async (dispatch: AppD
         updatedAt: c.updated_at,
         archived: c.archived || false,
         deletedAt: c.deleted_at || null,
+        order_rank: c.order_rank || '',
+        last_active_rank: c.last_active_rank || null,
       }));
 
       dispatch(setAllCommitments(convertedCommitments));

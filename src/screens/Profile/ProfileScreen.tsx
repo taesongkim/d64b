@@ -22,6 +22,8 @@ import {
   updateFeatureFlags,
   resetSettings,
 } from '@/store/slices/settingsSlice';
+import { reorderCommitmentBetween } from '@/store/slices/commitmentsSlice';
+import { selectActiveOrdered } from '@/store/selectors/commitmentsOrder';
 import { supabase } from '@/services/supabase';
 import AnimalAvatar from '@/components/AnimalAvatar';
 import AvatarSelector from '@/components/AvatarSelector';
@@ -54,6 +56,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
   const { user, signOut } = useAuth();
   const dispatch = useAppDispatch();
   const { notifications, preferences, privacy, featureFlags } = useAppSelector(state => state.settings);
+  const activeCommitments = useAppSelector(selectActiveOrdered);
   
   // UI state
   const [showSettings, setShowSettings] = useState(false);
@@ -69,6 +72,27 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
     currentStreak: 7,
     longestStreak: 23,
     completionRate: 78,
+  };
+
+  // DEV: Test reordering function
+  const handleTestReorder = () => {
+    if (activeCommitments.length < 2) {
+      Alert.alert('Dev Test', 'Need at least 2 commitments to test reordering');
+      return;
+    }
+
+    const firstCommitment = activeCommitments[0];
+    const lastCommitment = activeCommitments[activeCommitments.length - 1];
+
+    // Move first commitment to bottom (after the last commitment)
+    dispatch(reorderCommitmentBetween({
+      id: firstCommitment.id,
+      prevRank: lastCommitment.order_rank,
+      nextRank: null
+    }));
+
+    Alert.alert('Dev Test', `Moved "${firstCommitment.title}" to bottom`);
+    console.log('🧪 reorder →', firstCommitment.id, 'moved to bottom');
   };
   
   // Load user profile data
@@ -669,6 +693,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
           <View style={styles.devInfo}>
             <Text style={styles.devText}>🔧 Development Build</Text>
             <Text style={styles.devText}>Environment: {__DEV__ ? 'Development' : 'Production'}</Text>
+            <TouchableOpacity
+              style={styles.devButton}
+              onPress={handleTestReorder}
+            >
+              <Text style={styles.devButtonText}>Dev: Move first active to bottom</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -938,6 +968,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#92400E',
     fontFamily: 'Manrope_500Medium',
+  },
+  devButton: {
+    backgroundColor: '#92400E',
+    borderRadius: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
+  },
+  devButtonText: {
+    fontSize: 12,
+    color: '#FEF3C7',
+    fontFamily: 'Manrope_600SemiBold',
+    textAlign: 'center',
   },
   // Settings styles
   profileInfoItem: {

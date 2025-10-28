@@ -21,10 +21,12 @@ export async function getUserCommitments(userId: string) {
 
   const { data, error } = await supabase
     .from('commitments')
-    .select('*, archived, deleted_at, show_values')
+    .select('*, archived, deleted_at, show_values, order_rank, last_active_rank')
     .eq('user_id', userId)
     .eq('is_active', true)
-    .order('created_at', { ascending: false });
+    .order('order_rank', { ascending: true })
+    .order('updated_at', { ascending: true })
+    .order('id', { ascending: true });
 
   console.log('🔍 getUserCommitments result:', {
     dataCount: data?.length || 0,
@@ -40,9 +42,11 @@ export async function getAllUserCommitments(userId: string) {
 
   const { data, error } = await supabase
     .from('commitments')
-    .select('*, archived, deleted_at, show_values')
+    .select('*, archived, deleted_at, show_values, order_rank, last_active_rank')
     .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .order('order_rank', { ascending: true })
+    .order('updated_at', { ascending: true })
+    .order('id', { ascending: true });
 
   console.log('🔍 getAllUserCommitments result:', {
     dataCount: data?.length || 0,
@@ -57,6 +61,18 @@ export async function updateCommitment(id: string, updates: CommitmentUpdate) {
   const { data, error } = await supabase
     .from('commitments')
     .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+// Update only the order rank for reordering operations
+export async function updateOrderRank(id: string, order_rank: string) {
+  const { data, error } = await supabase
+    .from('commitments')
+    .update({ order_rank })
     .eq('id', id)
     .select()
     .single();
@@ -263,4 +279,63 @@ export async function getAllUserRecords(userId: string) {
   });
 
   return { data, error };
+}
+
+// One-time seeding for existing commitments without order_rank
+export async function seedOrderRanksIfNeeded(userId: string) {
+  if (!__DEV__) return { success: true, seeded: 0 }; // Only run in development
+
+  console.log('🌱 Checking if order rank seeding is needed for user:', userId);
+
+  // Check if any commitments have empty order_rank
+  const { data: commitmentsNeedingRanks, error: checkError } = await supabase
+    .from('commitments')
+    .select('id, created_at')
+    .eq('user_id', userId)
+    .eq('order_rank', '');
+
+  if (checkError) {
+    console.error('❌ Error checking for commitments needing ranks:', checkError);
+    return { success: false, seeded: 0 };
+  }
+
+  if (!commitmentsNeedingRanks || commitmentsNeedingRanks.length === 0) {
+    console.log('✅ All commitments already have order ranks');
+    return { success: true, seeded: 0 };
+  }
+
+  console.log('🌱 Found', commitmentsNeedingRanks.length, 'commitments needing order ranks');
+
+  // Import rank utilities
+  const { rankAfter } = await import('@/utils/rank');
+
+  // Sort by creation date and assign sequential ranks
+  const sortedCommitments = commitmentsNeedingRanks.sort((a, b) =>
+    a.created_at.localeCompare(b.created_at)
+  );
+
+  let lastRank = '';
+  const updates = [];
+
+  for (const commitment of sortedCommitments) {
+    const newRank = rankAfter(lastRank);
+    updates.push({
+      id: commitment.id,
+      order_rank: newRank
+    });
+    lastRank = newRank;
+  }
+
+  // Batch update all commitments
+  try {
+    for (const update of updates) {
+      await updateOrderRank(update.id, update.order_rank);
+    }
+
+    console.log('✅ Successfully seeded', updates.length, 'commitment order ranks');
+    return { success: true, seeded: updates.length };
+  } catch (error) {
+    console.error('❌ Error seeding order ranks:', error);
+    return { success: false, seeded: 0 };
+  }
 }

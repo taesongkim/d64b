@@ -181,6 +181,13 @@ export class SyncService {
             throw new Error(`updateCommitment show_values failed: ${result.error.message}`);
           }
           console.log(`Synced show_values=${data.show_values} for commitment ${item.entityId}`);
+        } else if (data.idempotencyKey?.startsWith('move:')) {
+          // Handle commitment reordering
+          const result = await commitmentService.updateOrderRank(item.entityId, data.order_rank);
+          if (result.error) {
+            throw new Error(`updateOrderRank failed: ${result.error.message}`);
+          }
+          console.log(`Synced order_rank=${data.order_rank} for commitment ${item.entityId}`);
         } else {
           // Regular update
           console.log('No matching idempotency pattern for UPDATE');

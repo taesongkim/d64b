@@ -14,15 +14,17 @@ import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
+import { selectActiveOrdered } from '@/store/selectors/commitmentsOrder';
 import { toggleRecord, setRecordStatus, setRecords, loadAllRecordsThunk, type RecordStatus } from '@/store/slices/recordsSlice';
 import { addToQueue } from '@/store/slices/syncSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
 import { normalizeUnit } from '@/utils/unitUtils';
+import { rankAfter } from '@/utils/rank';
 import { isFeatureEnabled } from '@/config/features';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserCommitments, createCommitment, updateCommitment as updateCommitmentService, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate } from '@/services/commitments';
+import { getUserCommitments, createCommitment, updateCommitment as updateCommitmentService, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate, seedOrderRanksIfNeeded } from '@/services/commitments';
 import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
@@ -31,7 +33,7 @@ import { since } from '@/_shared/perf';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
-  const commitments = useAppSelector(selectActiveCommitments);
+  const commitments = useAppSelector(selectActiveOrdered);
   const records = useAppSelector(state => state.records.records);
   const { user } = useAuth();
   
@@ -88,10 +90,35 @@ export default function DashboardScreen(): React.JSX.Element {
             // Archive and soft delete fields
             archived: c.archived || false,
             deletedAt: c.deleted_at || null,
+            // Order ranking fields
+            order_rank: c.order_rank || '',
+            last_active_rank: c.last_active_rank || null,
           }));
 
           dispatch(setCommitments(convertedCommitments));
           console.log('✅ User commitments loaded into Redux');
+
+          // Seed order ranks if needed (DEV only)
+          if (__DEV__) {
+            try {
+              const seedResult = await seedOrderRanksIfNeeded(user.id);
+              if (seedResult.seeded > 0) {
+                console.log('🌱 Seeded', seedResult.seeded, 'commitment order ranks');
+                // Reload commitments to get updated ranks
+                const { commitments: reloadedCommitments } = await getUserCommitments(user.id);
+                if (reloadedCommitments) {
+                  const reloadedConverted = reloadedCommitments.map(c => ({
+                    ...convertedCommitments.find(cc => cc.id === c.id)!,
+                    order_rank: c.order_rank || '',
+                    last_active_rank: c.last_active_rank || null,
+                  }));
+                  dispatch(setCommitments(reloadedConverted));
+                }
+              }
+            } catch (seedError) {
+              console.warn('🌱 Order rank seeding failed:', seedError);
+            }
+          }
         } else {
           console.log('📝 No commitments found for user');
           dispatch(setCommitments([]));
@@ -167,64 +194,77 @@ export default function DashboardScreen(): React.JSX.Element {
     if (!user?.id && commitments.length === 0) {
       timer = setTimeout(() => {
         const sampleCommitments: Commitment[] = [
-          { 
-            id: '1', 
+          {
+            id: '1',
             userId: 'current_user',
-            title: 'Morning Meditation', 
-            color: '#111827', 
-            type: 'binary', 
+            title: 'Morning Meditation',
+            color: '#111827',
+            type: 'binary',
+            commitmentType: 'checkbox',
             streak: 3,
             bestStreak: 3,
             isActive: true,
             isPrivate: false,
             createdAt: getCurrentTimestamp(),
-            updatedAt: getCurrentTimestamp()
+            updatedAt: getCurrentTimestamp(),
+            order_rank: 'V',
+            last_active_rank: null
           },
-          { 
-            id: '2', 
+          {
+            id: '2',
             userId: 'current_user',
-            title: 'Exercise', 
-            color: '#111827', 
-            type: 'binary', 
+            title: 'Exercise',
+            color: '#111827',
+            type: 'binary',
+            commitmentType: 'checkbox',
             streak: 7,
             bestStreak: 7,
             isActive: true,
             isPrivate: false,
             createdAt: getCurrentTimestamp(),
-            updatedAt: getCurrentTimestamp()
+            updatedAt: getCurrentTimestamp(),
+            order_rank: 'W',
+            last_active_rank: null
           },
-          { 
-            id: '3', 
+          {
+            id: '3',
             userId: 'current_user',
-            title: 'Read 30 mins', 
-            color: '#8B5CF6', 
-            type: 'binary', 
+            title: 'Read 30 mins',
+            color: '#8B5CF6',
+            type: 'binary',
+            commitmentType: 'checkbox',
             streak: 1,
             bestStreak: 5,
             isActive: true,
             isPrivate: false,
             createdAt: getCurrentTimestamp(),
-            updatedAt: getCurrentTimestamp()
+            updatedAt: getCurrentTimestamp(),
+            order_rank: 'X',
+            last_active_rank: null
           },
-          { 
-            id: '4', 
+          {
+            id: '4',
             userId: 'current_user',
-            title: 'No Social Media', 
-            color: '#EF4444', 
-            type: 'binary', 
+            title: 'No Social Media',
+            color: '#EF4444',
+            type: 'binary',
+            commitmentType: 'checkbox',
             streak: 2,
             bestStreak: 10,
             isActive: true,
             isPrivate: false,
             createdAt: getCurrentTimestamp(),
-            updatedAt: getCurrentTimestamp()
+            updatedAt: getCurrentTimestamp(),
+            order_rank: 'Y',
+            last_active_rank: null
           },
-          { 
-            id: '5', 
+          {
+            id: '5',
             userId: 'current_user',
-            title: 'Water (8 glasses)', 
-            color: '#06B6D4', 
-            type: 'counter', 
+            title: 'Water (8 glasses)',
+            color: '#06B6D4',
+            type: 'counter',
+            commitmentType: 'measurement',
             target: 8,
             unit: 'glasses',
             streak: 5,
@@ -232,7 +272,9 @@ export default function DashboardScreen(): React.JSX.Element {
             isActive: true,
             isPrivate: false,
             createdAt: getCurrentTimestamp(),
-            updatedAt: getCurrentTimestamp()
+            updatedAt: getCurrentTimestamp(),
+            order_rank: 'Z',
+            last_active_rank: null
           },
         ];
         
@@ -340,6 +382,10 @@ export default function DashboardScreen(): React.JSX.Element {
       // Normalize unit for consistent database storage
       const normalizedUnit = commitmentData.unit ? normalizeUnit(commitmentData.unit) : undefined;
 
+      // Assign order rank - place new commitments at the end
+      const lastCommitment = commitments[commitments.length - 1];
+      const newOrderRank = rankAfter(lastCommitment?.order_rank || null);
+
       // Save to Supabase first
       const supabaseData = {
         user_id: user.id,
@@ -355,6 +401,8 @@ export default function DashboardScreen(): React.JSX.Element {
         unit: normalizedUnit,
         requirements: commitmentData.requirements,
         rating_range: commitmentData.ratingRange,
+        // Order ranking
+        order_rank: newOrderRank,
         // Note: 'type' field doesn't exist in current schema
         // tracking_mode and other Phase 0 fields will be used later
       };
@@ -377,6 +425,8 @@ export default function DashboardScreen(): React.JSX.Element {
         userId: user.id,
         createdAt: getCurrentTimestamp(),
         updatedAt: getCurrentTimestamp(),
+        order_rank: newOrderRank,
+        last_active_rank: null,
       };
       
       dispatch(addCommitment(newCommitment));
@@ -391,6 +441,8 @@ export default function DashboardScreen(): React.JSX.Element {
         userId: user.id,
         createdAt: getCurrentTimestamp(),
         updatedAt: getCurrentTimestamp(),
+        order_rank: newOrderRank,
+        last_active_rank: null,
       };
       dispatch(addCommitment(newCommitment));
     }
