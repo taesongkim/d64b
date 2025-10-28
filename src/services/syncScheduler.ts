@@ -155,29 +155,37 @@ class SyncScheduler {
       }
 
       if (dbCommitments && dbCommitments.length >= 0) {
-        // Convert to Redux format
+        // Convert to Redux format (synchronized with DashboardScreen mapping)
+        // IMPORTANT: Keep this mapping in sync with DashboardScreen.tsx loadUserData conversion
         const convertedCommitments = dbCommitments.map(c => ({
           id: c.id,
           userId: c.user_id,
           title: c.title,
           description: c.description || undefined,
           color: c.color,
-          commitmentType: c.commitment_type || 'checkbox',
+          // New commitment type architecture
+          commitmentType: c.commitment_type || 'checkbox', // Default to checkbox for existing commitments
           target: c.target,
           unit: c.unit,
           requirements: c.requirements,
           ratingRange: c.rating_range,
+          showValues: c.show_values,
+          // Legacy fields for backward compatibility
           type: c.commitment_type === 'checkbox' && !c.requirements ? 'binary' as const :
                 c.commitment_type === 'checkbox' && c.requirements ? 'binary' as const :
                 c.commitment_type === 'measurement' && c.rating_range ? 'counter' as const : 'timer' as const,
           streak: 0, // Will be calculated from records
           bestStreak: 0, // Will be calculated from records
           isActive: c.is_active,
-          isPrivate: c.is_private || false,
+          isPrivate: c.is_private || false, // Use database value, default to false
           createdAt: c.created_at,
           updatedAt: c.updated_at,
+          // Archive and soft delete fields
           archived: c.archived || false,
           deletedAt: c.deleted_at || null,
+          // Order ranking fields
+          order_rank: c.order_rank || '',
+          last_active_rank: c.last_active_rank || null,
         }));
 
         // Smart merge with existing Redux state to respect local changes
