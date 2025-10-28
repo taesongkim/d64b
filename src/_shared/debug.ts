@@ -3,4 +3,4 @@
  * Guards ensure zero production impact
  */
 
-export const GRID_DEBUG = __DEV__ && true;
+export const GRID_DEBUG = __DEV__ && false;

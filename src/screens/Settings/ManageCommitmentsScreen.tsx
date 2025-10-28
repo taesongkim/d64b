@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
@@ -129,17 +130,18 @@ const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navig
         <View style={styles.placeholder} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Archived Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Archived ({archivedCommitments.length})</Text>
           {archivedCommitments.length > 0 ? (
-            <FlatList
-              data={archivedCommitments}
-              renderItem={renderArchivedItem}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-            />
+            <View>
+              {archivedCommitments.map((item) => (
+                <View key={item.id}>
+                  {renderArchivedItem({ item })}
+                </View>
+              ))}
+            </View>
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No archived commitments</Text>
@@ -152,19 +154,20 @@ const ManageCommitmentsScreen: React.FC<ManageCommitmentsScreenProps> = ({ navig
           <Text style={styles.sectionTitle}>Recently Deleted ({recentlyDeletedCommitments.length})</Text>
           <Text style={styles.sectionSubtitle}>Items are automatically deleted after 7 days</Text>
           {recentlyDeletedCommitments.length > 0 ? (
-            <FlatList
-              data={recentlyDeletedCommitments}
-              renderItem={renderDeletedItem}
-              keyExtractor={(item) => item.id}
-              showsVerticalScrollIndicator={false}
-            />
+            <View>
+              {recentlyDeletedCommitments.map((item) => (
+                <View key={item.id}>
+                  {renderDeletedItem({ item })}
+                </View>
+              ))}
+            </View>
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No recently deleted commitments</Text>
             </View>
           )}
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };

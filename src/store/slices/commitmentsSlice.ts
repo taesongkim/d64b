@@ -202,7 +202,7 @@ export const archiveCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
   }));
 };
 
-export const restoreCommitmentThunk = (id: string) => (dispatch: AppDispatch, getState: () => RootState) => {
+export const restoreCommitmentThunk = (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
   const state = getState();
   const commitment = state.commitments.commitments.find(c => c.id === id);
   if (!commitment) return;
@@ -223,6 +223,46 @@ export const restoreCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
       idempotencyKey: `${commitment.userId}:${id}:restore`
     }
   }));
+
+  // Reload records for the restored commitment
+  try {
+    const { getCommitmentRecords } = await import('@/services/commitments');
+    const { setRecords } = await import('@/store/slices/recordsSlice');
+
+    // Get records for the last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const startDate = thirtyDaysAgo.toISOString().split('T')[0];
+    const endDate = new Date().toISOString().split('T')[0];
+
+    const { data: commitmentRecords, error } = await getCommitmentRecords(id, startDate, endDate);
+
+    if (!error && commitmentRecords) {
+      // Convert to Redux format and merge with existing records
+      const newRecords = commitmentRecords.map(r => ({
+        id: r.id,
+        userId: r.user_id || '',
+        commitmentId: r.commitment_id,
+        date: r.completed_at.split('T')[0],
+        status: r.status === 'complete' ? 'completed' as const : r.status as any,
+        value: r.value,
+        notes: r.notes || undefined,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at || r.created_at,
+      }));
+
+      // Get current records and filter out any existing records for this commitment
+      const currentState = getState();
+      const existingRecords = currentState.records.records.filter(r => r.commitmentId !== id);
+
+      // Merge with new records
+      dispatch(setRecords([...existingRecords, ...newRecords]));
+
+      console.log(`✅ Reloaded ${newRecords.length} records for restored commitment ${id}`);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to reload records for restored commitment ${id}:`, error);
+  }
 };
 
 export const softDeleteCommitmentThunk = (id: string) => (dispatch: AppDispatch, getState: () => RootState) => {

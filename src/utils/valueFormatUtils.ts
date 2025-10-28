@@ -149,13 +149,6 @@ export function getCellDisplayText(
   value: number | null | undefined,
   showValues: boolean = false
 ): string {
-  console.log('🎨 [Display] getCellDisplayText called:', {
-    status,
-    value,
-    valueType: typeof value,
-    showValues
-  });
-
   // If not showing values, return empty (icons will be shown instead)
   if (!showValues) {
     return '';
@@ -163,18 +156,15 @@ export function getCellDisplayText(
 
   // Check if we should display anything at all
   if (!shouldDisplayValue(status, value)) {
-    console.log('🎨 [Display] shouldDisplayValue returned false');
     return '';
   }
 
   // If there's a status but no value, show 0
   if ((value === null || value === undefined) && status && status !== 'none') {
-    console.log('🎨 [Display] Status exists but value is null/undefined, showing 0');
     return '0';
   }
 
   // Format and return the value
   const result = formatValueForGrid(value);
-  console.log('🎨 [Display] formatValueForGrid result:', result);
   return result;
 }

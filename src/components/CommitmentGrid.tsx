@@ -515,19 +515,6 @@ export default function CommitmentGrid({
                     const shouldShowValues = c.showValues && c.commitmentType === 'measurement';
                     const displayText = getCellDisplayText(status, record?.value, shouldShowValues);
 
-                    // Debug logging for home grid
-                    if (c.showValues && c.commitmentType === 'measurement') {
-                      console.log(`🏠 [Grid] ${c.title} (${date.slice(-2)}):`, {
-                        showValues: c.showValues,
-                        shouldShowValues,
-                        displayText,
-                        status,
-                        value: record?.value,
-                        valueType: typeof record?.value,
-                        recordExists: !!record,
-                        recordId: record?.id
-                      });
-                    }
 
                     let cellContent = null;
                     if (shouldShowValues) {

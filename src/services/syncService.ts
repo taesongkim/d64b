@@ -167,9 +167,29 @@ export class SyncService {
           }
           console.log(`Synced archive status for commitment ${item.entityId}`);
         } else if (data.idempotencyKey?.includes(':restore')) {
-          await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
-          await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
-          console.log(`Synced restore for commitment ${item.entityId}`);
+          console.log(`🔄 DEBUG: Restore sync data:`, {
+            entityId: item.entityId,
+            archived: data.archived,
+            deletedAt: data.deletedAt,
+            is_active: data.is_active,
+            fullData: data
+          });
+
+          const archivedResult = await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });
+          if (archivedResult.error) {
+            console.error(`❌ setArchived failed in restore:`, archivedResult.error);
+            throw new Error(`setArchived failed: ${archivedResult.error.message}`);
+          }
+          console.log(`✅ setArchived success in restore:`, archivedResult.data);
+
+          const deletedResult = await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
+          if (deletedResult.error) {
+            console.error(`❌ setDeletedAt failed in restore:`, deletedResult.error);
+            throw new Error(`setDeletedAt failed: ${deletedResult.error.message}`);
+          }
+          console.log(`✅ setDeletedAt success in restore:`, deletedResult.data);
+
+          console.log(`✅ Synced restore for commitment ${item.entityId}`);
         } else if (data.idempotencyKey?.includes(':deletedAt:')) {
           await commitmentService.setDeletedAt(item.entityId, data.deletedAt, { is_active: data.is_active });
           await commitmentService.setArchived(item.entityId, data.archived, { is_active: data.is_active });

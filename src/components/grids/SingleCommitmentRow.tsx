@@ -202,25 +202,6 @@ export default function SingleCommitmentRow({
         const shouldShowValues = commitment.showValues && commitment.commitmentType === 'measurement';
         const displayText = getCellDisplayText(status, record?.value, shouldShowValues);
 
-        // Debug logging - only for toggled commitments showing values
-        if (commitment.showValues && commitment.commitmentType === 'measurement') {
-          console.log(`📊 [${gridContext || 'home'}] ${commitment.title}:`, {
-            showValues: commitment.showValues,
-            shouldShowValues,
-            displayText,
-            status,
-            value: record?.value,
-            date: date.slice(-2) // Last 2 chars of date for brevity
-          });
-        }
-
-        // Debug ALL grids to see what's happening
-        console.log(`🔍 [${gridContext || 'UNKNOWN'}] ${commitment.title} (${date.slice(-2)}):`, {
-          gridContext,
-          showValues: commitment.showValues,
-          shouldShowValues,
-          displayText
-        });
 
         let cellContent = null;
         if (shouldShowValues) {
