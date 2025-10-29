@@ -26,14 +26,6 @@ export default function FriendChart({
   const { friend, commitments, records } = friendChartData;
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
 
-  // 🔍 DEBUG: Check what commitments the component is receiving
-  if (friend.id === '8a1e7367-9995-4ae4-983a-519936ce7b87') {
-    console.log('🔍 COMPONENT DEBUG - FriendChart 8a1e7367 commitments:', {
-      count: commitments.length,
-      commitmentIds: commitments.map(c => c.id),
-      hasArchivedCommitment: commitments.some(c => c.id === 'd77e7fcb-47b6-41b3-ae5c-206944154596')
-    });
-  }
 
   const handleCellPress = (commitmentId: string, date: string) => {
     // Friends' charts are read-only - no interaction allowed

@@ -244,6 +244,9 @@ export interface FriendChartData {
     isPrivate: boolean;
     createdAt: string;
     updatedAt: string;
+    // Display preference fields for friends to see user's settings
+    showValues?: boolean;
+    commitmentType?: 'checkbox' | 'measurement';
   }>;
   records: Array<{
     id: string;
@@ -286,7 +289,7 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
         
         const { data: commitments, error: commitmentsError } = await supabase
           .from('commitments')
-          .select('*, order_rank')
+          .select('*, order_rank, show_values, commitment_type')
           .eq('user_id', friend.id)
           .eq('is_active', true)
           .eq('archived', false)
@@ -326,6 +329,9 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
             createdAt: c.created_at,
             updatedAt: c.updated_at,
             order_rank: c.order_rank || '', // Include order_rank for client-side sorting
+            // Display preference fields so friends can see user's preferred display format
+            showValues: c.show_values || false,
+            commitmentType: c.commitment_type || 'checkbox',
           }))
           .sort((a, b) => {
             // Client-side fallback ordering (matches selectActiveOrdered logic)
@@ -373,7 +379,7 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
           commitmentId: r.commitment_id,
           date: r.completed_at.split('T')[0], // Extract date part
           status: r.status === 'complete' ? 'completed' : r.status as 'completed' | 'skipped' | 'failed' | 'none',
-          value: undefined,
+          value: r.value, // Preserve the actual value from database for measurement commitments
           notes: r.notes || undefined,
           createdAt: r.created_at,
           updatedAt: r.updated_at || r.created_at,
