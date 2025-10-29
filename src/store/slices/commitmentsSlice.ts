@@ -138,6 +138,15 @@ const commitmentsSlice = createSlice({
         commitment.order_rank = newRank;
       }
     },
+    batchReorderCommitments: (state, action: PayloadAction<Array<{ id: string; newRank: string }>>) => {
+      const updates = action.payload;
+      updates.forEach(({ id, newRank }) => {
+        const commitment = state.commitments.find(c => c.id === id);
+        if (commitment) {
+          commitment.order_rank = newRank;
+        }
+      });
+    },
   },
 });
 
@@ -157,6 +166,7 @@ export const {
   permanentDeleteCommitment,
   purgeExpiredDeleted,
   reorderCommitment,
+  batchReorderCommitments,
 } = commitmentsSlice.actions;
 
 // Memoized selectors

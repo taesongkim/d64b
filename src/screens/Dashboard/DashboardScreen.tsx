@@ -11,6 +11,7 @@ import {
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
+import CommitmentOrderingModal from '@/components/CommitmentOrderingModal';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
@@ -294,6 +295,7 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
+  const [showOrderingModal, setShowOrderingModal] = useState(false);
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -590,13 +592,22 @@ export default function DashboardScreen(): React.JSX.Element {
         </View>
         
         <View style={styles.gridContainer}>
-          {/* Header row with title and toggle */}
+          {/* Header row with title and controls */}
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, fontStyle]}>Your Commitments</Text>
-            <ViewToggle 
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-            />
+            <View style={styles.headerControls}>
+              <TouchableOpacity
+                style={styles.reorderButton}
+                onPress={() => setShowOrderingModal(true)}
+                accessibilityLabel="Reorder commitments"
+              >
+                <Text style={[styles.reorderButtonText, fontStyle]}>Reorder</Text>
+              </TouchableOpacity>
+              <ViewToggle
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+              />
+            </View>
           </View>
           
           {commitments.length > 0 ? (
@@ -683,6 +694,11 @@ export default function DashboardScreen(): React.JSX.Element {
         earliestDate={user?.created_at ? user.created_at.split('T')[0] : undefined}
       />
 
+      <CommitmentOrderingModal
+        visible={showOrderingModal}
+        onClose={() => setShowOrderingModal(false)}
+      />
+
 
     </SafeAreaView>
   );
@@ -765,6 +781,23 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     color: '#111827',
+  },
+  headerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  reorderButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  reorderButtonText: {
+    fontSize: 14,
+    color: '#374151',
   },
   emptyState: {
     justifyContent: 'center',
