@@ -12,6 +12,7 @@ import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
 import CommitmentOrderingModal from '@/components/CommitmentOrderingModal';
+import CommitmentOrderingModalR2 from '@/components/CommitmentOrderingModalR2';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
@@ -296,6 +297,7 @@ export default function DashboardScreen(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
   const [showOrderingModal, setShowOrderingModal] = useState(false);
+  const [showOrderingModalR2, setShowOrderingModalR2] = useState(false);
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -599,9 +601,16 @@ export default function DashboardScreen(): React.JSX.Element {
               <TouchableOpacity
                 style={styles.reorderButton}
                 onPress={() => setShowOrderingModal(true)}
-                accessibilityLabel="Reorder commitments"
+                accessibilityLabel="Reorder commitments (R1)"
               >
-                <Text style={[styles.reorderButtonText, fontStyle]}>Reorder</Text>
+                <Text style={[styles.reorderButtonText, fontStyle]}>R1</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.reorderButtonR2}
+                onPress={() => setShowOrderingModalR2(true)}
+                accessibilityLabel="Reorder commitments with drag & drop (R2)"
+              >
+                <Text style={[styles.reorderButtonTextR2, fontStyle]}>R2</Text>
               </TouchableOpacity>
               <ViewToggle
                 viewMode={viewMode}
@@ -697,6 +706,11 @@ export default function DashboardScreen(): React.JSX.Element {
       <CommitmentOrderingModal
         visible={showOrderingModal}
         onClose={() => setShowOrderingModal(false)}
+      />
+
+      <CommitmentOrderingModalR2
+        visible={showOrderingModalR2}
+        onClose={() => setShowOrderingModalR2(false)}
       />
 
 
@@ -798,6 +812,19 @@ const styles = StyleSheet.create({
   reorderButtonText: {
     fontSize: 14,
     color: '#374151',
+  },
+  reorderButtonR2: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#EBF8FF',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3B82F6',
+  },
+  reorderButtonTextR2: {
+    fontSize: 14,
+    color: '#3B82F6',
+    fontWeight: '500',
   },
   emptyState: {
     justifyContent: 'center',
