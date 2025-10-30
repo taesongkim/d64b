@@ -241,7 +241,7 @@ export default function CommitmentOrderingModalR2({
     const positionInList = Math.max(0, newItemY - contentPaddingTop);
     const newPlaceholderIndex = Math.max(0, Math.min(
       localCommitmentsRef.current.length - 1,
-      Math.round(positionInList / itemHeight)
+      Math.floor(positionInList / itemHeight)
     ));
 
     // Update placeholder ref for immediate access
@@ -514,7 +514,7 @@ export default function CommitmentOrderingModalR2({
         // Determine which item was touched
         const contentPaddingTop = designTokens.spacing.lg;
         const itemHeight = ROW_HEIGHT + designTokens.spacing.xs; // Row height + margin bottom
-        const touchedIndex = Math.round((touchStartY.current - contentPaddingTop) / itemHeight);
+        const touchedIndex = Math.floor((touchStartY.current - contentPaddingTop) / itemHeight);
 
         if (__DEV__) {
           console.log('🎯 [R2-DEBUG] Calculated touched index:', {
