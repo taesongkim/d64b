@@ -913,9 +913,9 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   placeholder: {
-    height: 4,
+    height: ROW_HEIGHT,
     backgroundColor: designTokens.dnd.placeholder.tint.light,
-    borderRadius: 2,
+    borderRadius: designTokens.radius.lg,
     marginBottom: designTokens.spacing.xs,
     opacity: designTokens.dnd.placeholder.opacity,
   },

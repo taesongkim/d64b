@@ -11,7 +11,6 @@ import {
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
-import CommitmentOrderingModal from '@/components/CommitmentOrderingModal';
 import CommitmentOrderingModalR2 from '@/components/CommitmentOrderingModalR2';
 import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -296,7 +295,6 @@ export default function DashboardScreen(): React.JSX.Element {
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
-  const [showOrderingModal, setShowOrderingModal] = useState(false);
   const [showOrderingModalR2, setShowOrderingModalR2] = useState(false);
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -600,17 +598,16 @@ export default function DashboardScreen(): React.JSX.Element {
             <View style={styles.headerControls}>
               <TouchableOpacity
                 style={styles.reorderButton}
-                onPress={() => setShowOrderingModal(true)}
-                accessibilityLabel="Reorder commitments (R1)"
-              >
-                <Text style={[styles.reorderButtonText, fontStyle]}>R1</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.reorderButtonR2}
                 onPress={() => setShowOrderingModalR2(true)}
-                accessibilityLabel="Reorder commitments with drag & drop (R2)"
+                accessibilityLabel="Reorder commitments"
               >
-                <Text style={[styles.reorderButtonTextR2, fontStyle]}>R2</Text>
+                <View style={styles.reorderButtonInner}>
+                  <View style={styles.hamburgerIcon}>
+                    <View style={styles.hamburgerLine} />
+                    <View style={styles.hamburgerLine} />
+                    <View style={styles.hamburgerLine} />
+                  </View>
+                </View>
               </TouchableOpacity>
               <ViewToggle
                 viewMode={viewMode}
@@ -703,10 +700,6 @@ export default function DashboardScreen(): React.JSX.Element {
         earliestDate={user?.created_at ? user.created_at.split('T')[0] : undefined}
       />
 
-      <CommitmentOrderingModal
-        visible={showOrderingModal}
-        onClose={() => setShowOrderingModal(false)}
-      />
 
       <CommitmentOrderingModalR2
         visible={showOrderingModalR2}
@@ -799,32 +792,40 @@ const styles = StyleSheet.create({
   headerControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 6,
   },
   reorderButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
     backgroundColor: '#F3F4F6',
+    borderRadius: 8,
+    padding: 2,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reorderButtonInner: {
+    backgroundColor: 'white',
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  reorderButtonText: {
-    fontSize: 14,
-    color: '#374151',
+  hamburgerIcon: {
+    justifyContent: 'space-between',
+    height: 12,
+    width: 16,
   },
-  reorderButtonR2: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#EBF8FF',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#3B82F6',
-  },
-  reorderButtonTextR2: {
-    fontSize: 14,
-    color: '#3B82F6',
-    fontWeight: '500',
+  hamburgerLine: {
+    height: 2,
+    backgroundColor: '#111827',
+    borderRadius: 1,
+    opacity: 0.3,
   },
   emptyState: {
     justifyContent: 'center',
