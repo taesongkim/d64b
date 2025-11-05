@@ -502,23 +502,19 @@ export default function CommitmentGrid({
               );
             } else if (item.type === 'spacer') {
               const spacer = item.data as LayoutItem;
-              const spacerHeight = spacer.height || designTokens.layoutItems.spacer.height.regular;
+              // Use view-mode responsive heights: regular for daily, compact for weekly
+              const spacerHeight = viewMode === 'weekly'
+                ? designTokens.layoutItems.spacer.height.compact
+                : designTokens.layoutItems.spacer.height.regular;
               return (
                 <View
                   key={`spacer-label-${spacer.id}`}
                   style={{
                     height: spacerHeight,
                     marginBottom: getRowSpacing(viewMode),
-                    justifyContent: 'center',
-                    alignItems: 'flex-start',
                     width: getLeftColWidth(viewMode),
-                    paddingRight: 12,
                   }}
-                >
-                  <Text style={[styles.spacerLabel, fontStyle]}>
-                    Spacer ({spacerHeight}px)
-                  </Text>
-                </View>
+                />
               );
             }
             return null;
@@ -630,7 +626,10 @@ export default function CommitmentGrid({
                   );
                 } else if (item.type === 'spacer') {
                   const spacer = item.data as LayoutItem;
-                  const spacerHeight = spacer.height || designTokens.layoutItems.spacer.height.regular;
+                  // Use view-mode responsive heights: regular for daily, compact for weekly
+                  const spacerHeight = viewMode === 'weekly'
+                    ? designTokens.layoutItems.spacer.height.compact
+                    : designTokens.layoutItems.spacer.height.regular;
                   return (
                     <View
                       key={spacer.id}
@@ -812,10 +811,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontFamily: 'Manrope_700Bold',
-  },
-  spacerLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    fontStyle: 'italic',
   },
 });

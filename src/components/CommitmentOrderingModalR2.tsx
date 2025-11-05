@@ -67,6 +67,7 @@ export default function CommitmentOrderingModalR2({
   const [localCommitments, setLocalCommitments] = useState<Commitment[]>([]); // Keep for backward compatibility during transition
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [lockedLocalItems, setLockedLocalItems] = useState<ListItem[] | null>(null);
 
   // Drag state
   const [dragState, setDragState] = useState<DragState>({
@@ -521,6 +522,8 @@ export default function CommitmentOrderingModalR2({
     }
 
     setIsSaving(true);
+    // Lock the visual state to prevent flickering during save
+    setLockedLocalItems([...localItems]);
 
     try {
       // Validate the final layout using current localItems data
@@ -766,6 +769,7 @@ export default function CommitmentOrderingModalR2({
       );
     } finally {
       setIsSaving(false);
+      setLockedLocalItems(null);
     }
   }, [hasChanges, isSaving, user?.id, layoutItems, localItems, dispatch, onClose]);
 
@@ -956,11 +960,11 @@ export default function CommitmentOrderingModalR2({
     }
 
     // Check if this is the last item and placeholder should go after it
-    const isLastItem = index === localItems.length - 1;
+    const isLastItem = index === itemsToRender.length - 1;
     const shouldShowPlaceholderAfter = dragState.isDragging &&
-      dragState.placeholderIndex === (dragState.draggedIndex !== null && dragState.draggedIndex < localItems.length
-        ? localItems.length - 1  // Dragged item removed, so max index is length - 1
-        : localItems.length) &&
+      dragState.placeholderIndex === (dragState.draggedIndex !== null && dragState.draggedIndex < itemsToRender.length
+        ? itemsToRender.length - 1  // Dragged item removed, so max index is length - 1
+        : itemsToRender.length) &&
       isLastItem;
 
     return (
@@ -1011,11 +1015,11 @@ export default function CommitmentOrderingModalR2({
     }
 
     // Check if this is the last item and placeholder should go after it
-    const isLastItem = index === localItems.length - 1;
+    const isLastItem = index === itemsToRender.length - 1;
     const shouldShowPlaceholderAfter = dragState.isDragging &&
-      dragState.placeholderIndex === (dragState.draggedIndex !== null && dragState.draggedIndex < localItems.length
-        ? localItems.length - 1  // Dragged item removed, so max index is length - 1
-        : localItems.length) &&
+      dragState.placeholderIndex === (dragState.draggedIndex !== null && dragState.draggedIndex < itemsToRender.length
+        ? itemsToRender.length - 1  // Dragged item removed, so max index is length - 1
+        : itemsToRender.length) &&
       isLastItem;
 
     return (
@@ -1044,6 +1048,9 @@ export default function CommitmentOrderingModalR2({
     );
   }, [dragState, fontStyle, localItems.length, handleDeleteSpacer]);
 
+  // Determine which items to render: locked state during save, or live state
+  const itemsToRender = (isSaving && lockedLocalItems) ? lockedLocalItems : localItems;
+
   // Unified renderer for list items (commitments and spacers)
   const renderListItem = useCallback((item: ListItem, index: number) => {
     if (item.type === 'commitment') {
@@ -1059,7 +1066,7 @@ export default function CommitmentOrderingModalR2({
       console.log('🎯 [R2-DEBUG] renderDraggedItem called:', {
         isDragging: dragState.isDragging,
         draggedIndex: dragState.draggedIndex,
-        item: dragState.draggedIndex !== null ? localItems[dragState.draggedIndex] : 'none'
+        item: dragState.draggedIndex !== null ? itemsToRender[dragState.draggedIndex] : 'none'
       });
     }
 
@@ -1070,7 +1077,7 @@ export default function CommitmentOrderingModalR2({
       return null;
     }
 
-    const draggedItem = localItems[dragState.draggedIndex];
+    const draggedItem = itemsToRender[dragState.draggedIndex];
     if (!draggedItem) {
       if (__DEV__) {
         console.log('🎯 [R2-DEBUG] Not rendering dragged item - no item found');
@@ -1127,7 +1134,7 @@ export default function CommitmentOrderingModalR2({
     );
   }, [dragState, localItems, draggedItemY, draggedItemScale, draggedItemOpacity, fontStyle]);
 
-  const canReorder = localItems.length > 1;
+  const canReorder = itemsToRender.length > 1;
 
   return (
     <Modal
@@ -1179,7 +1186,7 @@ export default function CommitmentOrderingModalR2({
           showsVerticalScrollIndicator={false}
           scrollEnabled={!dragState.isDragging}
         >
-          {localItems.length === 0 ? (
+          {itemsToRender.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={[styles.emptyStateText, fontStyle]}>No items to reorder</Text>
             </View>
@@ -1204,7 +1211,7 @@ export default function CommitmentOrderingModalR2({
             </View>
           ) : (
             <View style={styles.commitmentsList}>
-              {localItems.map((item, index) =>
+              {itemsToRender.map((item, index) =>
                 renderListItem(item, index)
               )}
             </View>
