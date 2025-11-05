@@ -524,7 +524,7 @@ export default function CommitmentOrderingModalR2({
 
     try {
       // Validate the final layout using current localItems data
-      const currentLayoutItems: LayoutItem[] = localItems.map(item => ({
+      const finalLayoutItems: LayoutItem[] = localItems.map(item => ({
         id: item.data.id,
         type: item.type,
         title: item.type === 'commitment' ? item.data.title : undefined,
@@ -534,14 +534,14 @@ export default function CommitmentOrderingModalR2({
       if (__DEV__) {
         console.log('🔍 [SAVE-VALIDATION-DEBUG] Validating with current data:', {
           localItemsLength: localItems.length,
-          currentLayoutItemsLength: currentLayoutItems.length,
-          commitments: currentLayoutItems.filter(item => item.type === 'commitment').length,
-          spacers: currentLayoutItems.filter(item => item.type === 'spacer').length,
-          items: currentLayoutItems.map((item, idx) => `${idx}:${item.type}`)
+          finalLayoutItemsLength: finalLayoutItems.length,
+          commitments: finalLayoutItems.filter(item => item.type === 'commitment').length,
+          spacers: finalLayoutItems.filter(item => item.type === 'spacer').length,
+          items: finalLayoutItems.map((item, idx) => `${idx}:${item.type}`)
         });
       }
 
-      const validationResult = validateReorderLayout(currentLayoutItems);
+      const validationResult = validateReorderLayout(finalLayoutItems);
       logValidationResult(validationResult, 'R2 Save');
 
       let finalItems = localItems;
@@ -667,12 +667,26 @@ export default function CommitmentOrderingModalR2({
         });
       }
 
-      // Handle deleted spacers (present in original but not in final)
-      const originalSpacerIds = currentLayoutItems.map(item => item.id);
+      // Handle deleted spacers (present in original Redux state but not in final local state)
+      // TODO: This diff logic could be optimized to only process changes instead of all items
+      const originalSpacerIds = currentLayoutItems  // Use ORIGINAL Redux layout items, not modified local items
+        .filter(item => item.type === 'spacer')
+        .map(item => item.id);
       const finalSpacerIds = finalItems
         .filter(item => item.type === 'spacer')
         .map(item => item.data.id);
       const deletedSpacerIds = originalSpacerIds.filter(id => !finalSpacerIds.includes(id));
+
+      if (__DEV__) {
+        console.log('🔍 [DELETE-DEBUG] Spacer deletion analysis:', {
+          originalSpacerIds,
+          finalSpacerIds,
+          deletedSpacerIds,
+          originalSpacersCount: originalSpacerIds.length,
+          finalSpacersCount: finalSpacerIds.length,
+          deletedCount: deletedSpacerIds.length
+        });
+      }
 
       // Delete spacers from database and Redux
       for (const deletedId of deletedSpacerIds) {
