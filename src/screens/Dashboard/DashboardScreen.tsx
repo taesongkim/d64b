@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import ViewToggle from '@/components/ViewToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
 import { selectActiveOrdered } from '@/store/selectors/commitmentsOrder';
+import { selectActiveLayoutItemsOrdered } from '@/store/slices/layoutItemsSlice';
 import { toggleRecord, setRecordStatus, setRecords, loadAllRecordsThunk, type RecordStatus } from '@/store/slices/recordsSlice';
 import { addToQueue } from '@/store/slices/syncSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
@@ -35,6 +36,7 @@ import { since } from '@/_shared/perf';
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const commitments = useAppSelector(selectActiveOrdered);
+  const layoutItems = useAppSelector(selectActiveLayoutItemsOrdered);
   const records = useAppSelector(state => state.records.records);
   const { user } = useAuth();
   
@@ -42,15 +44,30 @@ export default function DashboardScreen(): React.JSX.Element {
   const boldFontStyle = useFontStyle(undefined, 'bold');
   const semiBoldFontStyle = useFontStyle(undefined, 'semiBold');
   
+  // Use ref to prevent multiple simultaneous loads
+  const isLoadingRef = useRef(false);
+  const lastLoadedUserIdRef = useRef<string | null>(null);
+
   // Load authenticated user's data
   useEffect(() => {
-    const loadUserData = async () => {
-      if (!user?.id) {
-        console.log('No authenticated user, skipping data load');
-        return;
-      }
+    const currentUserId = user?.id;
 
-      console.log('📊 Loading data for authenticated user:', user.id);
+    console.log('🔄 [DEBUG] Dashboard useEffect triggered:', {
+      userId: currentUserId,
+      isLoading: isLoadingRef.current,
+      lastLoadedUserId: lastLoadedUserIdRef.current,
+      shouldSkip: !currentUserId || isLoadingRef.current || lastLoadedUserIdRef.current === currentUserId,
+      timestamp: new Date().toISOString()
+    });
+
+    // Skip if no user, already loading, or already loaded for this user
+    if (!currentUserId || isLoadingRef.current || lastLoadedUserIdRef.current === currentUserId) {
+      return;
+    }
+
+    const loadUserData = async () => {
+      isLoadingRef.current = true;
+      console.log('📊 Loading data for authenticated user:', currentUserId);
       
       try {
         // Load user's commitments from Supabase
@@ -98,6 +115,22 @@ export default function DashboardScreen(): React.JSX.Element {
 
           dispatch(setCommitments(convertedCommitments));
           console.log('✅ User commitments loaded into Redux');
+
+          // Load user's layout items from Supabase
+          try {
+            const { getUserLayoutItems } = await import('@/services/layoutItems');
+            const userLayoutItems = await getUserLayoutItems(user.id);
+
+            if (userLayoutItems && userLayoutItems.length > 0) {
+              const { setLayoutItems } = await import('@/store/slices/layoutItemsSlice');
+              dispatch(setLayoutItems(userLayoutItems));
+              console.log('✅ User layout items loaded into Redux:', userLayoutItems.length);
+            } else {
+              console.log('📥 No layout items found for user');
+            }
+          } catch (layoutError) {
+            console.error('❌ Error loading layout items:', layoutError);
+          }
 
           // Seed order ranks if needed (DEV only)
           if (__DEV__) {
@@ -181,11 +214,14 @@ export default function DashboardScreen(): React.JSX.Element {
         
       } catch (error) {
         console.error('💥 Failed to load user data:', error);
+      } finally {
+        isLoadingRef.current = false;
+        lastLoadedUserIdRef.current = currentUserId;
       }
     };
 
     loadUserData();
-  }, [user?.id, dispatch]);
+  }, [user?.id]);
 
 
   // Fallback sample data for development (only if no user authenticated)
@@ -290,7 +326,7 @@ export default function DashboardScreen(): React.JSX.Element {
         clearTimeout(timer);
       }
     };
-  }, [user?.id, commitments.length, dispatch]);
+  }, [user?.id, commitments.length]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
@@ -619,6 +655,7 @@ export default function DashboardScreen(): React.JSX.Element {
           {commitments.length > 0 ? (
             <CommitmentGrid
               commitments={commitments}
+              layoutItems={layoutItems}
               records={records}
               onCellPress={handleCellPress}
               onSetRecordStatus={handleSetRecordStatus}

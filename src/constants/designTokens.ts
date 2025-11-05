@@ -84,6 +84,24 @@ export const designTokens = {
       bold: '700' as const,
     },
   },
+
+  // Layout items (spacers, dividers)
+  layoutItems: {
+    spacer: {
+      height: {
+        compact: 16,   // Minimal spacing for tight layouts
+        regular: 32,   // Standard spacing between commitments
+        comfortable: 48, // Extra spacing for visual separation
+      },
+    },
+    divider: {
+      thickness: 2,    // Line thickness for dividers (Phase 4)
+      color: {
+        light: '#E5E7EB', // Gray-200 for subtle dividers
+        dark: '#6B7280',  // Gray-500 for prominent dividers
+      },
+    },
+  },
 } as const;
 
 // Type-safe access to design tokens

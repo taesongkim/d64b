@@ -34,21 +34,21 @@ export interface ValidationViolation {
  * 1. No spacers or dividers at top/bottom positions
  * 2. No adjacent spacers or dividers (spacer|divider next to spacer|divider)
  * 3. Count bound: (#spacers + #dividers) ≤ n-1 (n = active commitments)
- * 4. Currently only commitments are allowed (spacers/dividers inactive)
+ * 4. Phase 3: Spacers are now allowed (dividers still inactive)
  */
 export function validateReorderLayout(items: LayoutItem[]): ValidationResult {
   const violations: ValidationViolation[] = [];
 
-  // For current phase: only commitments are allowed
-  const nonCommitmentItems = items.filter(item => item.type !== 'commitment');
-  if (nonCommitmentItems.length > 0) {
+  // Phase 3: Allow spacers, but not dividers yet
+  const dividerItems = items.filter(item => item.type === 'divider');
+  if (dividerItems.length > 0) {
     violations.push({
       type: 'count_limit_exceeded',
-      message: 'Only commitments are currently supported',
+      message: 'Dividers are not yet supported (Phase 4)',
     });
 
-    // Auto-repair: filter out non-commitment items
-    const repairedOrder = items.filter(item => item.type === 'commitment');
+    // Auto-repair: filter out divider items
+    const repairedOrder = items.filter(item => item.type !== 'divider');
     return {
       isValid: false,
       violations,
@@ -56,18 +56,18 @@ export function validateReorderLayout(items: LayoutItem[]): ValidationResult {
     };
   }
 
-  // Future validation rules (inactive until spacers/dividers are introduced)
-  const futureValidationResult = validateFutureLayoutRules(items);
+  // Apply layout validation rules for spacers
+  const layoutValidationResult = validateFutureLayoutRules(items);
 
   return {
-    isValid: violations.length === 0 && futureValidationResult.isValid,
-    violations: [...violations, ...futureValidationResult.violations],
+    isValid: violations.length === 0 && layoutValidationResult.isValid,
+    violations: [...violations, ...layoutValidationResult.violations],
   };
 }
 
 /**
- * Future validation rules for spacers and dividers
- * Currently inactive but ready for implementation
+ * Layout validation rules for spacers and dividers
+ * Active for Phase 3 (spacers), Phase 4 will add dividers
  */
 function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
   const violations: ValidationViolation[] = [];
@@ -77,14 +77,14 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
   }
 
   const commitments = items.filter(item => item.type === 'commitment');
-  const layoutItems = items.filter(item => item.type !== 'commitment');
+  const layoutItems = items.filter(item => item.type === 'spacer' || item.type === 'divider');
 
   // Rule 1: No layout items at top/bottom positions
   if (items.length > 0) {
     const firstItem = items[0];
     const lastItem = items[items.length - 1];
 
-    if (firstItem.type !== 'commitment') {
+    if (firstItem.type === 'spacer' || firstItem.type === 'divider') {
       violations.push({
         type: 'top_layout_item',
         message: 'Layout items (spacers/dividers) cannot be at the top position',
@@ -93,7 +93,7 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
       });
     }
 
-    if (lastItem.type !== 'commitment') {
+    if (lastItem.type === 'spacer' || lastItem.type === 'divider') {
       violations.push({
         type: 'bottom_layout_item',
         message: 'Layout items (spacers/dividers) cannot be at the bottom position',
@@ -108,7 +108,8 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
     const current = items[i];
     const next = items[i + 1];
 
-    if (current.type !== 'commitment' && next.type !== 'commitment') {
+    if ((current.type === 'spacer' || current.type === 'divider') &&
+        (next.type === 'spacer' || next.type === 'divider')) {
       violations.push({
         type: 'adjacent_layout_items',
         message: 'Layout items cannot be adjacent to each other',
@@ -198,7 +199,38 @@ export function isDropPositionValid(
     ...itemsWithoutDragged.slice(targetIndex),
   ];
 
+  if (__DEV__) {
+    console.log('🔍 [VALIDATION-DEBUG] Drop position preview:', {
+      originalLength: items.length,
+      draggedItem: draggedItem.type,
+      targetIndex,
+      previewLength: previewItems.length,
+      previewItems: previewItems.map((item, idx) => `${idx}:${item.type}`)
+    });
+  }
+
   const validation = validateReorderLayout(previewItems);
+
+  // Throttle validation debug logging to prevent infinite loops during drag
+  if (__DEV__ && !validation.isValid) {
+    const currentTime = Date.now();
+    const lastLogKey = `${draggedItem.id}_${targetIndex}`;
+
+    // Only log if more than 500ms has passed since last log for this item/position
+    const lastLogTime = (globalThis as any).__validationLogCache?.[lastLogKey] || 0;
+    if (currentTime - lastLogTime > 500) {
+      console.log('🔍 [VALIDATION-DEBUG] Validation failed:', {
+        violations: validation.violations
+      });
+
+      // Update log cache
+      if (!(globalThis as any).__validationLogCache) {
+        (globalThis as any).__validationLogCache = {};
+      }
+      (globalThis as any).__validationLogCache[lastLogKey] = currentTime;
+    }
+  }
+
   return validation.isValid;
 }
 

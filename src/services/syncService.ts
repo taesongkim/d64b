@@ -87,12 +87,44 @@ export class SyncService {
   private static async processSyncQueue(): Promise<void> {
     const state = store.getState();
 
-    if (!state.sync.isOnline || state.sync.isSyncing || state.sync.queue.length === 0) {
+    console.log(`🔍 [SYNC-DEBUG] processSyncQueue called:`, {
+      isOnline: state.sync.isOnline,
+      isSyncing: state.sync.isSyncing,
+      queueLength: state.sync.queue.length
+    });
+
+    if (!state.sync.isOnline || state.sync.queue.length === 0) {
+      console.log(`🔍 [SYNC-DEBUG] Early return from processSyncQueue:`, {
+        reason: !state.sync.isOnline ? 'offline' : 'empty queue'
+      });
       return;
+    }
+
+    // Handle deadlock: if isSyncing is true but we have items to process, reset the state
+    if (state.sync.isSyncing) {
+      console.warn(`🔧 [SYNC-DEBUG] Detected sync deadlock - resetting isSyncing state. Queue has ${state.sync.queue.length} items.`);
+      store.dispatch(setSyncing(false));
+      // Small delay to ensure state update is processed
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     store.dispatch(setSyncing(true));
     console.log(`Processing sync queue with ${state.sync.queue.length} items`);
+
+    // Detailed queue inspection
+    console.log(`🔍 [SYNC-QUEUE-DEBUG] Queue contents:`, state.sync.queue.map((item, index) => ({
+      index,
+      id: item.id,
+      entity: item.entity,
+      type: item.type,
+      entityId: item.entityId,
+      entityIdType: typeof item.entityId,
+      retryCount: item.retryCount,
+      hasData: !!item.data,
+      dataUserId: item.data?.userId || item.data?.user_id,
+      dataKeys: item.data ? Object.keys(item.data) : 'no data',
+      isTemp: item.entityId?.startsWith('temp-')
+    })));
 
     try {
       const queue = state.sync.queue;
@@ -140,6 +172,8 @@ export class SyncService {
         return this.syncCommitment(item);
       case 'record':
         return this.syncRecord(item);
+      case 'layout_item':
+        return this.syncLayoutItem(item);
       default:
         throw new Error(`Unknown entity type: ${item.entity}`);
     }
@@ -295,6 +329,115 @@ export class SyncService {
         }
         // Note: For DELETE, we don't need to update Redux since the record should already be removed
         console.log(`✅ Synced DELETE record for ${item.entityId}`);
+        break;
+    }
+  }
+
+  /**
+   * Sync layout item with server
+   */
+  private static async syncLayoutItem(item: SyncAction): Promise<void> {
+    console.log(`🔍 [SYNC-LAYOUT-DEBUG] About to sync layout item ${item.type}:`, {
+      entityId: item.entityId,
+      isTemp: item.entityId.startsWith('temp-spacer-'),
+      entityIdType: typeof item.entityId,
+      entityIdValue: item.entityId,
+      data: item.data,
+      userId: item.data?.userId || item.data?.user_id,
+      hasUserId: !!(item.data?.userId || item.data?.user_id),
+      userIdType: typeof (item.data?.userId || item.data?.user_id),
+      idempotencyKey: item.data?.idempotencyKey,
+      dataKeys: item.data ? Object.keys(item.data) : 'no data'
+    });
+
+    // Skip temp spacer IDs - they should never be synced with UPDATE operations
+    if (item.entityId.startsWith('temp-spacer-') && item.type === 'UPDATE') {
+      console.log(`⚠️ Skipping UPDATE for temp spacer ${item.entityId} - temp spacers should only be CREATE operations`);
+      return; // Don't throw error, just skip
+    }
+
+    // Validate UUID format for non-temp IDs
+    if (!item.entityId.startsWith('temp-') && (item.entityId === 'undefined' || !item.entityId || typeof item.entityId !== 'string')) {
+      console.error(`❌ Invalid entityId for layout item sync: ${item.entityId}`);
+      throw new Error(`Invalid entityId: ${item.entityId}`);
+    }
+
+    // Validate userId exists - if invalid, mark item for removal instead of throwing error
+    const userId = item.data?.userId || item.data?.user_id;
+    if (!userId || userId === 'undefined') {
+      console.warn(`🗑️ [SYNC-CLEANUP] Removing sync item with invalid userId: ${userId}. Item ID: ${item.id}`);
+      // Remove the problematic item from queue immediately
+      store.dispatch(removeFromQueue(item.id));
+      return; // Skip processing this item
+    }
+
+    switch (item.type) {
+      case 'CREATE':
+        // For new spacers, we already created them in the R2 save logic
+        // This sync action is mainly for verification/redundancy
+        // Check if the item already exists, if not create it
+        try {
+          const { createLayoutItem } = await import('./layoutItems');
+          const spacerData = item.data;
+          await createLayoutItem({
+            userId: spacerData.user_id || spacerData.userId,
+            type: spacerData.type,
+            height: spacerData.height,
+            order_rank: spacerData.order_rank,
+            isActive: spacerData.is_active !== undefined ? spacerData.is_active : true,
+            archived: spacerData.archived || false,
+            deletedAt: spacerData.deleted_at || null,
+          });
+          console.log(`Created layout item ${item.entityId} via sync`);
+        } catch (error) {
+          // If creation fails due to duplicate, that's fine - it means it already exists
+          if (error?.message?.includes('duplicate') || error?.code === '23505') {
+            console.log(`Layout item ${item.entityId} already exists, skipping CREATE`);
+          } else {
+            throw error;
+          }
+        }
+        break;
+
+      case 'UPDATE':
+        // Handle layout item updates (mainly reordering)
+        const data = item.data;
+
+        console.log(`🔍 [SYNC-SERVICE-UPDATE-DEBUG] Processing UPDATE:`, {
+          entityId: item.entityId,
+          isTemp: item.entityId.startsWith('temp-spacer-'),
+          idempotencyKey: data.idempotencyKey,
+          startsWithMove: data.idempotencyKey?.startsWith('move:'),
+          order_rank: data.order_rank,
+          userId: data.user_id || data.userId
+        });
+
+        // Skip UPDATE operations for temp spacers - they should only be CREATE operations
+        if (item.entityId.startsWith('temp-spacer-')) {
+          console.log(`⚠️ Skipping UPDATE for temp spacer ${item.entityId} - temp spacers should only be CREATE operations`);
+          break;
+        }
+
+        if (data.idempotencyKey?.startsWith('move:')) {
+          // Handle layout item reordering
+          const { updateLayoutItem } = await import('./layoutItems');
+          await updateLayoutItem({
+            id: item.entityId,
+            userId: data.user_id || data.userId,
+            order_rank: data.order_rank,
+          });
+          console.log(`✅ Synced order_rank=${data.order_rank} for layout item ${item.entityId}`);
+        } else {
+          // Regular update
+          console.log('❌ No matching idempotency pattern for layout item UPDATE');
+        }
+        break;
+
+      case 'DELETE':
+        // Handle layout item deletion
+        const { deleteLayoutItem } = await import('./layoutItems');
+        await deleteLayoutItem(item.entityId, item.data.user_id || item.data.userId);
+        console.log(`Synced DELETE for layout item ${item.entityId}`);
         break;
     }
   }

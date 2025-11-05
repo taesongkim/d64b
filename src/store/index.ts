@@ -6,6 +6,7 @@ import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist
 
 import authReducer from './slices/authSlice';
 import commitmentsReducer from './slices/commitmentsSlice';
+import layoutItemsReducer from './slices/layoutItemsSlice';
 import recordsReducer from './slices/recordsSlice';
 import socialReducer from './slices/socialSlice';
 import syncReducer from './slices/syncSlice';
@@ -17,6 +18,7 @@ import { logoutGlobal } from './slices/authSlice';
 const appReducer = combineReducers({
   auth: authReducer,
   commitments: commitmentsReducer,
+  layoutItems: layoutItemsReducer,
   records: recordsReducer,
   social: socialReducer,
   sync: syncReducer,
@@ -35,7 +37,7 @@ const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
   whitelist: ['auth', 'settings', 'sync'],
-  blacklist: ['commitments', 'records', 'social'],
+  blacklist: ['commitments', 'layoutItems', 'records', 'social'],
 };
 
 // Dev-only: Guard against persist whitelist drift

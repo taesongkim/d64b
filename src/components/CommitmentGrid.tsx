@@ -32,6 +32,7 @@ import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { GRID_DEBUG } from '@/_shared/debug';
 import { getPressPoint } from './grids/getPressPoint';
 import { getCellDisplayText } from '@/utils/valueFormatUtils';
+import { designTokens } from '@/constants/designTokens';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -102,8 +103,16 @@ interface DayRecord {
   value?: any;
 }
 
+interface LayoutItem {
+  id: string;
+  type: 'spacer' | 'divider';
+  height?: number;
+  order_rank: string;
+}
+
 interface CommitmentGridProps {
   commitments: Commitment[];
+  layoutItems?: LayoutItem[];
   records: DayRecord[];
   onCellPress: (commitmentId: string, date: string) => void;
   onSetRecordStatus: (commitmentId: string, date: string, status: RecordStatus, value?: any) => void;
@@ -120,6 +129,7 @@ type ViewMode = 'daily' | 'weekly';
 
 export default function CommitmentGrid({
   commitments,
+  layoutItems = [],
   records,
   onCellPress,
   onSetRecordStatus,
@@ -187,6 +197,32 @@ export default function CommitmentGrid({
     }
     return min;
   }, [records]);
+
+  // Create unified ordered list of commitments and layout items
+  const orderedItems = useMemo(() => {
+    const allItems: Array<{ type: 'commitment' | 'spacer' | 'divider'; data: Commitment | LayoutItem; order_rank: string }> = [];
+
+    // Add commitments with their order_rank
+    commitments.forEach(commitment => {
+      allItems.push({
+        type: 'commitment',
+        data: commitment,
+        order_rank: commitment.order_rank
+      });
+    });
+
+    // Add layout items with their order_rank
+    layoutItems.forEach(item => {
+      allItems.push({
+        type: item.type,
+        data: item,
+        order_rank: item.order_rank
+      });
+    });
+
+    // Sort by order_rank (lexicographic ordering)
+    return allItems.sort((a, b) => a.order_rank.localeCompare(b.order_rank));
+  }, [commitments, layoutItems]);
 
   // Generate dates based on view mode
   const buildInitialDates = () => {
@@ -451,16 +487,42 @@ export default function CommitmentGrid({
               )}
             </View>
           </View>
-          {commitments.map((commitment) => (
-            <TouchableOpacity 
-              key={`label-${commitment.id}`} 
-              style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}
-              onPress={() => onCommitmentTitlePress?.(commitment.id)}
-              disabled={!onCommitmentTitlePress}
-            > 
-              <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>{commitment.title}</Text>
-            </TouchableOpacity>
-          ))}
+          {orderedItems.map((item) => {
+            if (item.type === 'commitment') {
+              const commitment = item.data as Commitment;
+              return (
+                <TouchableOpacity
+                  key={`label-${commitment.id}`}
+                  style={[dynamicStyles.commitmentHeader, { marginBottom: getRowSpacing(viewMode), height: getCellSize(viewMode), paddingTop: 0, paddingBottom: 0 }]}
+                  onPress={() => onCommitmentTitlePress?.(commitment.id)}
+                  disabled={!onCommitmentTitlePress}
+                >
+                  <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>{commitment.title}</Text>
+                </TouchableOpacity>
+              );
+            } else if (item.type === 'spacer') {
+              const spacer = item.data as LayoutItem;
+              const spacerHeight = spacer.height || designTokens.layoutItems.spacer.height.regular;
+              return (
+                <View
+                  key={`spacer-label-${spacer.id}`}
+                  style={{
+                    height: spacerHeight,
+                    marginBottom: getRowSpacing(viewMode),
+                    justifyContent: 'center',
+                    alignItems: 'flex-start',
+                    width: getLeftColWidth(viewMode),
+                    paddingRight: 12,
+                  }}
+                >
+                  <Text style={[styles.spacerLabel, fontStyle]}>
+                    Spacer ({spacerHeight}px)
+                  </Text>
+                </View>
+              );
+            }
+            return null;
+          })}
         </View>
 
         {/* Right column: unified horizontal ScrollView with header + grid */}
@@ -488,82 +550,114 @@ export default function CommitmentGrid({
               {/* Date header */}
               {renderDateHeader()}
               {/* Grid rows */}
-              {commitments.map((c, rowIndex) => (
-                <View key={c.id} style={{ flexDirection: 'row', marginBottom: getRowSpacing(viewMode) }}>
-                  {dates.map((date) => {
-                    const record = records.find(r => r.commitmentId === c.id && r.date === date);
-                    const status = record?.status || 'none';
-                    const isWeekendDay = isWeekend(date);
-                    const isTodayDate = date === todayISO;
+              {orderedItems.map((item, rowIndex) => {
+                if (item.type === 'commitment') {
+                  const c = item.data as Commitment;
+                  return (
+                    <View key={c.id} style={{ flexDirection: 'row', marginBottom: getRowSpacing(viewMode) }}>
+                      {dates.map((date) => {
+                        const record = records.find(r => r.commitmentId === c.id && r.date === date);
+                        const status = record?.status || 'none';
+                        const isWeekendDay = isWeekend(date);
+                        const isTodayDate = date === todayISO;
 
-                    // Determine cell state and visual treatment using centralized palette
-                    const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-                    const visualTreatment = getCellVisualTreatment(cellState);
+                        // Determine cell state and visual treatment using centralized palette
+                        const cellState = determineCellState(status, isWeekendDay, isTodayDate);
+                        const visualTreatment = getCellVisualTreatment(cellState);
 
-                    const cellSize = getCellSize(viewMode);
-                    const cellRadius = getCellBorderRadius(viewMode);
+                        const cellSize = getCellSize(viewMode);
+                        const cellRadius = getCellBorderRadius(viewMode);
 
-                    // Create dynamic cell style
-                    const cellStyleOverrides = {
-                      backgroundColor: visualTreatment.backgroundColor,
-                      borderWidth: visualTreatment.borderWidth,
-                      borderColor: visualTreatment.borderColor,
-                    };
+                        // Create dynamic cell style
+                        const cellStyleOverrides = {
+                          backgroundColor: visualTreatment.backgroundColor,
+                          borderWidth: visualTreatment.borderWidth,
+                          borderColor: visualTreatment.borderColor,
+                        };
 
-                    const cellStyle = [dynamicStyles.cell, cellStyleOverrides];
-                    // Determine if we should show values or icons
-                    const shouldShowValues = c.showValues && c.commitmentType === 'measurement';
-                    const displayText = getCellDisplayText(status, record?.value, shouldShowValues);
+                        const cellStyle = [dynamicStyles.cell, cellStyleOverrides];
+                        // Determine if we should show values or icons
+                        const shouldShowValues = c.showValues && c.commitmentType === 'measurement';
+                        const displayText = getCellDisplayText(status, record?.value, shouldShowValues);
 
+                        let cellContent = null;
+                        if (shouldShowValues) {
+                          // When showing values, always show text (even if empty)
+                          if (displayText) {
+                            cellContent = (
+                              <Text style={{
+                                color: 'white',
+                                fontSize: viewMode === 'daily' ? 12 : 10,
+                                fontWeight: '600',
+                                textAlign: 'center',
+                              }}>
+                                {displayText}
+                              </Text>
+                            );
+                          }
+                          // If shouldShowValues is true but no displayText, show nothing (no icons)
+                        } else {
+                          // Show icons (existing behavior)
+                          if (status === 'completed') {
+                            cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
+                          } else if (status === 'failed') {
+                            cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+                          }
+                          // skipped cells have no content (empty colored square)
+                        }
 
-                    let cellContent = null;
-                    if (shouldShowValues) {
-                      // When showing values, always show text (even if empty)
-                      if (displayText) {
-                        cellContent = (
-                          <Text style={{
-                            color: 'white',
-                            fontSize: viewMode === 'daily' ? 12 : 10,
-                            fontWeight: '600',
-                            textAlign: 'center',
-                          }}>
-                            {displayText}
-                          </Text>
+                        return (
+                          <TouchableOpacity
+                            key={`${c.id}-${date}`}
+                            style={cellStyle}
+                            onPress={(event) => handleCellPress(c.id, date, event)}
+                            onLongPress={() => handleLongPress(c.id, date)}
+                            delayLongPress={400}
+                          >
+                            {cellContent}
+                            <CellShimmerOverlay
+                              size={cellSize}
+                              radius={cellRadius}
+                              rowIndex={rowIndex}
+                              isToday={isTodayDate}
+                              isVisible={true}
+                              reduceMotion={reduceMotion}
+                            />
+                          </TouchableOpacity>
                         );
-                      }
-                      // If shouldShowValues is true but no displayText, show nothing (no icons)
-                    } else {
-                      // Show icons (existing behavior)
-                      if (status === 'completed') {
-                        cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
-                      } else if (status === 'failed') {
-                        cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
-                      }
-                      // skipped cells have no content (empty colored square)
-                    }
-                    
-                    return (
-                      <TouchableOpacity
-                        key={`${c.id}-${date}`}
-                        style={cellStyle}
-                        onPress={(event) => handleCellPress(c.id, date, event)}
-                        onLongPress={() => handleLongPress(c.id, date)}
-                        delayLongPress={400}
-                      >
-                        {cellContent}
-                        <CellShimmerOverlay
-                          size={cellSize}
-                          radius={cellRadius}
-                          rowIndex={rowIndex}
-                          isToday={isTodayDate}
-                          isVisible={true}
-                          reduceMotion={reduceMotion}
+                      })}
+                    </View>
+                  );
+                } else if (item.type === 'spacer') {
+                  const spacer = item.data as LayoutItem;
+                  const spacerHeight = spacer.height || designTokens.layoutItems.spacer.height.regular;
+                  return (
+                    <View
+                      key={spacer.id}
+                      style={{
+                        height: spacerHeight,
+                        marginBottom: getRowSpacing(viewMode),
+                        flexDirection: 'row'
+                      }}
+                    >
+                      {/* Render empty cells for each date to maintain grid alignment */}
+                      {dates.map((date) => (
+                        <View
+                          key={`${spacer.id}-${date}`}
+                          style={[
+                            dynamicStyles.cell,
+                            {
+                              backgroundColor: 'transparent',
+                              borderWidth: 0,
+                            }
+                          ]}
                         />
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              ))}
+                      ))}
+                    </View>
+                  );
+                }
+                return null;
+              })}
             </View>
           </ScrollView>
         </View>
@@ -718,5 +812,10 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 10,
     fontFamily: 'Manrope_700Bold',
+  },
+  spacerLabel: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
   },
 });
