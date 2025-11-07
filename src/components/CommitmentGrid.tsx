@@ -516,6 +516,31 @@ export default function CommitmentGrid({
                   }}
                 />
               );
+            } else if (item.type === 'divider') {
+              const divider = item.data as LayoutItem;
+              // Use same height as commitment rows for dividers
+              const dividerHeight = getCellSize(viewMode);
+              return (
+                <View
+                  key={`divider-label-${divider.id}`}
+                  style={{
+                    height: dividerHeight,
+                    marginBottom: getRowSpacing(viewMode),
+                    width: getLeftColWidth(viewMode),
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      height: designTokens.layoutItems.divider.thickness,
+                      width: '80%',
+                      backgroundColor: designTokens.layoutItems.divider.color.dark,
+                      borderRadius: 1,
+                    }}
+                  />
+                </View>
+              );
             }
             return null;
           })}
@@ -651,6 +676,44 @@ export default function CommitmentGrid({
                             }
                           ]}
                         />
+                      ))}
+                    </View>
+                  );
+                } else if (item.type === 'divider') {
+                  const divider = item.data as LayoutItem;
+                  const dividerHeight = getCellSize(viewMode);
+                  return (
+                    <View
+                      key={divider.id}
+                      style={{
+                        height: dividerHeight,
+                        marginBottom: getRowSpacing(viewMode),
+                        flexDirection: 'row'
+                      }}
+                    >
+                      {/* Render divider cells for each date */}
+                      {dates.map((date) => (
+                        <View
+                          key={`${divider.id}-${date}`}
+                          style={[
+                            dynamicStyles.cell,
+                            {
+                              backgroundColor: 'transparent',
+                              borderWidth: 0,
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                            }
+                          ]}
+                        >
+                          <View
+                            style={{
+                              height: designTokens.layoutItems.divider.thickness,
+                              width: '80%',
+                              backgroundColor: designTokens.layoutItems.divider.color.light,
+                              borderRadius: 1,
+                            }}
+                          />
+                        </View>
                       ))}
                     </View>
                   );

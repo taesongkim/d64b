@@ -339,7 +339,7 @@ export class SyncService {
   private static async syncLayoutItem(item: SyncAction): Promise<void> {
     console.log(`🔍 [SYNC-LAYOUT-DEBUG] About to sync layout item ${item.type}:`, {
       entityId: item.entityId,
-      isTemp: item.entityId.startsWith('temp-spacer-'),
+      isTemp: item.entityId.startsWith('temp-'),
       entityIdType: typeof item.entityId,
       entityIdValue: item.entityId,
       data: item.data,
@@ -350,9 +350,9 @@ export class SyncService {
       dataKeys: item.data ? Object.keys(item.data) : 'no data'
     });
 
-    // Skip temp spacer IDs - they should never be synced with UPDATE operations
-    if (item.entityId.startsWith('temp-spacer-') && item.type === 'UPDATE') {
-      console.log(`⚠️ Skipping UPDATE for temp spacer ${item.entityId} - temp spacers should only be CREATE operations`);
+    // Skip temp layout item IDs - they should never be synced with UPDATE operations
+    if (item.entityId.startsWith('temp-') && item.type === 'UPDATE') {
+      console.log(`⚠️ Skipping UPDATE for temp layout item ${item.entityId} - temp items should only be CREATE operations`);
       return; // Don't throw error, just skip
     }
 
@@ -373,21 +373,30 @@ export class SyncService {
 
     switch (item.type) {
       case 'CREATE':
-        // For new spacers, we already created them in the R2 save logic
+        // For new layout items (spacers/dividers), we already created them in the R2 save logic
         // This sync action is mainly for verification/redundancy
         // Check if the item already exists, if not create it
         try {
           const { createLayoutItem } = await import('./layoutItems');
-          const spacerData = item.data;
-          await createLayoutItem({
-            userId: spacerData.user_id || spacerData.userId,
-            type: spacerData.type,
-            height: spacerData.height,
-            order_rank: spacerData.order_rank,
-            isActive: spacerData.is_active !== undefined ? spacerData.is_active : true,
-            archived: spacerData.archived || false,
-            deletedAt: spacerData.deleted_at || null,
-          });
+          const layoutData = item.data;
+          const createData: any = {
+            userId: layoutData.user_id || layoutData.userId,
+            type: layoutData.type,
+            order_rank: layoutData.order_rank,
+            isActive: layoutData.is_active !== undefined ? layoutData.is_active : true,
+            archived: layoutData.archived || false,
+            deletedAt: layoutData.deleted_at || null,
+          };
+
+          // Add type-specific properties
+          if (layoutData.type === 'spacer') {
+            createData.height = layoutData.height;
+          } else if (layoutData.type === 'divider') {
+            createData.style = layoutData.style;
+            createData.color = layoutData.color;
+          }
+
+          await createLayoutItem(createData);
           console.log(`Created layout item ${item.entityId} via sync`);
         } catch (error) {
           // If creation fails due to duplicate, that's fine - it means it already exists
@@ -405,28 +414,36 @@ export class SyncService {
 
         console.log(`🔍 [SYNC-SERVICE-UPDATE-DEBUG] Processing UPDATE:`, {
           entityId: item.entityId,
-          isTemp: item.entityId.startsWith('temp-spacer-'),
+          isTemp: item.entityId.startsWith('temp-'),
           idempotencyKey: data.idempotencyKey,
           startsWithMove: data.idempotencyKey?.startsWith('move:'),
           order_rank: data.order_rank,
           userId: data.user_id || data.userId
         });
 
-        // Skip UPDATE operations for temp spacers - they should only be CREATE operations
-        if (item.entityId.startsWith('temp-spacer-')) {
-          console.log(`⚠️ Skipping UPDATE for temp spacer ${item.entityId} - temp spacers should only be CREATE operations`);
+        // Skip UPDATE operations for temp layout items - they should only be CREATE operations
+        if (item.entityId.startsWith('temp-')) {
+          console.log(`⚠️ Skipping UPDATE for temp layout item ${item.entityId} - temp items should only be CREATE operations`);
           break;
         }
 
         if (data.idempotencyKey?.startsWith('move:')) {
           // Handle layout item reordering
-          const { updateLayoutItem } = await import('./layoutItems');
-          await updateLayoutItem({
-            id: item.entityId,
-            userId: data.user_id || data.userId,
-            order_rank: data.order_rank,
-          });
-          console.log(`✅ Synced order_rank=${data.order_rank} for layout item ${item.entityId}`);
+          try {
+            const { updateLayoutItem } = await import('./layoutItems');
+            await updateLayoutItem({
+              id: item.entityId,
+              userId: data.user_id || data.userId,
+              order_rank: data.order_rank,
+            });
+            console.log(`✅ Synced order_rank=${data.order_rank} for layout item ${item.entityId}`);
+          } catch (error) {
+            if (error?.message?.includes('ITEM_NOT_FOUND')) {
+              console.log(`⚠️ Layout item ${item.entityId} no longer exists, skipping update (likely deleted in race condition)`);
+              return; // Don't throw, just skip this sync item
+            }
+            throw error; // Re-throw other errors
+          }
         } else {
           // Regular update
           console.log('❌ No matching idempotency pattern for layout item UPDATE');

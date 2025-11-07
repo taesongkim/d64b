@@ -34,29 +34,13 @@ export interface ValidationViolation {
  * 1. No spacers or dividers at top/bottom positions
  * 2. No adjacent spacers or dividers (spacer|divider next to spacer|divider)
  * 3. Count bound: (#spacers + #dividers) ≤ n-1 (n = active commitments)
- * 4. Phase 3: Spacers are now allowed (dividers still inactive)
+ * 4. Phase 4: Both spacers and dividers are now supported
  */
 export function validateReorderLayout(items: LayoutItem[]): ValidationResult {
   const violations: ValidationViolation[] = [];
 
-  // Phase 3: Allow spacers, but not dividers yet
-  const dividerItems = items.filter(item => item.type === 'divider');
-  if (dividerItems.length > 0) {
-    violations.push({
-      type: 'count_limit_exceeded',
-      message: 'Dividers are not yet supported (Phase 4)',
-    });
-
-    // Auto-repair: filter out divider items
-    const repairedOrder = items.filter(item => item.type !== 'divider');
-    return {
-      isValid: false,
-      violations,
-      repairedOrder,
-    };
-  }
-
-  // Apply layout validation rules for spacers
+  // Phase 4: Both spacers and dividers are now supported
+  // Apply layout validation rules for all layout items
   const layoutValidationResult = validateFutureLayoutRules(items);
 
   return {
@@ -132,6 +116,7 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
 
 /**
  * Auto-repair function that fixes validation violations deterministically
+ * For adjacency conflicts, removes the most recently inserted (later in temp ID sequence)
  */
 export function autoRepairLayout(items: LayoutItem[]): LayoutItem[] {
   if (items.length === 0) return items;
@@ -146,21 +131,49 @@ export function autoRepairLayout(items: LayoutItem[]): LayoutItem[] {
     repairedItems.pop();
   }
 
-  // Step 2: Remove adjacent layout items (keep the first one in each group)
+  // Step 2: Remove adjacent layout items (Phase 4: drop latest inserted for spacer-divider adjacency)
   const deduplicatedItems: LayoutItem[] = [];
-  let lastWasLayoutItem = false;
 
-  for (const item of repairedItems) {
-    if (item.type === 'commitment') {
-      deduplicatedItems.push(item);
-      lastWasLayoutItem = false;
-    } else {
-      // Layout item
-      if (!lastWasLayoutItem) {
-        deduplicatedItems.push(item);
+  for (let i = 0; i < repairedItems.length; i++) {
+    const currentItem = repairedItems[i];
+    const nextItem = i < repairedItems.length - 1 ? repairedItems[i + 1] : null;
+
+    // Add current item
+    deduplicatedItems.push(currentItem);
+
+    // Check if next item creates adjacency conflict
+    if (nextItem &&
+        (currentItem.type === 'spacer' || currentItem.type === 'divider') &&
+        (nextItem.type === 'spacer' || nextItem.type === 'divider')) {
+
+      // Skip the next item (remove latest inserted from the adjacent pair)
+      // Determine which is "latest inserted" by temp ID timestamp for new items
+      const currentIsTemp = currentItem.id.startsWith('temp-');
+      const nextIsTemp = nextItem.id.startsWith('temp-');
+
+      if (currentIsTemp && nextIsTemp) {
+        // Both are new - compare timestamps in temp IDs
+        const currentTime = parseInt(currentItem.id.split('-').pop() || '0');
+        const nextTime = parseInt(nextItem.id.split('-').pop() || '0');
+
+        if (nextTime > currentTime) {
+          // Next item is newer, skip it (already handled by loop increment)
+          i++; // Skip the next iteration
+        } else {
+          // Current item is newer, remove it from deduplicatedItems
+          deduplicatedItems.pop();
+        }
+      } else if (nextIsTemp && !currentIsTemp) {
+        // Next item is new insertion, skip it
+        i++; // Skip the next iteration
+      } else {
+        // Current item is new insertion or both are old - remove current
+        deduplicatedItems.pop();
       }
-      // Skip if last was also a layout item (adjacent rule)
-      lastWasLayoutItem = true;
+
+      if (__DEV__) {
+        console.log(`🔧 [REPAIR] Resolved adjacency conflict between ${currentItem.type}:${currentItem.id} and ${nextItem.type}:${nextItem.id}`);
+      }
     }
   }
 
@@ -199,37 +212,9 @@ export function isDropPositionValid(
     ...itemsWithoutDragged.slice(targetIndex),
   ];
 
-  if (__DEV__) {
-    console.log('🔍 [VALIDATION-DEBUG] Drop position preview:', {
-      originalLength: items.length,
-      draggedItem: draggedItem.type,
-      targetIndex,
-      previewLength: previewItems.length,
-      previewItems: previewItems.map((item, idx) => `${idx}:${item.type}`)
-    });
-  }
 
   const validation = validateReorderLayout(previewItems);
 
-  // Throttle validation debug logging to prevent infinite loops during drag
-  if (__DEV__ && !validation.isValid) {
-    const currentTime = Date.now();
-    const lastLogKey = `${draggedItem.id}_${targetIndex}`;
-
-    // Only log if more than 500ms has passed since last log for this item/position
-    const lastLogTime = (globalThis as any).__validationLogCache?.[lastLogKey] || 0;
-    if (currentTime - lastLogTime > 500) {
-      console.log('🔍 [VALIDATION-DEBUG] Validation failed:', {
-        violations: validation.violations
-      });
-
-      // Update log cache
-      if (!(globalThis as any).__validationLogCache) {
-        (globalThis as any).__validationLogCache = {};
-      }
-      (globalThis as any).__validationLogCache[lastLogKey] = currentTime;
-    }
-  }
 
   return validation.isValid;
 }

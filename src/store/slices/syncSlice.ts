@@ -3,7 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export interface SyncAction {
   id: string;
   type: 'CREATE' | 'UPDATE' | 'DELETE';
-  entity: 'commitment' | 'record' | 'user';
+  entity: 'commitment' | 'record' | 'user' | 'layout_item';
   entityId: string;
   data: any;
   timestamp: string;
@@ -37,8 +37,35 @@ const syncSlice = createSlice({
       state.isSyncing = action.payload;
     },
     addToQueue: (state, action: PayloadAction<Omit<SyncAction, 'id' | 'timestamp' | 'retryCount'>>) => {
+      const newAction = action.payload;
+
+      // Remove conflicting actions for the same entity
+      state.queue = state.queue.filter(existingAction => {
+        // Keep actions for different entities
+        if (existingAction.entityId !== newAction.entityId || existingAction.entity !== newAction.entity) {
+          return true;
+        }
+
+        // Remove conflicting actions for same entity
+        // DELETE trumps everything, UPDATE trumps CREATE
+        if (newAction.type === 'DELETE') {
+          console.log(`🔧 [SYNC-DEDUP] Removing conflicting ${existingAction.type} action for ${newAction.entity}:${newAction.entityId} (new DELETE)`);
+          return false;
+        }
+        if (newAction.type === 'UPDATE' && existingAction.type === 'CREATE') {
+          console.log(`🔧 [SYNC-DEDUP] Removing conflicting CREATE action for ${newAction.entity}:${newAction.entityId} (new UPDATE)`);
+          return false;
+        }
+        if (newAction.type === 'UPDATE' && existingAction.type === 'UPDATE') {
+          console.log(`🔧 [SYNC-DEDUP] Removing duplicate UPDATE action for ${newAction.entity}:${newAction.entityId}`);
+          return false;
+        }
+
+        return true;
+      });
+
       const syncAction: SyncAction = {
-        ...action.payload,
+        ...newAction,
         id: `sync_${Date.now()}_${Math.random()}`,
         timestamp: new Date().toISOString(),
         retryCount: 0,

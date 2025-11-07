@@ -39,7 +39,8 @@ interface CommitmentOrderingModalR2Props {
 // Unified type for drag & drop list items
 type ListItem =
   | { type: 'commitment'; data: Commitment }
-  | { type: 'spacer'; data: LayoutItemData };
+  | { type: 'spacer'; data: LayoutItemData }
+  | { type: 'divider'; data: LayoutItemData };
 
 interface DragState {
   isDragging: boolean;
@@ -62,6 +63,7 @@ export default function CommitmentOrderingModalR2({
   // Get current commitments and layout items from Redux
   const currentCommitments = useAppSelector(selectActiveOrdered);
   const currentLayoutItems = useAppSelector(selectActiveLayoutItemsOrdered);
+  const syncState = useAppSelector((state) => state.sync);
 
   // Local state for reordering (unified list of commitments and spacers)
   const [localItems, setLocalItems] = useState<ListItem[]>([]);
@@ -79,6 +81,28 @@ export default function CommitmentOrderingModalR2({
     initialItemY: 0,
   });
 
+  // Helper function to get display text for layout items
+  const getLayoutItemDisplayText = useCallback((item: LayoutItemData): string => {
+    switch (item.type) {
+      case 'spacer':
+        return `${item.height || 0}px`;
+      case 'divider':
+        return `${item.style || 'solid'} divider`;
+      default:
+        // Future-proofing for new layout item types
+        return `${item.type} item`;
+    }
+  }, []);
+
+  // Helper function to get display text for any ListItem
+  const getItemDisplayText = useCallback((item: ListItem): string => {
+    if (item.type === 'commitment') {
+      return item.data.title;
+    } else {
+      return getLayoutItemDisplayText(item.data);
+    }
+  }, [getLayoutItemDisplayText]);
+
   // Merge and sort commitments and layout items by order_rank
   const createUnifiedList = useCallback((commitments: Commitment[], layoutItems: LayoutItemData[]): ListItem[] => {
     const commitmentItems: ListItem[] = commitments.map(commitment => ({
@@ -86,12 +110,13 @@ export default function CommitmentOrderingModalR2({
       data: commitment
     }));
 
-    const spacerItems: ListItem[] = layoutItems.map(item => ({
-      type: 'spacer' as const,
+    // Preserve the actual layout item types (spacer, divider, future types)
+    const layoutItemsList: ListItem[] = layoutItems.map(item => ({
+      type: item.type as any, // Preserve actual type (future-proofed)
       data: item
     }));
 
-    const combined = [...commitmentItems, ...spacerItems];
+    const combined = [...commitmentItems, ...layoutItemsList];
 
     // Sort by order_rank (lexicographic ordering) - matches CommitmentGrid logic
     return combined.sort((a, b) => a.data.order_rank.localeCompare(b.data.order_rank));
@@ -129,10 +154,11 @@ export default function CommitmentOrderingModalR2({
       if (__DEV__) {
         console.log(`📱 R2 Modal opened with ${currentCommitments.length} commitments and ${currentLayoutItems.length} layout items`);
         console.log(`📱 R2 Unified list has ${unifiedList.length} total items:`,
-          unifiedList.map(item => `${item.type}:${item.type === 'commitment' ? item.data.title : item.data.height+'px'}`));
+          unifiedList.map(item => `${item.type}:${getItemDisplayText(item)}`));
       }
     }
-  }, [visible, currentCommitments, currentLayoutItems]);
+  }, [visible, currentCommitments, currentLayoutItems, getItemDisplayText]);
+
 
   // Keep refs in sync for PanResponder access
   useEffect(() => {
@@ -170,6 +196,7 @@ export default function CommitmentOrderingModalR2({
       type: item.type,
       title: item.type === 'commitment' ? item.data.title : undefined,
       height: item.type === 'spacer' ? item.data.height : undefined,
+      style: item.type === 'divider' ? item.data.style : undefined,
     }));
 
     // Find first valid position for the layout item
@@ -223,6 +250,11 @@ export default function CommitmentOrderingModalR2({
     handleAddLayoutItem('spacer');
   }, [handleAddLayoutItem]);
 
+  // Add Divider functionality (wrapper around generic handler)
+  const handleAddDivider = useCallback(() => {
+    handleAddLayoutItem('divider');
+  }, [handleAddLayoutItem]);
+
   // Delete spacer functionality
   const handleDeleteSpacer = useCallback((spacerId: string) => {
     // Remove from local state
@@ -231,6 +263,17 @@ export default function CommitmentOrderingModalR2({
 
     if (__DEV__) {
       console.log('🗑️ Deleted spacer:', spacerId);
+    }
+  }, []);
+
+  // Delete divider functionality
+  const handleDeleteDivider = useCallback((dividerId: string) => {
+    // Remove from local state
+    setLocalItems(prev => prev.filter(item => item.data.id !== dividerId));
+    setHasChanges(true);
+
+    if (__DEV__) {
+      console.log('🗑️ Deleted divider:', dividerId);
     }
   }, []);
 
@@ -260,26 +303,23 @@ export default function CommitmentOrderingModalR2({
       type: item.type,
       title: item.type === 'commitment' ? item.data.title : undefined,
       height: item.type === 'spacer' ? item.data.height : undefined,
+      style: item.type === 'divider' ? item.data.style : undefined,
     })),
     [localItems]
   );
 
   const startDrag = useCallback((index: number, initialRelativeY: number) => {
     const item = localItemsRef.current[index];
-    if (__DEV__) {
-      console.log('🎯 [R2-DEBUG] startDrag called:', {
-        index,
-        initialRelativeY,
-        itemType: item?.type,
-        itemTitle: item?.type === 'commitment' ? item.data.title : `Spacer (${item.data.height}px)`,
-        currentDragState: dragState
-      });
-    }
 
     // Calculate the item's position within the ScrollView content
     const contentPaddingTop = designTokens.spacing.lg; // ScrollView content padding top
     const itemHeight = ROW_HEIGHT + designTokens.spacing.xs; // Row height + margin bottom
     const initialItemY = contentPaddingTop + (index * itemHeight);
+
+    // Disable ScrollView scrolling during drag to prevent accidental scrolling
+    if (scrollViewRef.current) {
+      scrollViewRef.current.setNativeProps({ scrollEnabled: false });
+    }
 
     // Update refs synchronously for PanResponder FIRST
     isDraggingRef.current = true;
@@ -287,17 +327,8 @@ export default function CommitmentOrderingModalR2({
     placeholderIndexRef.current = index;
     initialItemYRef.current = initialItemY;
 
-    if (__DEV__) {
-      console.log('🎯 [R2-DEBUG] Set refs: isDragging=true, draggedIndex=', index, 'placeholderIndex=', index, 'initialItemY=', initialItemY);
-    }
 
     setDragState(prev => {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] Setting drag state:', {
-          prev,
-          new: { isDragging: true, draggedIndex: index, draggedY: initialRelativeY, placeholderIndex: index, initialItemY }
-        });
-      }
       return {
         isDragging: true,
         draggedIndex: index,
@@ -307,13 +338,6 @@ export default function CommitmentOrderingModalR2({
       };
     });
 
-    if (__DEV__) {
-      console.log('🎯 [R2-DEBUG] Starting lift animations with values:', {
-        targetScale: designTokens.dnd.lift.scale,
-        targetOpacity: designTokens.dnd.lift.opacity,
-        duration: designTokens.animation.fast
-      });
-    }
 
     // Animate lift effect
     Animated.parallel([
@@ -328,25 +352,12 @@ export default function CommitmentOrderingModalR2({
         duration: designTokens.animation.fast,
         useNativeDriver: true,
       }),
-    ]).start((finished) => {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] Lift animations completed:', { finished });
-      }
-    });
+    ]).start();
 
-    if (__DEV__) {
-      console.log(`🎯 [R2-DEBUG] Drag setup complete for item ${index}:`, localItemsRef.current[index]);
-    }
   }, [localItems, dragState]);
 
   const updateDrag = useCallback((currentRelativeY: number) => {
     if (!isDraggingRef.current || draggedIndexRef.current === null) {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] updateDrag early return:', {
-          isDraggingRef: isDraggingRef.current,
-          draggedIndexRef: draggedIndexRef.current
-        });
-      }
       return;
     }
 
@@ -394,31 +405,15 @@ export default function CommitmentOrderingModalR2({
         type: item.type,
         title: item.type === 'commitment' ? item.data.title : undefined,
         height: item.type === 'spacer' ? item.data.height : undefined,
+        style: item.type === 'divider' ? item.data.style : undefined,
       }));
 
-      if (__DEV__) {
-        console.log('🔍 [VALIDATION-INPUT-DEBUG] Before validation:', {
-          refItemsLength: currentItems.length,
-          layoutItemsLength: layoutItems.length,
-          localItemsLength: localItems.length,
-          currentItems: currentItems.map(item => `${item.type}:${item.data.id}`),
-          layoutItems: layoutItems.map(item => `${item.type}:${item.id}`),
-          localItems: localItems.map(item => `${item.type}:${item.data.id}`)
-        });
-      }
 
       const isValidPosition = isDropPositionValid(currentLayoutItems, draggedLayoutItem, candidatePlaceholderIndex);
 
-      if (__DEV__) {
-        console.log('🎯 [VALIDATION-DEBUG] Drop position check:', {
-          candidatePlaceholderIndex,
-          isValidPosition,
-          draggedItem: draggedLayoutItem.type,
-        });
-      }
 
       // Only update placeholder if position is valid
-      newPlaceholderIndex = isValidPosition ? candidatePlaceholderIndex : placeholderIndexRef.current;
+      newPlaceholderIndex = isValidPosition ? candidatePlaceholderIndex : (placeholderIndexRef.current ?? candidatePlaceholderIndex);
     }
 
     placeholderIndexRef.current = newPlaceholderIndex;
@@ -435,9 +430,6 @@ export default function CommitmentOrderingModalR2({
   }, [dragState, localItems.length]);
 
   const endDrag = useCallback(() => {
-    if (__DEV__) {
-      console.log('🎯 [R2-DEBUG] endDrag called:', dragState);
-    }
 
     // Clear the auto-reset timeout
     if (dragTimeoutRef.current) {
@@ -446,9 +438,6 @@ export default function CommitmentOrderingModalR2({
     }
 
     if (!isDraggingRef.current || draggedIndexRef.current === null) {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] endDrag early return - not dragging or missing indices');
-      }
       return;
     }
 
@@ -460,9 +449,6 @@ export default function CommitmentOrderingModalR2({
     if (sourceIndex === null || targetIndex === null ||
         sourceIndex < 0 || sourceIndex >= currentItems.length ||
         targetIndex < 0 || targetIndex >= currentItems.length) {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] Invalid indices - skipping reorder:', { sourceIndex, targetIndex, length: currentItems.length });
-      }
       return;
     }
 
@@ -472,9 +458,6 @@ export default function CommitmentOrderingModalR2({
       const draggedItem = newItems[sourceIndex];
 
       if (!draggedItem) {
-        if (__DEV__) {
-          console.log('🎯 [R2-DEBUG] No item found at sourceIndex:', sourceIndex);
-        }
         return;
       }
 
@@ -486,14 +469,6 @@ export default function CommitmentOrderingModalR2({
       setLocalItems(newItems);
       setHasChanges(true);
 
-      if (__DEV__) {
-        const itemName = draggedItem.type === 'commitment' ? draggedItem.data.title : `Spacer (${draggedItem.data.height}px)`;
-        console.log(`🎯 [R2-DEBUG] Dropped item from ${sourceIndex} to ${targetIndex}: ${itemName}`);
-      }
-    } else {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] No reorder needed - same position');
-      }
     }
 
     // Update refs synchronously for PanResponder
@@ -530,16 +505,15 @@ export default function CommitmentOrderingModalR2({
         tension: 300,
         friction: 20,
       }),
-    ]).start((finished) => {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] Reset animations completed:', { finished });
-      }
-    });
+    ]).start();
   }, [dragState, localCommitments, draggedItemScale, draggedItemOpacity, draggedItemY]);
 
 
   const handleSave = useCallback(async () => {
+    console.log('🔍 [SAVE-DEBUG] handleSave called:', { hasChanges, isSaving, userId: user?.id });
+
     if (!hasChanges || isSaving) {
+      console.log('🔍 [SAVE-DEBUG] Early return - no changes or already saving');
       onClose();
       return;
     }
@@ -560,17 +534,9 @@ export default function CommitmentOrderingModalR2({
         type: item.type,
         title: item.type === 'commitment' ? item.data.title : undefined,
         height: item.type === 'spacer' ? item.data.height : undefined,
+        style: item.type === 'divider' ? item.data.style : undefined,
       }));
 
-      if (__DEV__) {
-        console.log('🔍 [SAVE-VALIDATION-DEBUG] Validating with current data:', {
-          localItemsLength: localItems.length,
-          finalLayoutItemsLength: finalLayoutItems.length,
-          commitments: finalLayoutItems.filter(item => item.type === 'commitment').length,
-          spacers: finalLayoutItems.filter(item => item.type === 'spacer').length,
-          items: finalLayoutItems.map((item, idx) => `${idx}:${item.type}`)
-        });
-      }
 
       const validationResult = validateReorderLayout(finalLayoutItems);
       logValidationResult(validationResult, 'R2 Save');
@@ -597,8 +563,8 @@ export default function CommitmentOrderingModalR2({
           index,
           type: item.type,
           id: item.data.id,
-          isTemp: item.data.id.startsWith('temp-spacer-'),
-          title: item.type === 'commitment' ? item.data.title : `${item.data.height}px`
+          isTemp: item.data.id.startsWith('temp-'),
+          title: getItemDisplayText(item)
         })));
       }
 
@@ -616,7 +582,7 @@ export default function CommitmentOrderingModalR2({
           if (__DEV__) {
             console.log('🔍 [RANK-DEBUG] Processing spacer:', {
               id: item.data.id,
-              isTemp: item.data.id.startsWith('temp-spacer-'),
+              isTemp: item.data.id.startsWith('temp-'),
               newRank,
               itemIndex: i
             });
@@ -627,6 +593,26 @@ export default function CommitmentOrderingModalR2({
             newSpacerRanks.set(item.data.id, newRank);
           } else {
             // Process existing spacers for updates
+            layoutItemUpdates.push({
+              id: item.data.id,
+              newRank
+            });
+          }
+        } else if (item.type === 'divider') {
+          if (__DEV__) {
+            console.log('🔍 [RANK-DEBUG] Processing divider:', {
+              id: item.data.id,
+              isTemp: item.data.id.startsWith('temp-'),
+              newRank,
+              itemIndex: i
+            });
+          }
+
+          if (item.data.id.startsWith('temp-divider-')) {
+            // Track rank for new dividers
+            newSpacerRanks.set(item.data.id, newRank);
+          } else {
+            // Process existing dividers for updates
             layoutItemUpdates.push({
               id: item.data.id,
               newRank
@@ -698,29 +684,29 @@ export default function CommitmentOrderingModalR2({
         });
       }
 
-      // Handle deleted spacers (present in original Redux state but not in final local state)
+      // Handle deleted layout items (present in original Redux state but not in final local state)
       // TODO: This diff logic could be optimized to only process changes instead of all items
-      const originalSpacerIds = currentLayoutItems  // Use ORIGINAL Redux layout items, not modified local items
-        .filter(item => item.type === 'spacer')
+      const originalLayoutItemIds = currentLayoutItems  // Use ORIGINAL Redux layout items, not modified local items
+        .filter(item => item.type !== 'commitment') // All layout items (spacer, divider, future types)
         .map(item => item.id);
-      const finalSpacerIds = finalItems
-        .filter(item => item.type === 'spacer')
+      const finalLayoutItemIds = finalItems
+        .filter(item => item.type !== 'commitment') // All layout items (spacer, divider, future types)
         .map(item => item.data.id);
-      const deletedSpacerIds = originalSpacerIds.filter(id => !finalSpacerIds.includes(id));
+      const deletedLayoutItemIds = originalLayoutItemIds.filter(id => !finalLayoutItemIds.includes(id));
 
       if (__DEV__) {
-        console.log('🔍 [DELETE-DEBUG] Spacer deletion analysis:', {
-          originalSpacerIds,
-          finalSpacerIds,
-          deletedSpacerIds,
-          originalSpacersCount: originalSpacerIds.length,
-          finalSpacersCount: finalSpacerIds.length,
-          deletedCount: deletedSpacerIds.length
+        console.log('🔍 [DELETE-DEBUG] Layout item deletion analysis:', {
+          originalLayoutItemIds,
+          finalLayoutItemIds,
+          deletedLayoutItemIds,
+          originalCount: originalLayoutItemIds.length,
+          finalCount: finalLayoutItemIds.length,
+          deletedCount: deletedLayoutItemIds.length
         });
       }
 
-      // Delete spacers from database and Redux
-      for (const deletedId of deletedSpacerIds) {
+      // Delete layout items from database and Redux
+      for (const deletedId of deletedLayoutItemIds) {
         try {
           const { deleteLayoutItem } = await import('@/services/layoutItems');
           await deleteLayoutItem(deletedId, user.id);
@@ -742,16 +728,19 @@ export default function CommitmentOrderingModalR2({
           }));
 
           if (__DEV__) {
-            console.log('✅ Deleted spacer:', deletedId);
+            console.log('✅ Deleted layout item:', deletedId);
           }
         } catch (error) {
-          console.error('❌ Failed to delete spacer:', deletedId, error);
+          console.error('❌ Failed to delete layout item:', deletedId, error);
         }
       }
 
-      // Handle new spacers (with temporary IDs)
+      // Handle new layout items (spacers and dividers with temporary IDs)
       const newSpacers = finalItems.filter(item =>
         item.type === 'spacer' && item.data.id.startsWith('temp-spacer-')
+      );
+      const newDividers = finalItems.filter(item =>
+        item.type === 'divider' && item.data.id.startsWith('temp-divider-')
       );
 
       for (const newSpacerItem of newSpacers) {
@@ -765,7 +754,7 @@ export default function CommitmentOrderingModalR2({
           const createdSpacer = await createLayoutItem({
             userId: spacerData.userId,
             type: 'spacer',
-            height: spacerData.height,
+            height: spacerData.type === 'spacer' ? spacerData.height : undefined,
             order_rank: rank,
             isActive: true,
             archived: false,
@@ -775,6 +764,24 @@ export default function CommitmentOrderingModalR2({
           // Add the created spacer to Redux
           dispatch(addLayoutItem(createdSpacer));
 
+          // Add CREATE sync action for the new spacer
+          dispatch(addToQueue({
+            type: 'CREATE',
+            entity: 'layout_item',
+            entityId: createdSpacer.id,
+            data: {
+              userId: createdSpacer.userId,
+              user_id: createdSpacer.userId,
+              type: createdSpacer.type,
+              height: createdSpacer.height,
+              order_rank: createdSpacer.order_rank,
+              is_active: createdSpacer.isActive,
+              archived: createdSpacer.archived,
+              deleted_at: createdSpacer.deletedAt,
+              idempotencyKey: `create:spacer:${createdSpacer.id}:${Date.now()}`
+            }
+          }));
+
           if (__DEV__) {
             console.log('✅ Created new spacer:', createdSpacer.id);
           }
@@ -783,8 +790,55 @@ export default function CommitmentOrderingModalR2({
         }
       }
 
+      for (const newDividerItem of newDividers) {
+        const dividerData = newDividerItem.data;
+        // Get the rank that was calculated in the main ranking loop
+        const rank = newSpacerRanks.get(dividerData.id) || dividerData.order_rank;
+
+        try {
+          // Create the divider in the database
+          const { createLayoutItem } = await import('@/services/layoutItems');
+          const createdDivider = await createLayoutItem({
+            userId: dividerData.userId,
+            type: 'divider',
+            style: dividerData.type === 'divider' ? dividerData.style : undefined,
+            order_rank: rank,
+            isActive: true,
+            archived: false,
+            deletedAt: null,
+          });
+
+          // Add the created divider to Redux
+          dispatch(addLayoutItem(createdDivider));
+
+          // Add CREATE sync action for the new divider
+          dispatch(addToQueue({
+            type: 'CREATE',
+            entity: 'layout_item',
+            entityId: createdDivider.id,
+            data: {
+              userId: createdDivider.userId,
+              user_id: createdDivider.userId,
+              type: createdDivider.type,
+              style: createdDivider.style,
+              order_rank: createdDivider.order_rank,
+              is_active: createdDivider.isActive,
+              archived: createdDivider.archived,
+              deleted_at: createdDivider.deletedAt,
+              idempotencyKey: `create:divider:${createdDivider.id}:${Date.now()}`
+            }
+          }));
+
+          if (__DEV__) {
+            console.log('✅ Created new divider:', createdDivider.id);
+          }
+        } catch (error) {
+          console.error('❌ Failed to create divider:', error);
+        }
+      }
+
       if (__DEV__) {
-        console.log(`✅ R2 Save: Applied ${commitmentUpdates.length} commitment updates, ${layoutItemUpdates.length} layout item updates, ${deletedSpacerIds.length} deleted spacers, ${newSpacers.length} new spacers`);
+        console.log(`✅ R2 Save: Applied ${commitmentUpdates.length} commitment updates, ${layoutItemUpdates.length} layout item updates, ${deletedLayoutItemIds.length} deleted layout items, ${newSpacers.length} new spacers, ${newDividers.length} new dividers`);
       }
 
       onClose();
@@ -800,6 +854,15 @@ export default function CommitmentOrderingModalR2({
       setLockedLocalItems(null);
     }
   }, [hasChanges, isSaving, user?.id, layoutItems, localItems, dispatch, onClose]);
+
+  // Debounced save to prevent rapid successive saves
+  const debouncedHandleSave = useMemo(() => {
+    let timeoutId: NodeJS.Timeout;
+    return () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => handleSave(), 300);
+    };
+  }, [handleSave]);
 
   const handleCancel = useCallback(() => {
     if (hasChanges) {
@@ -819,40 +882,19 @@ export default function CommitmentOrderingModalR2({
   // Create a single PanResponder for all rows to avoid recreation
   const globalPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => {
-        const shouldMove = isDraggingRef.current;
-        if (__DEV__) {
-          console.log('🎯 [R2-DEBUG] onMoveShouldSetPanResponder called, isDragging:', shouldMove);
-        }
-        return shouldMove;
+      onStartShouldSetPanResponder: () => true, // Need to capture for long press detection
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        // Only capture movement if we're already dragging
+        return isDraggingRef.current;
       },
 
       onPanResponderGrant: (evt) => {
         // Store the initial page coordinates
         const initialPageY = evt.nativeEvent.pageY;
 
-        if (__DEV__) {
-          console.log('🎯 [R2-DEBUG] Global PanResponder grant:', {
-            pageY: initialPageY
-          });
-        }
 
-        // Disable ScrollView scrolling immediately
-        if (scrollViewRef.current) {
-          scrollViewRef.current.setNativeProps({ scrollEnabled: false });
-          if (__DEV__) {
-            console.log('🎯 [R2-DEBUG] Disabled scroll for potential drag');
-          }
-        } else {
-          if (__DEV__) {
-            console.log('🎯 [R2-DEBUG] WARNING: scrollViewRef.current is null!');
-          }
-        }
+        // DON'T disable scrolling immediately - only disable when drag actually starts
 
-        if (__DEV__) {
-          console.log('🎯 [R2-DEBUG] About to calculate coordinates...');
-        }
 
         // Use estimated ScrollView position (header height + SafeAreaView)
         // This is more reliable than async measure
@@ -860,55 +902,20 @@ export default function CommitmentOrderingModalR2({
         scrollViewLayoutY.current = estimatedScrollViewTop;
         touchStartY.current = initialPageY - estimatedScrollViewTop;
 
-        if (__DEV__) {
-          console.log('🎯 [R2-DEBUG] Using estimated coordinates:', {
-            estimatedScrollViewTop,
-            relativeY: touchStartY.current
-          });
-        }
 
-        if (__DEV__) {
-          console.log('🎯 [R2-DEBUG] About to calculate touched index...');
-        }
 
         // Determine which item was touched
         const contentPaddingTop = designTokens.spacing.lg;
         const itemHeight = ROW_HEIGHT + designTokens.spacing.xs; // Row height + margin bottom
         const touchedIndex = Math.floor((touchStartY.current - contentPaddingTop) / itemHeight);
 
-        if (__DEV__) {
-          console.log('🎯 [R2-DEBUG] Calculated touched index:', {
-            touchedIndex,
-            contentPaddingTop,
-            itemHeight,
-            totalItems: localItemsRef.current.length,
-            itemAtIndex: touchedIndex >= 0 && touchedIndex < localItemsRef.current.length
-              ? {
-                  type: localItemsRef.current[touchedIndex].type,
-                  title: localItemsRef.current[touchedIndex].type === 'commitment'
-                    ? localItemsRef.current[touchedIndex].data.title
-                    : `Spacer (${localItemsRef.current[touchedIndex].data.height}px)`
-                }
-              : 'None'
-          });
-        }
 
         if (touchedIndex >= 0 && touchedIndex < localItemsRef.current.length) {
-          if (__DEV__) {
-            console.log('🎯 [R2-DEBUG] Valid touch detected on index:', touchedIndex);
-          }
 
           // Start long-press timer
           longPressTimer.current = setTimeout(() => {
-            if (__DEV__) {
-              console.log('🎯 [R2-DEBUG] Global long press timer fired for index:', touchedIndex);
-            }
             startDrag(touchedIndex, touchStartY.current);
           }, designTokens.dnd.gesture.longPressMs);
-        } else {
-          if (__DEV__) {
-            console.log('🎯 [R2-DEBUG] Touch outside valid item area, ignoring');
-          }
         }
       },
 
@@ -923,9 +930,6 @@ export default function CommitmentOrderingModalR2({
         // Re-enable ScrollView scrolling
         if (scrollViewRef.current) {
           scrollViewRef.current.setNativeProps({ scrollEnabled: true });
-          if (__DEV__) {
-            console.log('🎯 [R2-DEBUG] Re-enabled scroll on release');
-          }
         }
 
         if (longPressTimer.current) {
@@ -934,9 +938,6 @@ export default function CommitmentOrderingModalR2({
         }
 
         if (isDraggingRef.current) {
-          if (__DEV__) {
-            console.log('🎯 [R2-DEBUG] Global PanResponder release - calling endDrag');
-          }
           endDrag();
         }
       },
@@ -953,9 +954,6 @@ export default function CommitmentOrderingModalR2({
         }
 
         if (isDraggingRef.current) {
-          if (__DEV__) {
-            console.log('🎯 [R2-DEBUG] Global PanResponder terminate - calling endDrag');
-          }
           endDrag();
         }
       },
@@ -977,15 +975,6 @@ export default function CommitmentOrderingModalR2({
 
     const isPlaceholder = dragState.placeholderIndex === effectiveIndex && dragState.isDragging;
 
-    if (__DEV__ && dragState.isDragging) {
-      console.log(`🎯 [PLACEHOLDER-DEBUG] Commitment ${index}:`, {
-        title: commitment.title,
-        effectiveIndex,
-        placeholderIndex: dragState.placeholderIndex,
-        isPlaceholder,
-        isDraggedItem,
-      });
-    }
 
     // Check if this is the last item and placeholder should go after it
     const isLastItem = index === itemsToRender.length - 1;
@@ -1032,15 +1021,6 @@ export default function CommitmentOrderingModalR2({
 
     const isPlaceholder = dragState.placeholderIndex === effectiveIndex && dragState.isDragging;
 
-    if (__DEV__ && dragState.isDragging) {
-      console.log(`🎯 [PLACEHOLDER-DEBUG] Spacer ${index}:`, {
-        height: spacer.height,
-        effectiveIndex,
-        placeholderIndex: dragState.placeholderIndex,
-        isPlaceholder,
-        isDraggedItem,
-      });
-    }
 
     // Check if this is the last item and placeholder should go after it
     const isLastItem = index === itemsToRender.length - 1;
@@ -1076,50 +1056,87 @@ export default function CommitmentOrderingModalR2({
     );
   }, [dragState, fontStyle, localItems.length, handleDeleteSpacer]);
 
+  const renderDividerRow = useCallback((divider: LayoutItemData, index: number) => {
+    const isDraggedItem = dragState.draggedIndex === index;
+
+    // Method 2: Don't render the dragged item at all during drag
+    if (isDraggedItem && dragState.isDragging) {
+      return null;
+    }
+
+    // Calculate the effective index (position in the list without the dragged item)
+    const effectiveIndex = dragState.isDragging && dragState.draggedIndex !== null && index > dragState.draggedIndex
+      ? index - 1  // Items below the dragged item shift up by 1
+      : index;     // Items above stay the same
+
+    const isPlaceholder = dragState.placeholderIndex === effectiveIndex && dragState.isDragging;
+
+
+    // Check if this is the last item and placeholder should go after it
+    const isLastItem = index === itemsToRender.length - 1;
+    const shouldShowPlaceholderAfter = dragState.isDragging &&
+      dragState.placeholderIndex === (dragState.draggedIndex !== null && dragState.draggedIndex < itemsToRender.length
+        ? itemsToRender.length - 1  // Dragged item removed, so max index is length - 1
+        : itemsToRender.length) &&
+      isLastItem;
+
+    return (
+      <View key={divider.id}>
+        {isPlaceholder && <View style={styles.placeholder} />}
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerInfo}>
+            <Text style={[styles.dividerLabel, fontStyle]}>Divider</Text>
+            <Text style={[styles.dividerStyle, fontStyle]}>{divider.style || 'solid'}</Text>
+          </View>
+          <View style={styles.dividerActions}>
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={() => handleDeleteDivider(divider.id)}
+              disabled={dragState.isDragging}
+            >
+              <Text style={styles.deleteButtonText}>🗑️</Text>
+            </TouchableOpacity>
+            <View style={styles.dragHandle}>
+              <Text style={styles.dragHandleText}>⋮⋮</Text>
+            </View>
+          </View>
+        </View>
+        {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
+      </View>
+    );
+  }, [dragState, fontStyle, localItems.length, handleDeleteDivider]);
+
   // Determine which items to render: locked state during save, or live state
   const itemsToRender = (isSaving && lockedLocalItems) ? lockedLocalItems : localItems;
 
-  // Unified renderer for list items (commitments and spacers)
+  // Unified renderer for list items (commitments, spacers, and dividers)
   const renderListItem = useCallback((item: ListItem, index: number) => {
     if (item.type === 'commitment') {
       return renderCommitmentRow(item.data, index);
     } else if (item.type === 'spacer') {
       return renderSpacerRow(item.data, index);
+    } else if (item.type === 'divider') {
+      return renderDividerRow(item.data, index);
+    } else {
+      // Future-proofing: fallback for unknown layout item types
+      if (__DEV__) {
+        console.warn(`⚠️ Unknown layout item type: ${item.type}`);
+      }
+      return renderSpacerRow(item.data, index); // Use spacer as fallback
     }
-    return null;
-  }, [renderCommitmentRow, renderSpacerRow]);
+  }, [renderCommitmentRow, renderSpacerRow, renderDividerRow]);
 
   const renderDraggedItem = useCallback(() => {
-    if (__DEV__) {
-      console.log('🎯 [R2-DEBUG] renderDraggedItem called:', {
-        isDragging: dragState.isDragging,
-        draggedIndex: dragState.draggedIndex,
-        item: dragState.draggedIndex !== null ? itemsToRender[dragState.draggedIndex] : 'none'
-      });
-    }
 
     if (!dragState.isDragging || dragState.draggedIndex === null) {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] Not rendering dragged item - not dragging or no index');
-      }
       return null;
     }
 
     const draggedItem = itemsToRender[dragState.draggedIndex];
     if (!draggedItem) {
-      if (__DEV__) {
-        console.log('🎯 [R2-DEBUG] Not rendering dragged item - no item found');
-      }
       return null;
     }
 
-    if (__DEV__) {
-      console.log('🎯 [R2-DEBUG] Rendering dragged item overlay:', {
-        type: draggedItem.type,
-        data: draggedItem.data,
-        shadow: designTokens.dnd.lift.shadow
-      });
-    }
 
     return (
       <Animated.View
@@ -1149,10 +1166,15 @@ export default function CommitmentOrderingModalR2({
               <Text style={[styles.privateIndicator, fontStyle]}>🔒</Text>
             )}
           </View>
-        ) : (
+        ) : draggedItem.type === 'spacer' ? (
           <View style={styles.spacerInfo}>
             <Text style={[styles.spacerLabel, fontStyle]}>Spacer</Text>
             <Text style={[styles.spacerHeight, fontStyle]}>{draggedItem.data.height}px</Text>
+          </View>
+        ) : (
+          <View style={styles.dividerInfo}>
+            <Text style={[styles.dividerLabel, fontStyle]}>Divider</Text>
+            <Text style={[styles.dividerStyle, fontStyle]}>{draggedItem.data.style || 'solid'}</Text>
           </View>
         )}
         <View style={styles.dragHandle}>
@@ -1171,7 +1193,7 @@ export default function CommitmentOrderingModalR2({
       presentationStyle="fullScreen"
       onRequestClose={handleCancel}
     >
-      <SafeAreaView style={styles.container} {...globalPanResponder.panHandlers}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.cancelButton}
@@ -1191,19 +1213,27 @@ export default function CommitmentOrderingModalR2({
           </TouchableOpacity>
 
           <TouchableOpacity
+            style={styles.addDividerButton}
+            onPress={handleAddDivider}
+            disabled={dragState.isDragging || isSaving}
+          >
+            <Text style={[styles.addDividerButtonText, fontStyle]}>+ Divider</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[
               styles.saveButton,
-              (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonActive
+              (hasChanges && !dragState.isDragging && !isSaving && !syncState.isSyncing) && styles.saveButtonActive
             ]}
-            onPress={handleSave}
-            disabled={dragState.isDragging || isSaving}
+            onPress={debouncedHandleSave}
+            disabled={dragState.isDragging || isSaving || syncState.isSyncing}
           >
             <Text style={[
               styles.saveButtonText,
               fontStyle,
               (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonTextActive
             ]}>
-              {isSaving ? 'Saving...' : 'Save'}
+              {isSaving ? 'Saving...' : syncState.isSyncing ? 'Syncing...' : 'Save'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -1212,7 +1242,6 @@ export default function CommitmentOrderingModalR2({
           ref={scrollViewRef}
           style={styles.content}
           showsVerticalScrollIndicator={false}
-          scrollEnabled={!dragState.isDragging}
         >
           {itemsToRender.length === 0 ? (
             <View style={styles.emptyState}>
@@ -1238,7 +1267,7 @@ export default function CommitmentOrderingModalR2({
               ))}
             </View>
           ) : (
-            <View style={styles.commitmentsList}>
+            <View style={styles.commitmentsList} {...globalPanResponder.panHandlers}>
               {itemsToRender.map((item, index) =>
                 renderListItem(item, index)
               )}
@@ -1305,6 +1334,18 @@ const styles = StyleSheet.create({
     borderColor: designTokens.colors.border,
   },
   addSpacerButtonText: {
+    color: designTokens.colors.secondary,
+    fontSize: designTokens.typography.sizes.sm,
+  },
+  addDividerButton: {
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
+    borderRadius: designTokens.radius.md,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: designTokens.colors.border,
+  },
+  addDividerButtonText: {
     color: designTokens.colors.secondary,
     fontSize: designTokens.typography.sizes.sm,
   },
@@ -1453,5 +1494,38 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     fontSize: 16,
     color: designTokens.colors.error,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6', // Light gray background for dividers
+    borderRadius: designTokens.radius.lg,
+    padding: designTokens.spacing.md,
+    marginBottom: designTokens.spacing.xs,
+    borderWidth: 1,
+    borderColor: designTokens.colors.border,
+    height: ROW_HEIGHT,
+    borderStyle: 'dotted',
+  },
+  dividerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  dividerLabel: {
+    fontSize: designTokens.typography.sizes.md,
+    color: designTokens.colors.secondary,
+    fontStyle: 'italic',
+  },
+  dividerStyle: {
+    fontSize: designTokens.typography.sizes.sm,
+    color: designTokens.colors.secondary,
+    marginLeft: designTokens.spacing.sm,
+  },
+  dividerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: designTokens.spacing.xs,
   },
 });

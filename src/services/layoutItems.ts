@@ -112,6 +112,11 @@ export async function updateLayoutItem(
     .single();
 
   if (error) {
+    if (error.code === 'PGRST116') {
+      // Item not found (0 rows), likely deleted in a race condition
+      console.warn(`⚠️ Layout item ${layoutItem.id} not found during update, may have been deleted. Skipping update.`);
+      throw new Error(`ITEM_NOT_FOUND: ${layoutItem.id}`);
+    }
     console.error('Failed to update layout item:', error);
     throw error;
   }
