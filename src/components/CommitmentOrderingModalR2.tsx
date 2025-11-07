@@ -206,7 +206,7 @@ export default function CommitmentOrderingModalR2({
 
     if (insertIndex === null) {
       Alert.alert(
-        'Cannot Add Layout Item',
+        'No Room Remaining',
         `No valid position available for ${type} placement.`,
         [{ text: 'OK' }]
       );
