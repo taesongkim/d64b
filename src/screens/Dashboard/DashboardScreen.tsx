@@ -905,7 +905,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E5E7EB',
     marginVertical: 20,
-    marginHorizontal: 20,
+    marginHorizontal: 0,
   },
   friendsChartsContainer: {
     paddingHorizontal: 20,

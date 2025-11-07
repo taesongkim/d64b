@@ -127,6 +127,68 @@ interface CommitmentGridProps {
 
 type ViewMode = 'daily' | 'weekly';
 
+// Unified GridDivider component with enhanced token utilization
+interface GridDividerProps {
+  divider: LayoutItem;
+  viewMode: ViewMode;
+  dates: string[];
+  dynamicStyles: any;
+}
+
+const GridDivider: React.FC<GridDividerProps> = ({ divider, viewMode, dates, dynamicStyles }) => {
+  const dividerHeight = getCellSize(viewMode);
+
+  // Determine divider styling from enhanced tokens
+  const dividerColor = designTokens.layoutItems.divider.color[
+    (divider as any)?.colorVariant || 'light'
+  ];
+  const dividerOpacity = designTokens.layoutItems.divider.opacity.normal;
+  const dividerThickness = designTokens.layoutItems.divider.thickness;
+  const borderRadius = designTokens.layoutItems.divider.borderRadius.small;
+
+  return (
+    <View
+      style={{
+        height: dividerHeight,
+        marginBottom: getRowSpacing(viewMode),
+        position: 'relative',
+        flexDirection: 'row',
+        alignItems: 'center',
+      }}
+    >
+      {/* Right side divider segment */}
+      <View
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          height: dividerThickness,
+          backgroundColor: dividerColor,
+          opacity: dividerOpacity,
+          borderRadius: borderRadius,
+          top: '50%',
+          marginTop: -(dividerThickness / 2),
+        }}
+      />
+
+      {/* Invisible spacer elements to maintain proper spacing and touch targets */}
+      <View style={{ width: getLeftColWidth(viewMode) }} />
+      {dates.map((date) => (
+        <View
+          key={`${divider.id}-${date}`}
+          style={[
+            dynamicStyles.cell,
+            {
+              backgroundColor: 'transparent',
+              borderWidth: 0,
+            }
+          ]}
+        />
+      ))}
+    </View>
+  );
+};
+
 export default function CommitmentGrid({
   commitments,
   layoutItems = [],
@@ -518,8 +580,16 @@ export default function CommitmentGrid({
               );
             } else if (item.type === 'divider') {
               const divider = item.data as LayoutItem;
-              // Use same height as commitment rows for dividers
               const dividerHeight = getCellSize(viewMode);
+
+              // Left side divider segment
+              const dividerColor = designTokens.layoutItems.divider.color[
+                (divider as any)?.colorVariant || 'light'
+              ];
+              const dividerOpacity = designTokens.layoutItems.divider.opacity.normal;
+              const dividerThickness = designTokens.layoutItems.divider.thickness;
+              const borderRadius = designTokens.layoutItems.divider.borderRadius.small;
+
               return (
                 <View
                   key={`divider-label-${divider.id}`}
@@ -527,16 +597,20 @@ export default function CommitmentGrid({
                     height: dividerHeight,
                     marginBottom: getRowSpacing(viewMode),
                     width: getLeftColWidth(viewMode),
+                    position: 'relative',
                     justifyContent: 'center',
-                    alignItems: 'center',
                   }}
                 >
+                  {/* Left segment of divider line */}
                   <View
                     style={{
-                      height: designTokens.layoutItems.divider.thickness,
-                      width: '80%',
-                      backgroundColor: designTokens.layoutItems.divider.color.dark,
-                      borderRadius: 1,
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      height: dividerThickness,
+                      backgroundColor: dividerColor,
+                      opacity: dividerOpacity,
+                      borderRadius: borderRadius,
                     }}
                   />
                 </View>
@@ -681,41 +755,14 @@ export default function CommitmentGrid({
                   );
                 } else if (item.type === 'divider') {
                   const divider = item.data as LayoutItem;
-                  const dividerHeight = getCellSize(viewMode);
                   return (
-                    <View
+                    <GridDivider
                       key={divider.id}
-                      style={{
-                        height: dividerHeight,
-                        marginBottom: getRowSpacing(viewMode),
-                        flexDirection: 'row'
-                      }}
-                    >
-                      {/* Render divider cells for each date */}
-                      {dates.map((date) => (
-                        <View
-                          key={`${divider.id}-${date}`}
-                          style={[
-                            dynamicStyles.cell,
-                            {
-                              backgroundColor: 'transparent',
-                              borderWidth: 0,
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                            }
-                          ]}
-                        >
-                          <View
-                            style={{
-                              height: designTokens.layoutItems.divider.thickness,
-                              width: '80%',
-                              backgroundColor: designTokens.layoutItems.divider.color.light,
-                              borderRadius: 1,
-                            }}
-                          />
-                        </View>
-                      ))}
-                    </View>
+                      divider={divider}
+                      viewMode={viewMode}
+                      dates={dates}
+                      dynamicStyles={dynamicStyles}
+                    />
                   );
                 }
                 return null;
