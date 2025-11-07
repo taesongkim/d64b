@@ -178,7 +178,7 @@ export default function CommitmentOrderingModalR2({
   }, [localItems]);
 
   // Generic add layout item handler (for future expansion to dividers)
-  const handleAddLayoutItem = useCallback((type: 'spacer' | 'divider') => {
+  const handleAddLayoutItem = useCallback(async (type: 'spacer' | 'divider') => {
     if (!user?.id) return;
 
     // Count active commitments to check if layout items are allowed
@@ -213,37 +213,46 @@ export default function CommitmentOrderingModalR2({
       return;
     }
 
-    // Create layout item at the calculated position
-    let newItem: ListItem;
-    if (type === 'spacer') {
-      newItem = createLayoutItemAtPosition(
-        'spacer',
-        insertIndex,
-        localItems,
-        user.id,
-        { height: designTokens.layoutItems.spacer.height.regular }
-      );
-    } else {
-      // Future divider support
-      newItem = createLayoutItemAtPosition(
-        'divider',
-        insertIndex,
-        localItems,
-        user.id,
-        { style: 'solid' }
-      );
-    }
+    try {
+      // Create layout item at the calculated position
+      let newItem: ListItem;
+      if (type === 'spacer') {
+        newItem = await createLayoutItemAtPosition(
+          'spacer',
+          insertIndex,
+          localItems,
+          user.id,
+          { height: designTokens.layoutItems.spacer.height.regular }
+        );
+      } else {
+        // Future divider support
+        newItem = await createLayoutItemAtPosition(
+          'divider',
+          insertIndex,
+          localItems,
+          user.id,
+          { style: 'solid' }
+        );
+      }
 
-    // Insert at the calculated position
-    setLocalItems(prev => {
-      const newItems = [...prev];
-      newItems.splice(insertIndex, 0, newItem);
-      return newItems;
-    });
-    setHasChanges(true);
+      // Insert at the calculated position
+      setLocalItems(prev => {
+        const newItems = [...prev];
+        newItems.splice(insertIndex, 0, newItem);
+        return newItems;
+      });
+      setHasChanges(true);
 
-    if (__DEV__) {
-      console.log(`🔲 Added ${type} at position ${insertIndex} with rank:`, newItem.data.order_rank);
+      if (__DEV__) {
+        console.log(`🔲 Added ${type} at position ${insertIndex} with rank:`, newItem.data.order_rank);
+      }
+    } catch (error) {
+      console.error(`Failed to create ${type}:`, error);
+      Alert.alert(
+        'Error',
+        `Failed to create ${type}. Please try again.`,
+        [{ text: 'OK' }]
+      );
     }
   }, [localItems, user?.id]);
 

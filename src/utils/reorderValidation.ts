@@ -116,22 +116,28 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
 
 /**
  * Auto-repair function that fixes validation violations deterministically
- * For adjacency conflicts, removes the most recently inserted (later in temp ID sequence)
+ * Enhanced with spacer priority for mixed-type adjacency and cascading removal
  */
 export function autoRepairLayout(items: LayoutItem[]): LayoutItem[] {
   if (items.length === 0) return items;
 
   let repairedItems = [...items];
 
-  // Step 1: Remove layout items from top/bottom positions
+  // Step 1: Remove layout items from top/bottom positions (with cascading)
   while (repairedItems.length > 0 && repairedItems[0].type !== 'commitment') {
+    if (__DEV__) {
+      console.log(`🔧 [REPAIR] Removing ${repairedItems[0].type} from top position`);
+    }
     repairedItems.shift();
   }
   while (repairedItems.length > 0 && repairedItems[repairedItems.length - 1].type !== 'commitment') {
+    if (__DEV__) {
+      console.log(`🔧 [REPAIR] Removing ${repairedItems[repairedItems.length - 1].type} from bottom position`);
+    }
     repairedItems.pop();
   }
 
-  // Step 2: Remove adjacent layout items (Phase 4: drop latest inserted for spacer-divider adjacency)
+  // Step 2: Remove adjacent layout items with enhanced spacer priority
   const deduplicatedItems: LayoutItem[] = [];
 
   for (let i = 0; i < repairedItems.length; i++) {
@@ -146,33 +152,43 @@ export function autoRepairLayout(items: LayoutItem[]): LayoutItem[] {
         (currentItem.type === 'spacer' || currentItem.type === 'divider') &&
         (nextItem.type === 'spacer' || nextItem.type === 'divider')) {
 
-      // Skip the next item (remove latest inserted from the adjacent pair)
-      // Determine which is "latest inserted" by temp ID timestamp for new items
-      const currentIsTemp = currentItem.id.startsWith('temp-');
-      const nextIsTemp = nextItem.id.startsWith('temp-');
+      // Enhanced adjacency resolution with spacer priority
+      let itemToRemove: 'current' | 'next' = 'next';
 
-      if (currentIsTemp && nextIsTemp) {
-        // Both are new - compare timestamps in temp IDs
-        const currentTime = parseInt(currentItem.id.split('-').pop() || '0');
-        const nextTime = parseInt(nextItem.id.split('-').pop() || '0');
+      if ((currentItem.type === 'spacer' && nextItem.type === 'divider') ||
+          (currentItem.type === 'divider' && nextItem.type === 'spacer')) {
+        // Mixed-type adjacency: Always remove spacer
+        itemToRemove = currentItem.type === 'spacer' ? 'current' : 'next';
 
-        if (nextTime > currentTime) {
-          // Next item is newer, skip it (already handled by loop increment)
-          i++; // Skip the next iteration
-        } else {
-          // Current item is newer, remove it from deduplicatedItems
-          deduplicatedItems.pop();
+        if (__DEV__) {
+          console.log(`🔧 [REPAIR] Mixed-type adjacency: removing spacer (${itemToRemove === 'current' ? currentItem.id : nextItem.id})`);
         }
-      } else if (nextIsTemp && !currentIsTemp) {
-        // Next item is new insertion, skip it
-        i++; // Skip the next iteration
       } else {
-        // Current item is new insertion or both are old - remove current
-        deduplicatedItems.pop();
+        // Same-type adjacency: Remove most recently inserted
+        const currentIsTemp = currentItem.id.startsWith('temp-');
+        const nextIsTemp = nextItem.id.startsWith('temp-');
+
+        if (currentIsTemp && nextIsTemp) {
+          // Both are new - compare timestamps
+          const currentTime = parseInt(currentItem.id.split('-').pop() || '0');
+          const nextTime = parseInt(nextItem.id.split('-').pop() || '0');
+          itemToRemove = nextTime > currentTime ? 'next' : 'current';
+        } else if (nextIsTemp && !currentIsTemp) {
+          itemToRemove = 'next';
+        } else {
+          itemToRemove = 'current';
+        }
+
+        if (__DEV__) {
+          console.log(`🔧 [REPAIR] Same-type adjacency: removing most recent (${itemToRemove === 'current' ? currentItem.id : nextItem.id})`);
+        }
       }
 
-      if (__DEV__) {
-        console.log(`🔧 [REPAIR] Resolved adjacency conflict between ${currentItem.type}:${currentItem.id} and ${nextItem.type}:${nextItem.id}`);
+      // Apply the removal decision
+      if (itemToRemove === 'current') {
+        deduplicatedItems.pop();
+      } else {
+        i++; // Skip the next iteration to remove next item
       }
     }
   }
@@ -272,6 +288,46 @@ export function findFirstValidInsertPosition(
     console.log(`❌ [PLACEMENT] No valid position found for ${newItemType}`);
   }
   return null;
+}
+
+/**
+ * Auto-delete layout items that become invalid after commitment deletion/archiving
+ * Returns the IDs of layout items that should be permanently deleted
+ */
+export function getLayoutItemsToDelete(
+  allItems: LayoutItem[],
+  remainingCommitments: LayoutItem[]
+): string[] {
+  // Create a combined list for validation (commitments + layout items)
+  const allCommitments = remainingCommitments.filter(item => item.type === 'commitment');
+  const allLayoutItems = allItems.filter(item => item.type !== 'commitment');
+
+  // Build combined list in original order
+  const combinedItems = [...allCommitments, ...allLayoutItems]
+    .filter(item => 'order_rank' in item && item.order_rank)
+    .sort((a, b) => (a as any).order_rank.localeCompare((b as any).order_rank));
+
+  if (__DEV__) {
+    console.log(`🗑️ [AUTO-DELETE] Checking ${allLayoutItems.length} layout items against ${allCommitments.length} remaining commitments`);
+  }
+
+  // Apply auto-repair to get valid layout
+  const validItems = autoRepairLayout(combinedItems);
+
+  // Find layout items that were removed during repair
+  const validLayoutItemIds = validItems
+    .filter(item => item.type !== 'commitment')
+    .map(item => item.id);
+
+  const layoutItemsToDelete = allLayoutItems
+    .filter(item => !validLayoutItemIds.includes(item.id))
+    .map(item => item.id);
+
+  if (__DEV__) {
+    console.log(`🗑️ [AUTO-DELETE] Will delete ${layoutItemsToDelete.length} layout items:`, layoutItemsToDelete);
+  }
+
+  return layoutItemsToDelete;
 }
 
 /**

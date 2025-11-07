@@ -143,6 +143,79 @@ export function compareRank(a: string | null, b: string | null): number {
   return 0;
 }
 
+/**
+ * Check if a rank conflicts with existing ranks in a list
+ * @param targetRank - The rank to check
+ * @param existingRanks - Array of existing ranks to check against
+ * @returns true if there's a conflict
+ */
+export function hasRankConflict(
+  targetRank: string,
+  existingRanks: Array<{ order_rank: string }>
+): boolean {
+  return existingRanks.some(item => item.order_rank === targetRank);
+}
+
+/**
+ * Find a safe rank that doesn't conflict with existing items
+ * If the desired rank conflicts, find the first available position
+ * @param desiredRank - The rank we want to use
+ * @param existingRanks - Array of existing ranks (sorted by order_rank)
+ * @returns A safe rank that doesn't conflict
+ */
+export function findSafeRank(
+  desiredRank: string,
+  existingRanks: Array<{ order_rank: string }>
+): string {
+  // Sort existing ranks to work with ordered list
+  const sortedRanks = existingRanks
+    .map(item => item.order_rank)
+    .filter(rank => rank && rank.length > 0)
+    .sort();
+
+  // If desired rank doesn't conflict, use it
+  if (!hasRankConflict(desiredRank, existingRanks)) {
+    return desiredRank;
+  }
+
+  if (__DEV__) {
+    console.log(`🔍 [RANK] Conflict detected for rank '${desiredRank}', finding safe position`);
+  }
+
+  // Find position where desired rank would fit in sorted order
+  const insertIndex = sortedRanks.findIndex(rank => rank >= desiredRank);
+
+  if (insertIndex === -1) {
+    // Desired rank is greater than all existing ranks - put it at the end
+    const lastRank = sortedRanks[sortedRanks.length - 1];
+    const safeRank = rankAfter(lastRank);
+
+    if (__DEV__) {
+      console.log(`🔍 [RANK] Using rank after last: '${safeRank}'`);
+    }
+    return safeRank;
+  } else if (insertIndex === 0) {
+    // Desired rank is smaller than all existing ranks - put it at the beginning
+    const firstRank = sortedRanks[0];
+    const safeRank = rankBefore(firstRank);
+
+    if (__DEV__) {
+      console.log(`🔍 [RANK] Using rank before first: '${safeRank}'`);
+    }
+    return safeRank;
+  } else {
+    // Find space between existing ranks around the desired position
+    const prevRank = sortedRanks[insertIndex - 1];
+    const nextRank = sortedRanks[insertIndex];
+    const safeRank = rankBetween(prevRank, nextRank);
+
+    if (__DEV__) {
+      console.log(`🔍 [RANK] Using rank between '${prevRank}' and '${nextRank}': '${safeRank}'`);
+    }
+    return safeRank;
+  }
+}
+
 // DEV-only tests
 if (__DEV__) {
   // Basic tests

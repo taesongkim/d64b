@@ -95,7 +95,68 @@ export async function deleteCommitment(id: string) {
     .select()
     .single();
 
+  // Trigger auto-delete for layout items if commitment deletion succeeded
+  if (data && !error) {
+    try {
+      // Get remaining active commitments for this user
+      const { data: remainingCommitments } = await supabase
+        .from('commitments')
+        .select('id, order_rank')
+        .eq('user_id', data.user_id)
+        .eq('is_active', true)
+        .neq('id', id); // Exclude the just-deleted commitment
+
+      if (remainingCommitments) {
+        // Import and call auto-delete function
+        const { autoDeleteInvalidLayoutItems } = await import('./layoutItems');
+        await autoDeleteInvalidLayoutItems(data.user_id, remainingCommitments);
+      }
+    } catch (layoutError) {
+      console.error('Failed to auto-delete layout items after commitment deletion:', layoutError);
+      // Don't fail the commitment deletion if layout cleanup fails
+    }
+  }
+
   return { data, error };
+}
+
+/**
+ * Safely restore a commitment with rank conflict detection
+ * @param id - Commitment ID to restore
+ * @param userId - User ID (for rank conflict checking)
+ * @param lastActiveRank - The rank to restore to (from last_active_rank)
+ * @returns Updated commitment with safe rank
+ */
+export async function restoreCommitmentSafely(id: string, userId: string, lastActiveRank: string): Promise<{ data: any; error: any }> {
+  try {
+    // Get all current active items to check for rank conflicts
+    const { getAllActiveItemsWithRanks } = await import('@/services/layoutItems');
+    const { findSafeRank } = await import('@/utils/rank');
+
+    const allActiveItems = await getAllActiveItemsWithRanks(userId);
+    const safeRank = findSafeRank(lastActiveRank, allActiveItems);
+
+    if (__DEV__ && safeRank !== lastActiveRank) {
+      console.log(`🔧 [RESTORE] Commitment ${id} rank adjusted from '${lastActiveRank}' to '${safeRank}' to avoid conflict`);
+    }
+
+    // Restore commitment with safe rank
+    const { data, error } = await supabase
+      .from('commitments')
+      .update({
+        archived: false,
+        is_active: true,
+        order_rank: safeRank
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    return { data, error };
+  } catch (error) {
+    console.error('Failed to restore commitment safely:', error);
+    return { data: null, error };
+  }
 }
 
 // Archive/Delete operations
@@ -119,6 +180,28 @@ export async function setArchived(id: string, archived: boolean, options?: { is_
     .select()
     .single();
 
+  // Trigger auto-delete for layout items when archiving (making inactive)
+  if (data && !error && archived && !updates.is_active) {
+    try {
+      // Get remaining active commitments for this user
+      const { data: remainingCommitments } = await supabase
+        .from('commitments')
+        .select('id, order_rank')
+        .eq('user_id', data.user_id)
+        .eq('is_active', true)
+        .neq('id', id); // Exclude the just-archived commitment
+
+      if (remainingCommitments) {
+        // Import and call auto-delete function
+        const { autoDeleteInvalidLayoutItems } = await import('./layoutItems');
+        await autoDeleteInvalidLayoutItems(data.user_id, remainingCommitments);
+      }
+    } catch (layoutError) {
+      console.error('Failed to auto-delete layout items after commitment archiving:', layoutError);
+      // Don't fail the commitment archiving if layout cleanup fails
+    }
+  }
+
   return { data, error };
 }
 
@@ -140,14 +223,64 @@ export async function setDeletedAt(id: string, deletedAt: string | null, options
     .select()
     .single();
 
+  // Trigger auto-delete for layout items when soft deleting (making inactive)
+  if (data && !error && deletedAt !== null && !updates.is_active) {
+    try {
+      // Get remaining active commitments for this user
+      const { data: remainingCommitments } = await supabase
+        .from('commitments')
+        .select('id, order_rank')
+        .eq('user_id', data.user_id)
+        .eq('is_active', true)
+        .neq('id', id); // Exclude the just-deleted commitment
+
+      if (remainingCommitments) {
+        // Import and call auto-delete function
+        const { autoDeleteInvalidLayoutItems } = await import('./layoutItems');
+        await autoDeleteInvalidLayoutItems(data.user_id, remainingCommitments);
+      }
+    } catch (layoutError) {
+      console.error('Failed to auto-delete layout items after commitment soft deletion:', layoutError);
+      // Don't fail the commitment deletion if layout cleanup fails
+    }
+  }
+
   return { data, error };
 }
 
 export async function permanentDelete(id: string) {
+  // Get commitment info before deletion for auto-delete process
+  const { data: commitmentToDelete } = await supabase
+    .from('commitments')
+    .select('user_id')
+    .eq('id', id)
+    .single();
+
   const { error } = await supabase
     .from('commitments')
     .delete()
     .eq('id', id);
+
+  // Trigger auto-delete for layout items if permanent deletion succeeded
+  if (!error && commitmentToDelete) {
+    try {
+      // Get remaining commitments for this user (all active commitments)
+      const { data: remainingCommitments } = await supabase
+        .from('commitments')
+        .select('id, order_rank')
+        .eq('user_id', commitmentToDelete.user_id)
+        .eq('is_active', true); // All remaining active commitments
+
+      if (remainingCommitments) {
+        // Import and call auto-delete function
+        const { autoDeleteInvalidLayoutItems } = await import('./layoutItems');
+        await autoDeleteInvalidLayoutItems(commitmentToDelete.user_id, remainingCommitments);
+      }
+    } catch (layoutError) {
+      console.error('Failed to auto-delete layout items after permanent commitment deletion:', layoutError);
+      // Don't fail the commitment deletion if layout cleanup fails
+    }
+  }
 
   return { error };
 }

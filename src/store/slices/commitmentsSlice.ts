@@ -189,7 +189,7 @@ export const selectRecentlyDeletedCommitments = createSelector(
 );
 
 // Thunk actions for archive/delete operations with sync queue
-export const archiveCommitmentThunk = (id: string) => (dispatch: AppDispatch, getState: () => RootState) => {
+export const archiveCommitmentThunk = (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
   const state = getState();
   const commitment = state.commitments.commitments.find(c => c.id === id);
   if (!commitment) return;
@@ -210,6 +210,19 @@ export const archiveCommitmentThunk = (id: string) => (dispatch: AppDispatch, ge
       idempotencyKey: `${commitment.userId}:${id}:archive`
     }
   }));
+
+  // Auto-delete invalid layout items after archiving
+  try {
+    // Get remaining active commitments after this one is archived
+    const remainingCommitments = state.commitments.commitments
+      .filter(c => c.id !== id && c.isActive && !c.archived && !c.deletedAt)
+      .map(c => ({ id: c.id, order_rank: c.order_rank }));
+
+    const { autoDeleteInvalidLayoutItems } = await import('@/services/layoutItems');
+    await autoDeleteInvalidLayoutItems(commitment.userId, remainingCommitments, dispatch);
+  } catch (error) {
+    console.error('Failed to auto-delete layout items after archiving commitment:', error);
+  }
 };
 
 export const restoreCommitmentThunk = (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
@@ -217,25 +230,56 @@ export const restoreCommitmentThunk = (id: string) => async (dispatch: AppDispat
   const commitment = state.commitments.commitments.find(c => c.id === id);
   if (!commitment) return;
 
-  // Optimistic update
-  dispatch(restoreCommitment(id));
-
-  // Add to sync queue with idempotency key
-  dispatch(addToQueue({
-    type: 'UPDATE',
-    entity: 'commitment',
-    entityId: id,
-    data: {
-      id,
-      archived: false,
-      deletedAt: null,
-      is_active: true, // Restore visibility to friends
-      idempotencyKey: `${commitment.userId}:${id}:restore`
-    }
-  }));
-
-  // Reload records for the restored commitment
   try {
+    // Use safe restoration to avoid rank conflicts
+    if (commitment.last_active_rank) {
+      const { restoreCommitmentSafely } = await import('@/services/commitments');
+      const { data, error } = await restoreCommitmentSafely(
+        id,
+        commitment.userId,
+        commitment.last_active_rank
+      );
+
+      if (error) {
+        console.error('Failed to restore commitment:', error);
+        return;
+      }
+
+      if (data) {
+        // Update Redux state with the actual safe rank from database
+        dispatch(updateCommitment({
+          id,
+          archived: false,
+          isActive: true,
+          deletedAt: null,
+          order_rank: data.order_rank, // Use the conflict-safe rank
+        }));
+
+        if (__DEV__) {
+          console.log(`✅ [RESTORE] Commitment restored with safe rank: ${data.order_rank}`);
+        }
+      }
+    } else {
+      // Fallback to optimistic update if no last_active_rank
+      dispatch(restoreCommitment(id));
+
+      // Add to sync queue with idempotency key
+      dispatch(addToQueue({
+        type: 'UPDATE',
+        entity: 'commitment',
+        entityId: id,
+        data: {
+          id,
+          archived: false,
+          deletedAt: null,
+          is_active: true,
+          order_rank: commitment.order_rank,
+          idempotencyKey: `${commitment.userId}:${id}:restore`
+        }
+      }));
+    }
+
+    // Reload records for the restored commitment
     const { getCommitmentRecords } = await import('@/services/commitments');
     const { setRecords } = await import('@/store/slices/recordsSlice');
 
@@ -271,11 +315,11 @@ export const restoreCommitmentThunk = (id: string) => async (dispatch: AppDispat
       console.log(`✅ Reloaded ${newRecords.length} records for restored commitment ${id}`);
     }
   } catch (error) {
-    console.error(`❌ Failed to reload records for restored commitment ${id}:`, error);
+    console.error(`❌ Failed to restore commitment or reload records for ${id}:`, error);
   }
 };
 
-export const softDeleteCommitmentThunk = (id: string) => (dispatch: AppDispatch, getState: () => RootState) => {
+export const softDeleteCommitmentThunk = (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
   const state = getState();
   const commitment = state.commitments.commitments.find(c => c.id === id);
   if (!commitment) return;
@@ -299,9 +343,22 @@ export const softDeleteCommitmentThunk = (id: string) => (dispatch: AppDispatch,
       idempotencyKey: `${commitment.userId}:${id}:deletedAt:${today}`
     }
   }));
+
+  // Auto-delete invalid layout items after soft deletion
+  try {
+    // Get remaining active commitments after this one is deleted
+    const remainingCommitments = state.commitments.commitments
+      .filter(c => c.id !== id && c.isActive && !c.archived && !c.deletedAt)
+      .map(c => ({ id: c.id, order_rank: c.order_rank }));
+
+    const { autoDeleteInvalidLayoutItems } = await import('@/services/layoutItems');
+    await autoDeleteInvalidLayoutItems(commitment.userId, remainingCommitments, dispatch);
+  } catch (error) {
+    console.error('Failed to auto-delete layout items after soft deleting commitment:', error);
+  }
 };
 
-export const permanentDeleteCommitmentThunk = (id: string) => (dispatch: AppDispatch, getState: () => RootState) => {
+export const permanentDeleteCommitmentThunk = (id: string) => async (dispatch: AppDispatch, getState: () => RootState) => {
   const state = getState();
   const commitment = state.commitments.commitments.find(c => c.id === id);
   if (!commitment) return;
@@ -321,6 +378,20 @@ export const permanentDeleteCommitmentThunk = (id: string) => (dispatch: AppDisp
       idempotencyKey: `${commitment.userId}:${id}:permaDelete:${timestamp}`
     }
   }));
+
+  // Auto-delete invalid layout items after permanent deletion
+  try {
+    // Get remaining commitments after this one is permanently deleted
+    const remainingCommitments = state.commitments.commitments
+      .filter(c => c.id !== id) // Remove the deleted commitment
+      .filter(c => c.isActive && !c.archived && !c.deletedAt) // Only active commitments
+      .map(c => ({ id: c.id, order_rank: c.order_rank }));
+
+    const { autoDeleteInvalidLayoutItems } = await import('@/services/layoutItems');
+    await autoDeleteInvalidLayoutItems(commitment.userId, remainingCommitments, dispatch);
+  } catch (error) {
+    console.error('Failed to auto-delete layout items after permanently deleting commitment:', error);
+  }
 };
 
 // Reordering thunk actions

@@ -205,17 +205,26 @@ export async function archiveLayoutItem(id: string, userId: string): Promise<Lay
 }
 
 /**
- * Restore an archived layout item
+ * Restore an archived layout item with rank conflict detection
  */
 export async function restoreLayoutItem(
   id: string,
   userId: string,
   newRank: string
 ): Promise<LayoutItem> {
+  // Check for rank conflicts before restoring
+  const { findSafeRank } = await import('@/utils/rank');
+  const allActiveItems = await getAllActiveItemsWithRanks(userId);
+  const safeRank = findSafeRank(newRank, allActiveItems);
+
+  if (__DEV__ && safeRank !== newRank) {
+    console.log(`🔧 [RESTORE] Layout item ${id} rank adjusted from '${newRank}' to '${safeRank}' to avoid conflict`);
+  }
+
   const row = {
     archived: false,
     is_active: true,
-    order_rank: newRank,
+    order_rank: safeRank,
     deleted_at: null,
   };
 
@@ -318,7 +327,7 @@ export function createDefaultDivider(
  * @param options - Additional options (height for spacer, style for divider)
  * @returns New layout item data ready for insertion (with temp ID)
  */
-export function createLayoutItemAtPosition<T extends 'spacer' | 'divider'>(
+export async function createLayoutItemAtPosition<T extends 'spacer' | 'divider'>(
   type: T,
   insertIndex: number,
   existingItems: Array<{ data: { order_rank: string } }>,
@@ -326,9 +335,9 @@ export function createLayoutItemAtPosition<T extends 'spacer' | 'divider'>(
   options: T extends 'spacer'
     ? { height?: number }
     : { style?: 'solid' | 'dashed' | 'dotted' } = {} as any
-): T extends 'spacer'
+): Promise<T extends 'spacer'
   ? { type: 'spacer'; data: LayoutItem }
-  : { type: 'divider'; data: LayoutItem } {
+  : { type: 'divider'; data: LayoutItem }> {
 
   // Calculate rank for insertion position
   const prevItem = insertIndex > 0 ? existingItems[insertIndex - 1] : null;
@@ -336,7 +345,18 @@ export function createLayoutItemAtPosition<T extends 'spacer' | 'divider'>(
 
   const prevRank = prevItem?.data.order_rank || null;
   const nextRank = nextItem?.data.order_rank || null;
-  const newRank = rankBetween(prevRank, nextRank);
+
+  // Get initial rank between items
+  const { rankBetween, findSafeRank } = await import('@/utils/rank');
+  const initialRank = rankBetween(prevRank, nextRank);
+
+  // Check for conflicts and get safe rank
+  const allActiveItems = await getAllActiveItemsWithRanks(userId);
+  const newRank = findSafeRank(initialRank, allActiveItems);
+
+  if (__DEV__ && newRank !== initialRank) {
+    console.log(`🔧 [CREATE] Layout item rank adjusted from '${initialRank}' to '${newRank}' to avoid conflict`);
+  }
 
   if (__DEV__) {
     console.log(`🏭 [FACTORY] Creating ${type} at position ${insertIndex}:`, {
@@ -386,4 +406,130 @@ export function createLayoutItemAtPosition<T extends 'spacer' | 'divider'>(
     type,
     data: layoutItemData,
   } as any;
+}
+
+/**
+ * Get all active items with ranks for conflict detection
+ * Combines both commitments and layout items into a single rank-ordered list
+ *
+ * @param userId - User ID for filtering items
+ * @returns Promise resolving to array of items with order_rank
+ */
+export async function getAllActiveItemsWithRanks(userId: string): Promise<Array<{ id: string; order_rank: string; type: 'commitment' | 'spacer' | 'divider' }>> {
+  // Get active commitments
+  const { data: commitments, error: commitmentsError } = await supabase
+    .from('commitments')
+    .select('id, order_rank')
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  if (commitmentsError) {
+    console.error('Failed to fetch commitments for rank check:', commitmentsError);
+    throw commitmentsError;
+  }
+
+  // Get active layout items
+  const { data: layoutItems, error: layoutError } = await supabase
+    .from('layout_items')
+    .select('id, order_rank, type')
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  if (layoutError) {
+    console.error('Failed to fetch layout items for rank check:', layoutError);
+    throw layoutError;
+  }
+
+  // Combine and filter out items without ranks
+  const allItems = [
+    ...(commitments || []).map(c => ({ ...c, type: 'commitment' as const })),
+    ...(layoutItems || []).map(l => ({ ...l, type: l.type as 'spacer' | 'divider' }))
+  ].filter(item => item.order_rank && item.order_rank.length > 0);
+
+  return allItems;
+}
+
+/**
+ * Auto-delete layout items that become invalid after commitment changes
+ * This function should be called after commitments are deleted/archived
+ *
+ * @param userId - User ID for filtering layout items
+ * @param remainingCommitments - Commitments that remain active after deletion/archiving
+ * @param dispatch - Optional Redux dispatch function to update state immediately
+ * @returns Promise that resolves when auto-deletion is complete
+ */
+export async function autoDeleteInvalidLayoutItems(
+  userId: string,
+  remainingCommitments: Array<{ id: string; order_rank: string }>,
+  dispatch?: any
+): Promise<void> {
+  try {
+    // Get current layout items
+    const currentLayoutItems = await getUserLayoutItems(userId);
+
+    if (currentLayoutItems.length === 0) {
+      if (__DEV__) {
+        console.log('🗑️ [AUTO-DELETE] No layout items to check');
+      }
+      return;
+    }
+
+    // Import validation function (dynamic import to avoid circular dependency)
+    const { getLayoutItemsToDelete } = await import('@/utils/reorderValidation');
+
+    // Convert remaining commitments to LayoutItem format for validation
+    const remainingCommitmentItems = remainingCommitments.map(commitment => ({
+      id: commitment.id,
+      userId,
+      type: 'commitment' as const,
+      order_rank: commitment.order_rank,
+      isActive: true,
+      archived: false,
+      deletedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+
+    // Determine which layout items need to be deleted
+    const layoutItemsToDelete = getLayoutItemsToDelete(
+      currentLayoutItems,
+      remainingCommitmentItems
+    );
+
+    if (layoutItemsToDelete.length === 0) {
+      if (__DEV__) {
+        console.log('🗑️ [AUTO-DELETE] No layout items need deletion');
+      }
+      return;
+    }
+
+    // Delete invalid layout items in parallel
+    const deletePromises = layoutItemsToDelete.map(itemId =>
+      deleteLayoutItem(itemId, userId)
+    );
+
+    await Promise.all(deletePromises);
+
+    // Update Redux state immediately if dispatch is provided
+    if (dispatch) {
+      const { deleteLayoutItem: deleteLayoutItemAction } = await import('@/store/slices/layoutItemsSlice');
+
+      // Remove each deleted item from Redux state
+      layoutItemsToDelete.forEach(itemId => {
+        dispatch(deleteLayoutItemAction(itemId));
+      });
+
+      if (__DEV__) {
+        console.log(`🔄 [AUTO-DELETE] Updated Redux state: removed ${layoutItemsToDelete.length} layout items`);
+      }
+    }
+
+    if (__DEV__) {
+      console.log(`🗑️ [AUTO-DELETE] Successfully deleted ${layoutItemsToDelete.length} invalid layout items`);
+    }
+
+  } catch (error) {
+    console.error('Failed to auto-delete invalid layout items:', error);
+    throw error;
+  }
 }
