@@ -282,3 +282,103 @@ export function createDefaultSpacer(
     deletedAt: null,
   };
 }
+
+/**
+ * Generate a new divider with default properties
+ */
+export function createDefaultDivider(
+  userId: string,
+  order_rank: string,
+  style: 'solid' | 'dashed' | 'dotted' = 'solid'
+): Omit<LayoutItem, 'id' | 'createdAt' | 'updatedAt'> {
+  return {
+    userId,
+    type: 'divider',
+    style,
+    order_rank,
+    isActive: true,
+    archived: false,
+    deletedAt: null,
+  };
+}
+
+/**
+ * Create a layout item (spacer or divider) at a specific position in an existing list
+ * This function calculates the appropriate rank for the insertion position
+ *
+ * @param type - Type of layout item to create ('spacer' | 'divider')
+ * @param insertIndex - Index where to insert the item (between existing items)
+ * @param existingItems - Current list of items (for rank calculation)
+ * @param userId - User ID for the new item
+ * @param options - Additional options (height for spacer, style for divider)
+ * @returns New layout item data ready for insertion (with temp ID)
+ */
+export function createLayoutItemAtPosition<T extends 'spacer' | 'divider'>(
+  type: T,
+  insertIndex: number,
+  existingItems: Array<{ data: { order_rank: string } }>,
+  userId: string,
+  options: T extends 'spacer'
+    ? { height?: number }
+    : { style?: 'solid' | 'dashed' | 'dotted' } = {} as any
+): T extends 'spacer'
+  ? { type: 'spacer'; data: LayoutItem }
+  : { type: 'divider'; data: LayoutItem } {
+
+  // Calculate rank for insertion position
+  const prevItem = insertIndex > 0 ? existingItems[insertIndex - 1] : null;
+  const nextItem = insertIndex < existingItems.length ? existingItems[insertIndex] : null;
+
+  const prevRank = prevItem?.data.order_rank || null;
+  const nextRank = nextItem?.data.order_rank || null;
+  const newRank = rankBetween(prevRank, nextRank);
+
+  if (__DEV__) {
+    console.log(`🏭 [FACTORY] Creating ${type} at position ${insertIndex}:`, {
+      prevRank,
+      nextRank,
+      newRank,
+      totalItems: existingItems.length
+    });
+  }
+
+  // Create the layout item data
+  const baseLayoutItem: Omit<LayoutItem, 'id' | 'createdAt' | 'updatedAt'> = {
+    userId,
+    type,
+    order_rank: newRank,
+    isActive: true,
+    archived: false,
+    deletedAt: null,
+  };
+
+  // Add type-specific properties
+  let layoutItemData: LayoutItem;
+  if (type === 'spacer') {
+    const spacerOptions = options as { height?: number };
+    layoutItemData = {
+      ...baseLayoutItem,
+      id: `temp-spacer-${Date.now()}`,
+      type: 'spacer',
+      height: spacerOptions.height || 16, // Use design token default
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as LayoutItem;
+  } else {
+    const dividerOptions = options as { style?: 'solid' | 'dashed' | 'dotted' };
+    layoutItemData = {
+      ...baseLayoutItem,
+      id: `temp-divider-${Date.now()}`,
+      type: 'divider',
+      style: dividerOptions.style || 'solid',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    } as LayoutItem;
+  }
+
+  // Return the properly typed result
+  return {
+    type,
+    data: layoutItemData,
+  } as any;
+}

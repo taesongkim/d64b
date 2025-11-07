@@ -235,6 +235,61 @@ export function isDropPositionValid(
 }
 
 /**
+ * Finds the first valid position to insert a new layout item
+ *
+ * @param items - Current list of layout items
+ * @param newItemType - Type of item to insert ('spacer' or 'divider')
+ * @returns Index where item can be inserted, or null if no valid position exists
+ */
+export function findFirstValidInsertPosition(
+  items: LayoutItem[],
+  newItemType: 'spacer' | 'divider'
+): number | null {
+  if (items.length === 0) {
+    // Can't insert layout items in empty list (would violate top position rule)
+    return null;
+  }
+
+  if (items.length === 1) {
+    // Can't insert layout items with only 1 commitment (would violate count rule)
+    return null;
+  }
+
+  // Create a dummy layout item for testing insertion
+  const dummyItem: LayoutItem = {
+    id: 'temp-placement-test',
+    type: newItemType,
+    height: newItemType === 'spacer' ? 16 : undefined,
+    style: newItemType === 'divider' ? 'solid' : undefined,
+  };
+
+  // Test positions from 1 to length-1 (can't place at top or bottom)
+  for (let i = 1; i < items.length; i++) {
+    // Create preview array with item inserted at position i
+    const previewItems = [
+      ...items.slice(0, i),
+      dummyItem,
+      ...items.slice(i)
+    ];
+
+    // Test if this position is valid
+    const validation = validateReorderLayout(previewItems);
+
+    if (validation.isValid) {
+      if (__DEV__) {
+        console.log(`📍 [PLACEMENT] Found valid position ${i} for ${newItemType}`);
+      }
+      return i;
+    }
+  }
+
+  if (__DEV__) {
+    console.log(`❌ [PLACEMENT] No valid position found for ${newItemType}`);
+  }
+  return null;
+}
+
+/**
  * DEV-only logging for validation results
  */
 export function logValidationResult(result: ValidationResult, context: string = ''): void {

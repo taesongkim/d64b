@@ -21,12 +21,13 @@ import { rankBetween } from '@/utils/rank';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Commitment } from '@/store/slices/commitmentsSlice';
 import type { LayoutItem as LayoutItemData } from '@/store/slices/layoutItemsSlice';
-import { createDefaultSpacer } from '@/services/layoutItems';
+import { createDefaultSpacer, createLayoutItemAtPosition } from '@/services/layoutItems';
 import { designTokens } from '@/constants/designTokens';
 import {
   validateReorderLayout,
   isDropPositionValid,
   logValidationResult,
+  findFirstValidInsertPosition,
   type LayoutItem,
 } from '@/utils/reorderValidation';
 
@@ -148,52 +149,79 @@ export default function CommitmentOrderingModalR2({
     }
   }, [localItems]);
 
-  // Add Spacer functionality
-  const handleAddSpacer = useCallback(() => {
+  // Generic add layout item handler (for future expansion to dividers)
+  const handleAddLayoutItem = useCallback((type: 'spacer' | 'divider') => {
     if (!user?.id) return;
 
-    // Count active commitments to check if spacers are allowed
+    // Count active commitments to check if layout items are allowed
     const activeCommitments = localItems.filter(item => item.type === 'commitment');
     if (activeCommitments.length <= 1) {
       Alert.alert(
-        'Cannot Add Spacer',
-        'You need at least 2 commitments to add spacers.',
+        'Cannot Add Layout Item',
+        `You need at least 2 commitments to add ${type}s.`,
         [{ text: 'OK' }]
       );
       return;
     }
 
-    // Generate a rank that places the spacer at the bottom of the list
-    const lastItem = localItems[localItems.length - 1];
-    const newRank = rankBetween(lastItem?.data.order_rank || null, null);
+    // Convert to validation format for placement algorithm
+    const currentLayoutItems: LayoutItem[] = localItems.map(item => ({
+      id: item.data.id,
+      type: item.type,
+      title: item.type === 'commitment' ? item.data.title : undefined,
+      height: item.type === 'spacer' ? item.data.height : undefined,
+    }));
 
-    // Create new spacer with default height
-    const newSpacer: LayoutItemData = {
-      id: `temp-spacer-${Date.now()}`, // Temporary ID until saved
-      userId: user.id,
-      type: 'spacer',
-      height: designTokens.layoutItems.spacer.height.regular,
-      order_rank: newRank,
-      isActive: true,
-      archived: false,
-      deletedAt: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    // Find first valid position for the layout item
+    const insertIndex = findFirstValidInsertPosition(currentLayoutItems, type);
 
-    const newItem: ListItem = {
-      type: 'spacer',
-      data: newSpacer,
-    };
+    if (insertIndex === null) {
+      Alert.alert(
+        'Cannot Add Layout Item',
+        `No valid position available for ${type} placement.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
-    // Add to local state
-    setLocalItems(prev => [...prev, newItem]);
+    // Create layout item at the calculated position
+    let newItem: ListItem;
+    if (type === 'spacer') {
+      newItem = createLayoutItemAtPosition(
+        'spacer',
+        insertIndex,
+        localItems,
+        user.id,
+        { height: designTokens.layoutItems.spacer.height.regular }
+      );
+    } else {
+      // Future divider support
+      newItem = createLayoutItemAtPosition(
+        'divider',
+        insertIndex,
+        localItems,
+        user.id,
+        { style: 'solid' }
+      );
+    }
+
+    // Insert at the calculated position
+    setLocalItems(prev => {
+      const newItems = [...prev];
+      newItems.splice(insertIndex, 0, newItem);
+      return newItems;
+    });
     setHasChanges(true);
 
     if (__DEV__) {
-      console.log('🔲 Added spacer with rank:', newRank);
+      console.log(`🔲 Added ${type} at position ${insertIndex} with rank:`, newItem.data.order_rank);
     }
   }, [localItems, user?.id]);
+
+  // Add Spacer functionality (wrapper around generic handler)
+  const handleAddSpacer = useCallback(() => {
+    handleAddLayoutItem('spacer');
+  }, [handleAddLayoutItem]);
 
   // Delete spacer functionality
   const handleDeleteSpacer = useCallback((spacerId: string) => {
