@@ -23,6 +23,7 @@ import type { Commitment } from '@/store/slices/commitmentsSlice';
 import type { LayoutItem as LayoutItemData } from '@/store/slices/layoutItemsSlice';
 import { createDefaultSpacer, createLayoutItemAtPosition } from '@/services/layoutItems';
 import { designTokens } from '@/constants/designTokens';
+import Icon from './icons/Icon';
 import {
   validateReorderLayout,
   isDropPositionValid,
@@ -50,7 +51,7 @@ interface DragState {
   initialItemY: number; // Add initial item position
 }
 
-const ROW_HEIGHT = 64; // Standard row height
+const ROW_HEIGHT = 48; // Adjusted row height
 
 export default function CommitmentOrderingModalR2({
   visible,
@@ -141,6 +142,7 @@ export default function CommitmentOrderingModalR2({
   // Track touch coordinates for drag calculation
   const touchStartY = useRef<number>(0);
   const scrollViewLayoutY = useRef<number>(0);
+  const scrollViewLayoutReady = useRef<boolean>(false);
 
   // Initialize local state when modal opens
   useEffect(() => {
@@ -288,6 +290,10 @@ export default function CommitmentOrderingModalR2({
         placeholderIndex: null,
         initialItemY: 0,
       });
+
+      // Reset ScrollView layout state
+      scrollViewLayoutY.current = 0;
+      scrollViewLayoutReady.current = false;
 
       // Reset animations
       draggedItemY.setValue(0);
@@ -892,15 +898,23 @@ export default function CommitmentOrderingModalR2({
         // Store the initial page coordinates
         const initialPageY = evt.nativeEvent.pageY;
 
-
         // DON'T disable scrolling immediately - only disable when drag actually starts
 
+        // Use measured ScrollView position if available, otherwise fallback to estimate
+        if (!scrollViewLayoutReady.current) {
+          // Fallback to estimate if layout measurement isn't ready yet
+          const estimatedScrollViewTop = 100; // Rough estimate based on header
+          scrollViewLayoutY.current = estimatedScrollViewTop;
+          if (__DEV__) {
+            console.log(`[TOUCH-DEBUG] Using estimated ScrollView position: ${estimatedScrollViewTop}`);
+          }
+        } else {
+          if (__DEV__) {
+            console.log(`[TOUCH-DEBUG] Using measured ScrollView position: ${scrollViewLayoutY.current}`);
+          }
+        }
 
-        // Use estimated ScrollView position (header height + SafeAreaView)
-        // This is more reliable than async measure
-        const estimatedScrollViewTop = 100; // Rough estimate based on header
-        scrollViewLayoutY.current = estimatedScrollViewTop;
-        touchStartY.current = initialPageY - estimatedScrollViewTop;
+        touchStartY.current = initialPageY - scrollViewLayoutY.current;
 
 
 
@@ -909,9 +923,20 @@ export default function CommitmentOrderingModalR2({
         const itemHeight = ROW_HEIGHT + designTokens.spacing.xs; // Row height + margin bottom
         const touchedIndex = Math.floor((touchStartY.current - contentPaddingTop) / itemHeight);
 
+        if (__DEV__) {
+          console.log(`[TOUCH-DEBUG] Touch calculation:`, {
+            initialPageY,
+            scrollViewLayoutY: scrollViewLayoutY.current,
+            touchStartY: touchStartY.current,
+            contentPaddingTop,
+            itemHeight,
+            touchedIndex,
+            totalItems: localItemsRef.current.length,
+            layoutReady: scrollViewLayoutReady.current
+          });
+        }
 
         if (touchedIndex >= 0 && touchedIndex < localItemsRef.current.length) {
-
           // Start long-press timer
           longPressTimer.current = setTimeout(() => {
             startDrag(touchedIndex, touchStartY.current);
@@ -989,16 +1014,12 @@ export default function CommitmentOrderingModalR2({
         {isPlaceholder && <View style={styles.placeholder} />}
         <View style={styles.commitmentRow}>
           <View style={styles.commitmentInfo}>
-            <View style={[styles.colorBadge, { backgroundColor: commitment.color }]} />
             <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
               {commitment.title}
             </Text>
             {commitment.isPrivate && (
               <Text style={[styles.privateIndicator, fontStyle]}>🔒</Text>
             )}
-          </View>
-          <View style={styles.dragHandle}>
-            <Text style={styles.dragHandleText}>⋮⋮</Text>
           </View>
         </View>
         {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
@@ -1036,20 +1057,14 @@ export default function CommitmentOrderingModalR2({
         <View style={styles.spacerRow}>
           <View style={styles.spacerInfo}>
             <Text style={[styles.spacerLabel, fontStyle]}>Spacer</Text>
-            <Text style={[styles.spacerHeight, fontStyle]}>{spacer.height}px</Text>
           </View>
-          <View style={styles.spacerActions}>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteSpacer(spacer.id)}
-              disabled={dragState.isDragging}
-            >
-              <Text style={styles.deleteButtonText}>🗑️</Text>
-            </TouchableOpacity>
-            <View style={styles.dragHandle}>
-              <Text style={styles.dragHandleText}>⋮⋮</Text>
-            </View>
-          </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteSpacer(spacer.id)}
+            disabled={dragState.isDragging}
+          >
+            <Icon name="delete" size={16} color="#6B7280" />
+          </TouchableOpacity>
         </View>
         {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
       </View>
@@ -1085,21 +1100,15 @@ export default function CommitmentOrderingModalR2({
         {isPlaceholder && <View style={styles.placeholder} />}
         <View style={styles.dividerRow}>
           <View style={styles.dividerInfo}>
-            <Text style={[styles.dividerLabel, fontStyle]}>Divider</Text>
-            <Text style={[styles.dividerStyle, fontStyle]}>{divider.style || 'solid'}</Text>
+            <Text style={[styles.dividerLabel, fontStyle]}>— Divider —</Text>
           </View>
-          <View style={styles.dividerActions}>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteDivider(divider.id)}
-              disabled={dragState.isDragging}
-            >
-              <Text style={styles.deleteButtonText}>🗑️</Text>
-            </TouchableOpacity>
-            <View style={styles.dragHandle}>
-              <Text style={styles.dragHandleText}>⋮⋮</Text>
-            </View>
-          </View>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteDivider(divider.id)}
+            disabled={dragState.isDragging}
+          >
+            <Icon name="delete" size={16} color="#6B7280" />
+          </TouchableOpacity>
         </View>
         {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
       </View>
@@ -1138,6 +1147,18 @@ export default function CommitmentOrderingModalR2({
     }
 
 
+    // Get the appropriate background and border color based on item type
+    let itemBackgroundColor = designTokens.colors.surface;
+    let itemBorderColor = designTokens.colors.border;
+
+    if (draggedItem.type === 'spacer') {
+      itemBackgroundColor = designTokens.colors.background;
+      itemBorderColor = designTokens.colors.border;
+    } else if (draggedItem.type === 'divider') {
+      itemBackgroundColor = '#E5E7EB';
+      itemBorderColor = '#D1D5DB';
+    }
+
     return (
       <Animated.View
         style={[
@@ -1150,15 +1171,14 @@ export default function CommitmentOrderingModalR2({
             ],
             opacity: draggedItemOpacity,
             ...designTokens.dnd.lift.shadow,
-            // DEBUG: Make it super obvious
-            backgroundColor: __DEV__ ? 'rgba(255, 0, 0, 0.1)' : designTokens.colors.surface,
+            backgroundColor: itemBackgroundColor,
+            borderColor: itemBorderColor,
           },
         ]}
         pointerEvents="none"
       >
         {draggedItem.type === 'commitment' ? (
           <View style={styles.commitmentInfo}>
-            <View style={[styles.colorBadge, { backgroundColor: draggedItem.data.color }]} />
             <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
               {draggedItem.data.title}
             </Text>
@@ -1169,17 +1189,12 @@ export default function CommitmentOrderingModalR2({
         ) : draggedItem.type === 'spacer' ? (
           <View style={styles.spacerInfo}>
             <Text style={[styles.spacerLabel, fontStyle]}>Spacer</Text>
-            <Text style={[styles.spacerHeight, fontStyle]}>{draggedItem.data.height}px</Text>
           </View>
         ) : (
           <View style={styles.dividerInfo}>
-            <Text style={[styles.dividerLabel, fontStyle]}>Divider</Text>
-            <Text style={[styles.dividerStyle, fontStyle]}>{draggedItem.data.style || 'solid'}</Text>
+            <Text style={[styles.dividerLabel, fontStyle]}>— Divider —</Text>
           </View>
         )}
-        <View style={styles.dragHandle}>
-          <Text style={styles.dragHandleText}>⋮⋮</Text>
-        </View>
       </Animated.View>
     );
   }, [dragState, localItems, draggedItemY, draggedItemScale, draggedItemOpacity, fontStyle]);
@@ -1195,53 +1210,71 @@ export default function CommitmentOrderingModalR2({
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={handleCancel}
-          >
-            <Text style={[styles.cancelButtonText, fontStyle]}>Cancel</Text>
-          </TouchableOpacity>
+          {/* Top row: Cancel - Title - Save */}
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancel}
+            >
+              <Text style={[styles.cancelButtonText, fontStyle]}>Cancel</Text>
+            </TouchableOpacity>
 
-          <Text style={[styles.title, fontStyle]}>Reorder (R2)</Text>
+            <Text style={[styles.title, fontStyle]}>Formatting</Text>
 
-          <TouchableOpacity
-            style={styles.addSpacerButton}
-            onPress={handleAddSpacer}
-            disabled={dragState.isDragging || isSaving}
-          >
-            <Text style={[styles.addSpacerButtonText, fontStyle]}>+ Spacer</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                (hasChanges && !dragState.isDragging && !isSaving && !syncState.isSyncing) && styles.saveButtonActive
+              ]}
+              onPress={debouncedHandleSave}
+              disabled={dragState.isDragging || isSaving || syncState.isSyncing}
+            >
+              <Text style={[
+                styles.saveButtonText,
+                fontStyle,
+                (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonTextActive
+              ]}>
+                {isSaving ? 'Saving...' : syncState.isSyncing ? 'Syncing...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            style={styles.addDividerButton}
-            onPress={handleAddDivider}
-            disabled={dragState.isDragging || isSaving}
-          >
-            <Text style={[styles.addDividerButtonText, fontStyle]}>+ Divider</Text>
-          </TouchableOpacity>
+          {/* Description */}
+          <Text style={[styles.description, fontStyle]}>
+            Customize your grid layout here.{'\n'}Press and hold to drag items around.
+          </Text>
 
-          <TouchableOpacity
-            style={[
-              styles.saveButton,
-              (hasChanges && !dragState.isDragging && !isSaving && !syncState.isSyncing) && styles.saveButtonActive
-            ]}
-            onPress={debouncedHandleSave}
-            disabled={dragState.isDragging || isSaving || syncState.isSyncing}
-          >
-            <Text style={[
-              styles.saveButtonText,
-              fontStyle,
-              (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonTextActive
-            ]}>
-              {isSaving ? 'Saving...' : syncState.isSyncing ? 'Syncing...' : 'Save'}
-            </Text>
-          </TouchableOpacity>
+          {/* Bottom row: Add buttons side by side */}
+          <View style={styles.headerBottomRow}>
+            <TouchableOpacity
+              style={styles.addSpacerButton}
+              onPress={handleAddSpacer}
+              disabled={dragState.isDragging || isSaving}
+            >
+              <Text style={[styles.addSpacerButtonText, fontStyle]}>+ Spacer</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.addDividerButton}
+              onPress={handleAddDivider}
+              disabled={dragState.isDragging || isSaving}
+            >
+              <Text style={[styles.addDividerButtonText, fontStyle]}>+ Divider</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView
           ref={scrollViewRef}
           style={styles.content}
           showsVerticalScrollIndicator={false}
+          onLayout={(event) => {
+            scrollViewLayoutY.current = event.nativeEvent.layout.y;
+            scrollViewLayoutReady.current = true;
+            if (__DEV__) {
+              console.log(`[LAYOUT-DEBUG] ScrollView onLayout - y: ${event.nativeEvent.layout.y}`);
+            }
+          }}
         >
           {itemsToRender.length === 0 ? (
             <View style={styles.emptyState}>
@@ -1255,8 +1288,7 @@ export default function CommitmentOrderingModalR2({
               {localCommitments.map((commitment) => (
                 <View key={commitment.id} style={styles.commitmentRowDisabled}>
                   <View style={styles.commitmentInfo}>
-                    <View style={[styles.colorBadge, { backgroundColor: commitment.color }]} />
-                    <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
+                            <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
                       {commitment.title}
                     </Text>
                     {commitment.isPrivate && (
@@ -1288,17 +1320,35 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: designTokens.spacing.lg,
     paddingVertical: designTokens.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: designTokens.colors.border,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.sm,
+  },
+  headerBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: designTokens.spacing.md,
+    marginTop: designTokens.spacing.xl,
+    marginBottom: designTokens.spacing.lg,
+  },
+  description: {
+    fontSize: designTokens.typography.sizes.sm,
+    color: designTokens.colors.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   title: {
-    fontSize: designTokens.typography.sizes.lg,
+    fontSize: designTokens.typography.sizes.xxl,
     color: designTokens.colors.primary,
+    fontWeight: designTokens.typography.weights.semibold,
     flex: 1,
     textAlign: 'center',
   },
@@ -1326,8 +1376,8 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   addSpacerButton: {
-    paddingHorizontal: designTokens.spacing.sm,
-    paddingVertical: designTokens.spacing.xs,
+    paddingHorizontal: designTokens.spacing.lg,
+    paddingVertical: designTokens.spacing.md,
     borderRadius: designTokens.radius.md,
     backgroundColor: designTokens.colors.background,
     borderWidth: 1,
@@ -1335,19 +1385,19 @@ const styles = StyleSheet.create({
   },
   addSpacerButtonText: {
     color: designTokens.colors.secondary,
-    fontSize: designTokens.typography.sizes.sm,
+    fontSize: designTokens.typography.sizes.md,
   },
   addDividerButton: {
-    paddingHorizontal: designTokens.spacing.sm,
-    paddingVertical: designTokens.spacing.xs,
+    paddingHorizontal: designTokens.spacing.lg,
+    paddingVertical: designTokens.spacing.md,
     borderRadius: designTokens.radius.md,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#E5E7EB',
     borderWidth: 1,
-    borderColor: designTokens.colors.border,
+    borderColor: '#D1D5DB',
   },
   addDividerButtonText: {
     color: designTokens.colors.secondary,
-    fontSize: designTokens.typography.sizes.sm,
+    fontSize: designTokens.typography.sizes.md,
   },
   content: {
     flex: 1,
@@ -1384,7 +1434,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: designTokens.colors.surface,
-    borderRadius: designTokens.radius.lg,
+    borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
     borderWidth: 1,
@@ -1395,7 +1445,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
-    borderRadius: designTokens.radius.lg,
+    borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
     borderWidth: 1,
@@ -1432,22 +1482,25 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   spacerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    position: 'relative',
     alignItems: 'center',
-    backgroundColor: designTokens.layoutItems.divider.color.light,
-    borderRadius: designTokens.radius.lg,
+    backgroundColor: designTokens.colors.background,
+    borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
     borderWidth: 1,
     borderColor: designTokens.colors.border,
     height: ROW_HEIGHT,
-    borderStyle: 'dashed',
+    borderStyle: 'solid',
   },
   spacerInfo: {
-    flexDirection: 'row',
+    position: 'absolute',
+    left: designTokens.spacing.md,
+    right: designTokens.spacing.md,
+    top: designTokens.spacing.md,
+    bottom: designTokens.spacing.md,
     alignItems: 'center',
-    flex: 1,
+    justifyContent: 'center',
   },
   spacerLabel: {
     fontSize: designTokens.typography.sizes.md,
@@ -1461,8 +1514,10 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     height: ROW_HEIGHT,
-    backgroundColor: designTokens.dnd.placeholder.tint.light,
-    borderRadius: designTokens.radius.lg,
+    backgroundColor: '#D1FAE5', // Subtle green color
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: '#A7F3D0', // Slightly darker green border
     marginBottom: designTokens.spacing.xs,
     opacity: designTokens.dnd.placeholder.opacity,
   },
@@ -1474,7 +1529,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: designTokens.colors.surface,
-    borderRadius: designTokens.radius.lg,
+    borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     borderWidth: 1,
     borderColor: designTokens.colors.border,
@@ -1487,31 +1542,39 @@ const styles = StyleSheet.create({
     gap: designTokens.spacing.xs,
   },
   deleteButton: {
+    position: 'absolute',
+    right: designTokens.spacing.md,
+    top: '50%',
+    transform: [{ translateY: -1 }], // Slight upward adjustment for perfect centering
     padding: designTokens.spacing.xs,
     borderRadius: designTokens.radius.sm,
     backgroundColor: 'transparent',
+    zIndex: 1,
   },
   deleteButtonText: {
     fontSize: 16,
     color: designTokens.colors.error,
   },
   dividerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    position: 'relative',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6', // Light gray background for dividers
-    borderRadius: designTokens.radius.lg,
+    backgroundColor: '#E5E7EB',
+    borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
     borderWidth: 1,
-    borderColor: designTokens.colors.border,
+    borderColor: '#D1D5DB',
     height: ROW_HEIGHT,
-    borderStyle: 'dotted',
+    borderStyle: 'solid',
   },
   dividerInfo: {
-    flexDirection: 'row',
+    position: 'absolute',
+    left: designTokens.spacing.md,
+    right: designTokens.spacing.md,
+    top: designTokens.spacing.md,
+    bottom: designTokens.spacing.md,
     alignItems: 'center',
-    flex: 1,
+    justifyContent: 'center',
   },
   dividerLabel: {
     fontSize: designTokens.typography.sizes.md,
