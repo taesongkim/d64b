@@ -95,10 +95,33 @@ export const designTokens = {
       },
     },
     divider: {
-      thickness: 2,    // Line thickness for dividers (Phase 4)
+      thickness: 1,    // Line thickness for dividers (Phase 4)
       color: {
-        light: '#E5E7EB', // Gray-200 for subtle dividers
-        dark: '#6B7280',  // Gray-500 for prominent dividers
+        light: '#E5E7EB',   // Gray-200 for subtle dividers
+        dark: '#6B7280',    // Gray-500 for prominent dividers
+        primary: '#3B82F6', // Blue-500 for themed dividers
+        secondary: '#8B5CF6', // Purple-500 for accent dividers
+        muted: '#F3F4F6',   // Gray-100 for very subtle dividers
+      },
+      style: {
+        solid: 'solid' as const,
+        dashed: 'dashed' as const,
+        dotted: 'dotted' as const,
+      },
+      opacity: {
+        subtle: 0.5,
+        normal: 1.0,
+        emphasized: 1.0,
+      },
+      borderRadius: {
+        none: 0,
+        small: 1,
+        medium: 2,
+      },
+      // Layout positioning for grid integration
+      layout: {
+        verticalAlignment: 'center' as const,
+        horizontalSpan: 'full' as const,
       },
     },
   },
