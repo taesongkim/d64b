@@ -12,6 +12,8 @@ export interface LayoutItem {
   title?: string; // For commitments
   height?: number; // For spacers
   style?: string; // For dividers
+  // Friend view property
+  hidden?: boolean; // For hiding items in friend view
 }
 
 export interface ValidationResult {
@@ -117,10 +119,26 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
 /**
  * Auto-repair function that fixes validation violations deterministically
  * Enhanced with spacer priority for mixed-type adjacency and cascading removal
+ *
+ * @param items - Array of layout items to repair
+ * @param mode - 'delete' removes violating items, 'hide' marks them as hidden
  */
-export function autoRepairLayout(items: LayoutItem[]): LayoutItem[] {
+export function autoRepairLayout(items: LayoutItem[], mode: 'delete' | 'hide' = 'delete'): LayoutItem[] {
   if (items.length === 0) return items;
 
+  if (mode === 'delete') {
+    // Original delete mode logic
+    return autoRepairLayoutDelete(items);
+  } else {
+    // Hide mode: use delete logic to determine valid structure, then mark items as hidden
+    return autoRepairLayoutHide(items);
+  }
+}
+
+/**
+ * Delete mode: removes violating items entirely
+ */
+function autoRepairLayoutDelete(items: LayoutItem[]): LayoutItem[] {
   let repairedItems = [...items];
 
   // Step 1: Remove layout items from top/bottom positions (with cascading)
@@ -212,6 +230,37 @@ export function autoRepairLayout(items: LayoutItem[]): LayoutItem[] {
 }
 
 /**
+ * Hide mode: uses delete logic to determine valid structure, then marks removed items as hidden
+ */
+function autoRepairLayoutHide(items: LayoutItem[]): LayoutItem[] {
+  // Create a deep copy to avoid modifying original items
+  const originalItems = items.map(item => ({ ...item, hidden: false }));
+
+  // Use delete mode to determine what the valid structure looks like
+  const validItems = autoRepairLayoutDelete([...items]);
+
+  // Create a set of IDs that should remain visible
+  const validIds = new Set(validItems.map(item => item.id));
+
+  // Mark items as hidden if they're not in the valid set
+  originalItems.forEach(item => {
+    if (!validIds.has(item.id)) {
+      item.hidden = true;
+      if (__DEV__) {
+        console.log(`🔧 [REPAIR-HIDE] Hiding ${item.type} ${item.id} due to validation rules`);
+      }
+    }
+  });
+
+  if (__DEV__) {
+    const hiddenCount = originalItems.filter(item => item.hidden).length;
+    console.log(`🔧 [REPAIR-HIDE] Hidden ${hiddenCount} items, visible ${originalItems.length - hiddenCount} items`);
+  }
+
+  return originalItems;
+}
+
+/**
  * Preview function to check if a drop would be valid
  * Used during drag operations to show/hide drop zones
  */
@@ -288,6 +337,43 @@ export function findFirstValidInsertPosition(
     console.log(`❌ [PLACEMENT] No valid position found for ${newItemType}`);
   }
   return null;
+}
+
+/**
+ * Apply friend view hiding logic - filter private commitments and hide violating layout items
+ * This is the main function for generating friend views of commitment grids
+ *
+ * @param commitments - All user's commitments
+ * @param layoutItems - All user's layout items
+ * @param viewerUserId - ID of user viewing (friend)
+ * @returns Combined list with private commitments filtered and layout items marked as hidden
+ */
+export function applyFriendViewHiding(
+  commitments: LayoutItem[],
+  layoutItems: LayoutItem[],
+  viewerUserId: string
+): LayoutItem[] {
+  // Step 1: Filter out private commitments (this is already done in the friends service)
+  const visibleCommitments = commitments.filter(c => !(c as any).isPrivate);
+
+  if (__DEV__) {
+    console.log(`🙈 [FRIEND-VIEW] Filtered ${commitments.length - visibleCommitments.length} private commitments`);
+  }
+
+  // Step 2: Combine visible commitments with layout items
+  const allItems = [...visibleCommitments, ...layoutItems]
+    .filter(item => 'order_rank' in item && (item as any).order_rank)
+    .sort((a, b) => (a as any).order_rank.localeCompare((b as any).order_rank));
+
+  // Step 3: Apply auto-repair with hide mode to mark violating layout items
+  const repairedItems = autoRepairLayout(allItems, 'hide');
+
+  if (__DEV__) {
+    const hiddenCount = repairedItems.filter(item => item.hidden).length;
+    console.log(`🙈 [FRIEND-VIEW] Marked ${hiddenCount} layout items as hidden due to privacy filtering`);
+  }
+
+  return repairedItems;
 }
 
 /**

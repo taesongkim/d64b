@@ -247,6 +247,24 @@ export interface FriendChartData {
     // Display preference fields for friends to see user's settings
     showValues?: boolean;
     commitmentType?: 'checkbox' | 'measurement';
+    order_rank: string;
+  }>;
+  layoutItems: Array<{
+    id: string;
+    userId: string;
+    type: 'spacer' | 'divider';
+    height?: number;
+    style?: 'solid' | 'dashed' | 'dotted';
+    color?: string;
+    order_rank: string;
+    isActive: boolean;
+    archived: boolean;
+    deletedAt: string | null;
+    lastActiveRank?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    // Friend view specific property
+    hidden?: boolean;
   }>;
   records: Array<{
     id: string;
@@ -304,12 +322,46 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
           commitments: commitments?.map(c => ({ id: c.id, title: c.title, is_active: c.is_active })) || []
         });
 
+        // Get friend's layout items
+        console.log(`📊 Loading layout items for friend ${friend.id}`, {
+          friendId: friend.id,
+          friendEmail: friend.email,
+          friendName: friend.full_name
+        });
+
+
+        const { data: layoutItems, error: layoutItemsError } = await supabase
+          .from('layout_items')
+          .select('*')
+          .eq('user_id', friend.id)
+          .eq('is_active', true)
+          .eq('archived', false)
+          .is('deleted_at', null)
+          .order('order_rank', { ascending: true });
+
+        console.log(`📊 Layout items query result for friend ${friend.id}:`, {
+          layoutItemsCount: layoutItems?.length || 0,
+          error: layoutItemsError?.message || 'No error',
+          layoutItems: layoutItems?.map(l => ({
+            id: l.id,
+            type: l.type,
+            order_rank: l.order_rank,
+            is_active: l.is_active,
+            archived: l.archived,
+            deleted_at: l.deleted_at
+          })) || []
+        });
+
+        if (layoutItemsError) {
+          console.error(`📊 Layout items ERROR for friend ${friend.id}:`, layoutItemsError);
+        }
 
         if (commitmentsError || !commitments) {
           console.log(`📊 Error loading commitments for friend ${friend.id}:`, commitmentsError?.message);
           return {
             friend,
             commitments: [],
+            layoutItems: [],
             records: []
           };
         }
@@ -346,8 +398,59 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
             return a.id.localeCompare(b.id);
           });
 
+        // Convert layout items to the expected format
+        const convertedLayoutItems = (layoutItems || []).map(l => ({
+          id: l.id,
+          userId: l.user_id,
+          type: l.type as 'spacer' | 'divider',
+          height: l.height,
+          style: l.style as 'solid' | 'dashed' | 'dotted' | undefined,
+          color: l.color,
+          order_rank: l.order_rank,
+          isActive: l.is_active,
+          archived: l.archived,
+          deletedAt: l.deleted_at,
+          lastActiveRank: l.last_active_rank,
+          createdAt: l.created_at,
+          updatedAt: l.updated_at,
+          hidden: false, // Will be set by friend view logic
+        }));
+
+        // Apply friend view hiding logic
+        const { applyFriendViewHiding } = await import('@/utils/reorderValidation');
+
+        // Convert commitments to validation format
+        const commitmentItems = convertedCommitments.map(c => ({
+          id: c.id,
+          type: 'commitment' as const,
+          title: c.title,
+          order_rank: c.order_rank,
+          isPrivate: c.isPrivate,
+        }));
+
+        // Convert layout items to validation format
+        const layoutItemsForValidation = convertedLayoutItems.map(l => ({
+          id: l.id,
+          type: l.type,
+          height: l.height,
+          style: l.style,
+          order_rank: l.order_rank,
+        }));
+
+        // Apply hiding logic (this will mark layout items as hidden based on privacy filtering)
+        const repairedItems = applyFriendViewHiding(commitmentItems, layoutItemsForValidation, userId);
+
+        // Update convertedLayoutItems with hidden status
+        const hiddenItemIds = new Set(
+          repairedItems.filter(item => item.hidden && item.type !== 'commitment').map(item => item.id)
+        );
+
+        convertedLayoutItems.forEach(item => {
+          item.hidden = hiddenItemIds.has(item.id);
+        });
+
         if (__DEV__) {
-          console.log(`👥 friends order applied: ${friend.id}, ${commitments.length}`);
+          console.log(`👥 friends order applied: ${friend.id}, ${commitments.length} commitments, ${convertedLayoutItems.length} layout items`);
         }
 
         // Get records for the last 30 days for all commitments
@@ -385,11 +488,12 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
           updatedAt: r.updated_at || r.created_at,
         }));
 
-        console.log(`📊 Friend ${friend.id}: ${convertedCommitments.length} commitments, ${convertedRecords.length} records`);
+        console.log(`📊 Friend ${friend.id}: ${convertedCommitments.length} commitments, ${convertedLayoutItems.length} layout items, ${convertedRecords.length} records`);
 
         return {
           friend,
           commitments: convertedCommitments,
+          layoutItems: convertedLayoutItems,
           records: convertedRecords
         };
 
@@ -398,6 +502,7 @@ export async function getFriendsChartsData(userId: string): Promise<{ data: Frie
         return {
           friend,
           commitments: [],
+          layoutItems: [],
           records: []
         };
       }

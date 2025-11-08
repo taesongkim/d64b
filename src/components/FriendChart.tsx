@@ -23,8 +23,11 @@ export default function FriendChart({
   onFriendPress
 }: FriendChartProps): React.JSX.Element {
   const fontStyle = useFontStyle();
-  const { friend, commitments, records } = friendChartData;
+  const { friend, commitments, layoutItems, records } = friendChartData;
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
+
+  // Filter out hidden layout items for friend view
+  const visibleLayoutItems = layoutItems.filter(item => !item.hidden);
 
 
   const handleCellPress = (commitmentId: string, date: string) => {
@@ -82,6 +85,7 @@ export default function FriendChart({
       {commitments.length > 0 ? (
         <CommitmentGrid
           commitments={commitments}
+          layoutItems={visibleLayoutItems}
           records={records}
           onCellPress={handleCellPress}
           onSetRecordStatus={handleSetRecordStatus}
