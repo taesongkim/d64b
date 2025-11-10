@@ -399,7 +399,8 @@ export default function DashboardScreen(): React.JSX.Element {
         entity: 'record',
         entityId: `${commitmentId}_${date}`,
         data: recordData,
-        syncOpId // Pass the sync operation ID for correlation
+        syncOpId, // Pass the sync operation ID for correlation
+        interactive: true // Mark as user-initiated interactive operation
       }));
     } else {
       // DELETE record - only when status is 'none' AND no user data exists
@@ -411,7 +412,8 @@ export default function DashboardScreen(): React.JSX.Element {
           commitment_id: commitmentId,
           completed_at: `${date}T12:00:00Z`
         },
-        syncOpId // Pass the sync operation ID for correlation
+        syncOpId, // Pass the sync operation ID for correlation
+        interactive: true // Mark as user-initiated interactive operation
       }));
     }
 

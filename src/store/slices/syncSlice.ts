@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { recordTimingMark, SyncTimingMark } from '@/utils/syncXRay';
+import { FastPathSyncService } from '@/services/fastPathSync';
 
 export interface SyncAction {
   id: string;
@@ -11,6 +12,7 @@ export interface SyncAction {
   retryCount: number;
   idempotencyKey?: string; // For ensuring unique operations by (id, final rank)
   syncOpId?: string; // Sync X-Ray correlation ID
+  interactive?: boolean; // Fast-path classification for user-initiated operations
 }
 
 interface SyncState {
@@ -115,7 +117,19 @@ const syncSlice = createSlice({
       state.queue.push(syncAction);
 
       if (__DEV__ && newAction.idempotencyKey) {
-        console.log(`🔧 [SYNC-QUEUE] Added operation with idempotency key: ${newAction.idempotencyKey}`);
+        console.log(`🔧 [SYNC-QUEUE] Added operation with idempotency key: ${newAction.idempotencyKey}${newAction.interactive ? ' (INTERACTIVE)' : ''}`);
+      }
+
+      // FAST-PATH: Attempt immediate processing for interactive operations
+      if (newAction.interactive) {
+        // Process asynchronously to avoid blocking Redux dispatch
+        setTimeout(() => {
+          FastPathSyncService.processIfInteractive(syncAction).catch(error => {
+            if (__DEV__) {
+              console.warn(`🚀 [FAST-PATH] Processing failed, fallback to queue: ${syncAction.idempotencyKey}`, error);
+            }
+          });
+        }, 0);
       }
     },
     removeFromQueue: (state, action: PayloadAction<string>) => {

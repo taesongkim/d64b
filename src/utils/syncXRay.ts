@@ -379,3 +379,78 @@ export function logSyncReport(): void {
   if (!__DEV__) return;
   console.log('\n' + generateSyncReport() + '\n');
 }
+
+/**
+ * Generate fast-path specific report with Phase A targets
+ */
+export function generateFastPathReport(): string {
+  if (!__DEV__) return 'Fast-path report not available in production';
+
+  // Import fast-path metrics
+  let fastPathMetrics;
+  try {
+    const { FastPathSyncService } = require('@/services/fastPathSync');
+    fastPathMetrics = FastPathSyncService.getMetrics();
+  } catch (error) {
+    return 'Fast-path service not available';
+  }
+
+  const stats = exportTimingStats();
+  const report = [];
+
+  report.push('🚀 FAST-PATH SYNC REPORT (Phase A)');
+  report.push('=' .repeat(50));
+
+  // Fast-path specific metrics
+  report.push('📈 FAST-PATH OPERATIONS');
+  report.push('-'.repeat(25));
+  report.push(`Total Processed: ${fastPathMetrics.totalProcessed}`);
+  report.push(`Coalesced: ${fastPathMetrics.coalesced}`);
+  report.push(`De-duplicated: ${fastPathMetrics.deduped}`);
+  report.push(`Errors: ${fastPathMetrics.errors}`);
+  report.push('');
+
+  report.push('⚡ FAST-PATH LATENCY');
+  report.push('-'.repeat(25));
+  report.push(`Median: ${fastPathMetrics.medianLatency.toFixed(1)}ms`);
+  report.push(`P90: ${fastPathMetrics.p90Latency.toFixed(1)}ms`);
+  report.push(`P95: ${fastPathMetrics.p95Latency.toFixed(1)}ms`);
+  report.push('');
+
+  // Phase A targets check
+  report.push('🎯 PHASE A TARGETS (≤2s E2E)');
+  report.push('-'.repeat(25));
+  const medianE2E = stats.statistics.medianE2E;
+  const p90E2E = stats.statistics.p90E2E;
+
+  const medianTarget = medianE2E <= 1000;
+  const p90Target = p90E2E <= 2000;
+
+  report.push(`Median E2E: ${medianE2E.toFixed(1)}ms ${medianTarget ? '✅' : '❌'} (target: ≤1000ms)`);
+  report.push(`P90 E2E: ${p90E2E.toFixed(1)}ms ${p90Target ? '✅' : '❌'} (target: ≤2000ms)`);
+  report.push(`Overall: ${medianTarget && p90Target ? '✅ TARGETS MET' : '❌ NEEDS IMPROVEMENT'}`);
+  report.push('');
+
+  // Interactive vs background breakdown
+  const interactiveOps = stats.recentCompleted.filter(op =>
+    op.metadata?.status || op.type.includes('record')
+  );
+
+  if (interactiveOps.length > 0) {
+    report.push('🎮 INTERACTIVE vs BACKGROUND');
+    report.push('-'.repeat(25));
+    report.push(`Interactive Ops: ${interactiveOps.length}`);
+    report.push(`Background Ops: ${stats.recentCompleted.length - interactiveOps.length}`);
+    report.push('');
+  }
+
+  return report.join('\n');
+}
+
+/**
+ * Log fast-path report to console
+ */
+export function logFastPathReport(): void {
+  if (!__DEV__) return;
+  console.log('\n' + generateFastPathReport() + '\n');
+}

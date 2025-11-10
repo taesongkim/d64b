@@ -17,6 +17,11 @@ import { recordTimingMark, SyncTimingMark, forceCompleteOperation } from '@/util
 const MAX_RETRY_COUNT = 3;
 const RETRY_DELAY = 5000; // 5 seconds
 
+// Fast-path configuration
+const DEFAULT_TICK_INTERVAL = 30000; // 30 seconds (original)
+const FAST_TICK_INTERVAL = 5000; // 5 seconds for background ops
+const EMPTY_QUEUE_CHECK_INTERVAL = 10000; // 10 seconds when queue is empty
+
 export class SyncService {
   private static syncInterval: NodeJS.Timeout | null = null;
   private static isInitialized = false;
@@ -58,7 +63,7 @@ export class SyncService {
   }
 
   /**
-   * Start periodic sync process
+   * Start periodic sync process with adaptive intervals
    */
   private static startSync(): void {
     if (this.syncInterval) return;
@@ -66,10 +71,39 @@ export class SyncService {
     // Immediate sync
     this.processSyncQueue();
 
-    // Periodic sync every 30 seconds
-    this.syncInterval = setInterval(() => {
+    // Start adaptive sync cycle
+    this.scheduleNextSync();
+  }
+
+  /**
+   * Schedule next sync with adaptive interval based on queue state
+   */
+  private static scheduleNextSync(): void {
+    if (this.syncInterval) {
+      clearTimeout(this.syncInterval);
+    }
+
+    const state = store.getState();
+    const queueLength = state.sync.queue.length;
+
+    let interval: number;
+    if (queueLength === 0) {
+      // No pending operations - check less frequently
+      interval = EMPTY_QUEUE_CHECK_INTERVAL;
+    } else {
+      // Has pending operations - check more frequently for background ops
+      const hasBackgroundOps = state.sync.queue.some(op => !op.interactive);
+      interval = hasBackgroundOps ? FAST_TICK_INTERVAL : DEFAULT_TICK_INTERVAL;
+    }
+
+    this.syncInterval = setTimeout(() => {
       this.processSyncQueue();
-    }, 30000);
+      this.scheduleNextSync(); // Schedule next cycle
+    }, interval);
+
+    if (__DEV__) {
+      console.log(`🔧 [SYNC-ADAPTIVE] Next sync in ${interval}ms (queue: ${queueLength})`);
+    }
   }
 
   /**
