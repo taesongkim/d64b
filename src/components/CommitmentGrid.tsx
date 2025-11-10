@@ -33,6 +33,7 @@ import { GRID_DEBUG } from '@/_shared/debug';
 import { getPressPoint } from './grids/getPressPoint';
 import { getCellDisplayText } from '@/utils/valueFormatUtils';
 import { designTokens } from '@/constants/designTokens';
+import { filterItemsForEmergencyRollback } from '@/utils/emergencyRollback';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -81,6 +82,14 @@ const getCellBorderRadius = (mode: ViewMode) => {
     case 'daily': return 4; // 28px cell
     case 'weekly': return 3; // 18px cell
     default: return 4;
+  }
+};
+
+const getDividerHeight = (mode: ViewMode) => {
+  switch (mode) {
+    case 'daily': return 20;  // Regular view
+    case 'weekly': return 12; // Compact view
+    default: return 20;
   }
 };
 
@@ -136,7 +145,7 @@ interface GridDividerProps {
 }
 
 const GridDivider: React.FC<GridDividerProps> = ({ divider, viewMode, dates, dynamicStyles }) => {
-  const dividerHeight = getCellSize(viewMode);
+  const dividerHeight = getDividerHeight(viewMode);
 
   // Determine divider styling from enhanced tokens
   const dividerColor = designTokens.layoutItems.divider.color[
@@ -260,7 +269,7 @@ export default function CommitmentGrid({
     return min;
   }, [records]);
 
-  // Create unified ordered list of commitments and layout items
+  // Create unified ordered list of commitments and layout items with emergency rollback support
   const orderedItems = useMemo(() => {
     const allItems: Array<{ type: 'commitment' | 'spacer' | 'divider'; data: Commitment | LayoutItem; order_rank: string }> = [];
 
@@ -283,7 +292,10 @@ export default function CommitmentGrid({
     });
 
     // Sort by order_rank (lexicographic ordering)
-    return allItems.sort((a, b) => a.order_rank.localeCompare(b.order_rank));
+    const sortedItems = allItems.sort((a, b) => a.order_rank.localeCompare(b.order_rank));
+
+    // Apply emergency rollback filter if active
+    return filterItemsForEmergencyRollback(sortedItems);
   }, [commitments, layoutItems]);
 
   // Generate dates based on view mode
@@ -580,7 +592,7 @@ export default function CommitmentGrid({
               );
             } else if (item.type === 'divider') {
               const divider = item.data as LayoutItem;
-              const dividerHeight = getCellSize(viewMode);
+              const dividerHeight = getDividerHeight(viewMode);
 
               // Left side divider segment
               const dividerColor = designTokens.layoutItems.divider.color[

@@ -116,6 +116,27 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
   return { isValid: violations.length === 0, violations };
 }
 
+// DEV-only telemetry for repair actions
+interface RepairTelemetry {
+  topViolationsFixed: number;
+  bottomViolationsFixed: number;
+  adjacencyViolationsFixed: number;
+  countLimitViolationsFixed: number;
+  totalItemsHidden: number;
+  totalItemsDeleted: number;
+  totalOperations: number;
+}
+
+let globalRepairTelemetry: RepairTelemetry = {
+  topViolationsFixed: 0,
+  bottomViolationsFixed: 0,
+  adjacencyViolationsFixed: 0,
+  countLimitViolationsFixed: 0,
+  totalItemsHidden: 0,
+  totalItemsDeleted: 0,
+  totalOperations: 0,
+};
+
 /**
  * Auto-repair function that fixes validation violations deterministically
  * Enhanced with spacer priority for mixed-type adjacency and cascading removal
@@ -125,6 +146,11 @@ function validateFutureLayoutRules(items: LayoutItem[]): ValidationResult {
  */
 export function autoRepairLayout(items: LayoutItem[], mode: 'delete' | 'hide' = 'delete'): LayoutItem[] {
   if (items.length === 0) return items;
+
+  // Increment operation counter for telemetry
+  if (__DEV__) {
+    globalRepairTelemetry.totalOperations++;
+  }
 
   if (mode === 'delete') {
     // Original delete mode logic
@@ -140,23 +166,35 @@ export function autoRepairLayout(items: LayoutItem[], mode: 'delete' | 'hide' = 
  */
 function autoRepairLayoutDelete(items: LayoutItem[]): LayoutItem[] {
   let repairedItems = [...items];
+  let topViolations = 0;
+  let bottomViolations = 0;
 
   // Step 1: Remove layout items from top/bottom positions (with cascading)
   while (repairedItems.length > 0 && repairedItems[0].type !== 'commitment') {
     if (__DEV__) {
       console.log(`🔧 [REPAIR] Removing ${repairedItems[0].type} from top position`);
+      topViolations++;
+      globalRepairTelemetry.totalItemsDeleted++;
     }
     repairedItems.shift();
   }
   while (repairedItems.length > 0 && repairedItems[repairedItems.length - 1].type !== 'commitment') {
     if (__DEV__) {
       console.log(`🔧 [REPAIR] Removing ${repairedItems[repairedItems.length - 1].type} from bottom position`);
+      bottomViolations++;
+      globalRepairTelemetry.totalItemsDeleted++;
     }
     repairedItems.pop();
   }
 
+  if (__DEV__) {
+    globalRepairTelemetry.topViolationsFixed += topViolations;
+    globalRepairTelemetry.bottomViolationsFixed += bottomViolations;
+  }
+
   // Step 2: Remove adjacent layout items with enhanced spacer priority
   const deduplicatedItems: LayoutItem[] = [];
+  let adjacencyViolations = 0;
 
   for (let i = 0; i < repairedItems.length; i++) {
     const currentItem = repairedItems[i];
@@ -172,6 +210,7 @@ function autoRepairLayoutDelete(items: LayoutItem[]): LayoutItem[] {
 
       // Enhanced adjacency resolution with spacer priority
       let itemToRemove: 'current' | 'next' = 'next';
+      adjacencyViolations++;
 
       if ((currentItem.type === 'spacer' && nextItem.type === 'divider') ||
           (currentItem.type === 'divider' && nextItem.type === 'spacer')) {
@@ -208,7 +247,15 @@ function autoRepairLayoutDelete(items: LayoutItem[]): LayoutItem[] {
       } else {
         i++; // Skip the next iteration to remove next item
       }
+
+      if (__DEV__) {
+        globalRepairTelemetry.totalItemsDeleted++;
+      }
     }
+  }
+
+  if (__DEV__) {
+    globalRepairTelemetry.adjacencyViolationsFixed += adjacencyViolations;
   }
 
   // Step 3: Enforce count limit (remove excess layout items from the end)
@@ -220,6 +267,11 @@ function autoRepairLayoutDelete(items: LayoutItem[]): LayoutItem[] {
     // Remove excess layout items from the end
     const excessCount = finalLayoutItems.length - maxLayoutItems;
     const layoutItemsToRemove = finalLayoutItems.slice(-excessCount);
+
+    if (__DEV__) {
+      globalRepairTelemetry.countLimitViolationsFixed++;
+      globalRepairTelemetry.totalItemsDeleted += excessCount;
+    }
 
     return deduplicatedItems.filter(item =>
       item.type === 'commitment' || !layoutItemsToRemove.includes(item)
@@ -243,14 +295,20 @@ function autoRepairLayoutHide(items: LayoutItem[]): LayoutItem[] {
   const validIds = new Set(validItems.map(item => item.id));
 
   // Mark items as hidden if they're not in the valid set
+  let itemsHidden = 0;
   originalItems.forEach(item => {
     if (!validIds.has(item.id)) {
       item.hidden = true;
+      itemsHidden++;
       if (__DEV__) {
         console.log(`🔧 [REPAIR-HIDE] Hiding ${item.type} ${item.id} due to validation rules`);
       }
     }
   });
+
+  if (__DEV__) {
+    globalRepairTelemetry.totalItemsHidden += itemsHidden;
+  }
 
   if (__DEV__) {
     const hiddenCount = originalItems.filter(item => item.hidden).length;
@@ -429,5 +487,63 @@ export function logValidationResult(result: ValidationResult, context: string = 
         console.log(`🔧 ${context} Auto-repair suggested:`, result.repairedOrder.length, 'items');
       }
     }
+  }
+}
+
+/**
+ * DEV-only: Get current repair telemetry data
+ */
+export function getRepairTelemetry(): RepairTelemetry {
+  if (__DEV__) {
+    return { ...globalRepairTelemetry };
+  }
+  return {
+    topViolationsFixed: 0,
+    bottomViolationsFixed: 0,
+    adjacencyViolationsFixed: 0,
+    countLimitViolationsFixed: 0,
+    totalItemsHidden: 0,
+    totalItemsDeleted: 0,
+    totalOperations: 0,
+  };
+}
+
+/**
+ * DEV-only: Reset repair telemetry data
+ */
+export function resetRepairTelemetry(): void {
+  if (__DEV__) {
+    globalRepairTelemetry = {
+      topViolationsFixed: 0,
+      bottomViolationsFixed: 0,
+      adjacencyViolationsFixed: 0,
+      countLimitViolationsFixed: 0,
+      totalItemsHidden: 0,
+      totalItemsDeleted: 0,
+      totalOperations: 0,
+    };
+    console.log('📊 [TELEMETRY] Repair telemetry data reset');
+  }
+}
+
+/**
+ * DEV-only: Log current repair telemetry stats
+ */
+export function logRepairTelemetry(): void {
+  if (__DEV__) {
+    console.log('📊 [TELEMETRY] Layout Item Repair Statistics:', {
+      totalOperations: globalRepairTelemetry.totalOperations,
+      violationsFixed: {
+        top: globalRepairTelemetry.topViolationsFixed,
+        bottom: globalRepairTelemetry.bottomViolationsFixed,
+        adjacency: globalRepairTelemetry.adjacencyViolationsFixed,
+        countLimit: globalRepairTelemetry.countLimitViolationsFixed,
+      },
+      itemsAffected: {
+        deleted: globalRepairTelemetry.totalItemsDeleted,
+        hidden: globalRepairTelemetry.totalItemsHidden,
+        total: globalRepairTelemetry.totalItemsDeleted + globalRepairTelemetry.totalItemsHidden,
+      },
+    });
   }
 }

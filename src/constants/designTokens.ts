@@ -89,8 +89,8 @@ export const designTokens = {
   layoutItems: {
     spacer: {
       height: {
-        compact: 8,    // Minimal spacing for weekly/compact view
-        regular: 16,   // Standard spacing for daily view
+        compact: 6,    // Minimal spacing for weekly/compact view
+        regular: 12,   // Standard spacing for daily view
         comfortable: 48, // Extra spacing for visual separation
       },
     },

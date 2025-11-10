@@ -15,6 +15,7 @@ interface LayoutItemRow {
   archived: boolean;
   deleted_at?: string;
   last_active_rank?: string;
+  idempotency_key?: string;
   created_at: string;
   updated_at: string;
 }
@@ -96,12 +97,18 @@ export async function createLayoutItem(
 }
 
 /**
- * Update an existing layout item
+ * Update an existing layout item with idempotency support
  */
 export async function updateLayoutItem(
-  layoutItem: Partial<LayoutItem> & { id: string; userId: string }
+  layoutItem: Partial<LayoutItem> & { id: string; userId: string },
+  idempotencyKey?: string
 ): Promise<LayoutItem> {
   const row = transformLayoutItemToRow(layoutItem);
+
+  // Add idempotency key for move operations
+  if (idempotencyKey && layoutItem.order_rank) {
+    row.idempotency_key = idempotencyKey;
+  }
 
   const { data, error } = await supabase
     .from('layout_items')
@@ -245,22 +252,29 @@ export async function restoreLayoutItem(
 }
 
 /**
- * Batch update layout item ranks (for reordering)
+ * Batch update layout item ranks (for reordering) with idempotency
  */
 export async function batchUpdateLayoutItemRanks(
-  updates: Array<{ id: string; newRank: string }>,
+  updates: Array<{ id: string; newRank: string; idempotencyKey?: string }>,
   userId: string
 ): Promise<LayoutItem[]> {
   const results: LayoutItem[] = [];
 
   // Execute updates in parallel for performance
-  const promises = updates.map(async ({ id, newRank }) => {
+  const promises = updates.map(async ({ id, newRank, idempotencyKey }) => {
+    const updateData: any = {
+      order_rank: newRank,
+      updated_at: new Date().toISOString()
+    };
+
+    // Add idempotency key for move operations
+    if (idempotencyKey) {
+      updateData.idempotency_key = idempotencyKey;
+    }
+
     const { data, error } = await supabase
       .from('layout_items')
-      .update({
-        order_rank: newRank,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .eq('user_id', userId)
       .select()

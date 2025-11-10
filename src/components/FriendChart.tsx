@@ -12,6 +12,7 @@ import { useFontStyle } from '@/hooks/useFontStyle';
 import type { FriendChartData } from '@/services/friends';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { AnimalType, ColorType } from '@/utils/avatarUtils';
+import { filterItemsForEmergencyRollback } from '@/utils/emergencyRollback';
 
 interface FriendChartProps {
   friendChartData: FriendChartData;
@@ -26,8 +27,10 @@ export default function FriendChart({
   const { friend, commitments, layoutItems, records } = friendChartData;
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
 
-  // Filter out hidden layout items for friend view
-  const visibleLayoutItems = layoutItems.filter(item => !item.hidden);
+  // Filter out hidden layout items for friend view and apply emergency rollback
+  const visibleLayoutItems = filterItemsForEmergencyRollback(
+    layoutItems.filter(item => !item.hidden)
+  );
 
 
   const handleCellPress = (commitmentId: string, date: string) => {

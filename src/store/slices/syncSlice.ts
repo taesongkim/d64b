@@ -8,6 +8,7 @@ export interface SyncAction {
   data: any;
   timestamp: string;
   retryCount: number;
+  idempotencyKey?: string; // For ensuring unique operations by (id, final rank)
 }
 
 interface SyncState {
@@ -39,6 +40,19 @@ const syncSlice = createSlice({
     addToQueue: (state, action: PayloadAction<Omit<SyncAction, 'id' | 'timestamp' | 'retryCount'>>) => {
       const newAction = action.payload;
 
+      // Enhanced idempotency: check for duplicate operations by idempotencyKey
+      if (newAction.idempotencyKey) {
+        const existingAction = state.queue.find(action =>
+          action.idempotencyKey === newAction.idempotencyKey
+        );
+        if (existingAction) {
+          if (__DEV__) {
+            console.log(`🔧 [SYNC-IDEMPOTENT] Skipping duplicate operation with key: ${newAction.idempotencyKey}`);
+          }
+          return; // Skip adding this action as it's already queued
+        }
+      }
+
       // Remove conflicting actions for the same entity
       state.queue = state.queue.filter(existingAction => {
         // Keep actions for different entities
@@ -46,18 +60,39 @@ const syncSlice = createSlice({
           return true;
         }
 
+        // Enhanced conflict resolution: consider idempotency key for reordering operations
+        if (newAction.idempotencyKey && existingAction.idempotencyKey) {
+          // For reordering operations (move:id:rank), only keep the latest final rank
+          const newKeyParts = newAction.idempotencyKey.split(':');
+          const existingKeyParts = existingAction.idempotencyKey.split(':');
+
+          if (newKeyParts[0] === 'move' && existingKeyParts[0] === 'move' &&
+              newKeyParts[1] === existingKeyParts[1]) { // Same entity ID
+            if (__DEV__) {
+              console.log(`🔧 [SYNC-DEDUP] Removing conflicting move operation ${existingAction.idempotencyKey} for newer ${newAction.idempotencyKey}`);
+            }
+            return false; // Remove the older move operation
+          }
+        }
+
         // Remove conflicting actions for same entity
         // DELETE trumps everything, UPDATE trumps CREATE
         if (newAction.type === 'DELETE') {
-          console.log(`🔧 [SYNC-DEDUP] Removing conflicting ${existingAction.type} action for ${newAction.entity}:${newAction.entityId} (new DELETE)`);
+          if (__DEV__) {
+            console.log(`🔧 [SYNC-DEDUP] Removing conflicting ${existingAction.type} action for ${newAction.entity}:${newAction.entityId} (new DELETE)`);
+          }
           return false;
         }
         if (newAction.type === 'UPDATE' && existingAction.type === 'CREATE') {
-          console.log(`🔧 [SYNC-DEDUP] Removing conflicting CREATE action for ${newAction.entity}:${newAction.entityId} (new UPDATE)`);
+          if (__DEV__) {
+            console.log(`🔧 [SYNC-DEDUP] Removing conflicting CREATE action for ${newAction.entity}:${newAction.entityId} (new UPDATE)`);
+          }
           return false;
         }
         if (newAction.type === 'UPDATE' && existingAction.type === 'UPDATE') {
-          console.log(`🔧 [SYNC-DEDUP] Removing duplicate UPDATE action for ${newAction.entity}:${newAction.entityId}`);
+          if (__DEV__) {
+            console.log(`🔧 [SYNC-DEDUP] Removing duplicate UPDATE action for ${newAction.entity}:${newAction.entityId}`);
+          }
           return false;
         }
 
@@ -71,6 +106,10 @@ const syncSlice = createSlice({
         retryCount: 0,
       };
       state.queue.push(syncAction);
+
+      if (__DEV__ && newAction.idempotencyKey) {
+        console.log(`🔧 [SYNC-QUEUE] Added operation with idempotency key: ${newAction.idempotencyKey}`);
+      }
     },
     removeFromQueue: (state, action: PayloadAction<string>) => {
       state.queue = state.queue.filter(item => item.id !== action.payload);
