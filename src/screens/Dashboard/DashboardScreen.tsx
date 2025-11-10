@@ -32,7 +32,7 @@ import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
 import { triggerManualSync, setSyncUserId } from '@/services/syncScheduler';
 import { since } from '@/_shared/perf';
-import { startSyncOperation, recordTimingMark, SyncTimingMark } from '@/utils/syncXRay';
+import { startSyncOperation, recordTimingMark } from '@/utils/syncXRay';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();

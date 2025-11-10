@@ -72,7 +72,7 @@ export function startSyncOperation(
     type,
     entityId,
     startTime,
-    marks: new Map([[SyncTimingMark.T0_UI_ACTION, startTime]]),
+    marks: new Map([['T0_UI_ACTION', startTime]]),
     metadata
   };
 
@@ -109,7 +109,7 @@ export function recordTimingMark(
   console.log(`🔍 [SYNC-XRAY] ${opId} | ${mark} (+${delta.toFixed(1)}ms)${metadata ? ` | ${JSON.stringify(metadata)}` : ''}`);
 
   // If this is the final mark, complete the operation
-  if (mark === SyncTimingMark.T6_UI_RECONCILED) {
+  if (mark === 'T6_UI_RECONCILED') {
     completeOperation(opId);
   }
 }

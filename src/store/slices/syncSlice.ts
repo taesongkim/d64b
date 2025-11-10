@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { recordTimingMark, SyncTimingMark } from '@/utils/syncXRay';
+import { recordTimingMark } from '@/utils/syncXRay';
 import { FastPathSyncService } from '@/services/fastPathSync';
 
 export interface SyncAction {
