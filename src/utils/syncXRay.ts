@@ -13,6 +13,17 @@ export type SyncTimingMark =
   | 'T5_STORE_APPLIED'       // Redux store state updated
   | 'T6_UI_RECONCILED';      // UI component re-rendered with new state
 
+// Export timing mark enum for easier usage
+export const SyncTimingMark = {
+  T0_UI_ACTION: 'T0_UI_ACTION' as const,
+  T1_QUEUE_ENQUEUED: 'T1_QUEUE_ENQUEUED' as const,
+  T2_NET_REQUEST_START: 'T2_NET_REQUEST_START' as const,
+  T3_NET_RESPONSE_END: 'T3_NET_RESPONSE_END' as const,
+  T4_REALTIME_EVENT_RECEIVED: 'T4_REALTIME_EVENT_RECEIVED' as const,
+  T5_STORE_APPLIED: 'T5_STORE_APPLIED' as const,
+  T6_UI_RECONCILED: 'T6_UI_RECONCILED' as const,
+} as const;
+
 // Sync operation details
 export interface SyncOperation {
   id: string;           // Unique operation ID
@@ -76,7 +87,7 @@ export function startSyncOperation(
  */
 export function recordTimingMark(
   opId: string | null,
-  mark: SyncTimingMark,
+  mark: keyof typeof SyncTimingMark,
   metadata?: any
 ): void {
   if (!__DEV__ || !opId) return;

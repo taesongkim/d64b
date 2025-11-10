@@ -46,7 +46,7 @@ const syncSlice = createSlice({
 
       // SYNC X-RAY: Record queue enqueue timing
       if (newAction.syncOpId) {
-        recordTimingMark(newAction.syncOpId, SyncTimingMark.T1_QUEUE_ENQUEUED);
+        recordTimingMark(newAction.syncOpId, 'T1_QUEUE_ENQUEUED');
       }
 
       // Enhanced idempotency: check for duplicate operations by idempotencyKey

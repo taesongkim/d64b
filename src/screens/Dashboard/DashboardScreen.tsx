@@ -377,7 +377,7 @@ export default function DashboardScreen(): React.JSX.Element {
     dispatch(setRecordStatus({ commitmentId, date, status, value }));
 
     // SYNC X-RAY: Record store update timing
-    recordTimingMark(syncOpId, SyncTimingMark.T5_STORE_APPLIED);
+    recordTimingMark(syncOpId, 'T5_STORE_APPLIED');
 
     // STEP 2: Check if there's any user data worth preserving
     const hasUserData = value !== undefined || notes !== undefined;
