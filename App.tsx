@@ -9,6 +9,7 @@ import AppNavigator from '@/navigation/AppNavigator';
 import { store, persistor } from '@/store';
 import { SyncService } from '@/services/syncService';
 import { mark } from '@/_shared/perf';
+import { initializeStoreTracking } from '@/utils/syncXRay';
 
 // Initialize Sentry if DSN is provided and package is available
 const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
@@ -43,6 +44,9 @@ export default function App(): React.JSX.Element {
     // Initialize sync service after store is ready
     const initializeServices = async () => {
       await SyncService.initialize();
+
+      // Initialize Sync X-Ray store tracking (DEV only)
+      initializeStoreTracking();
     };
 
     initializeServices();

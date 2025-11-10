@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { recordTimingMark, SyncTimingMark } from '@/utils/syncXRay';
 
 export interface SyncAction {
   id: string;
@@ -9,6 +10,7 @@ export interface SyncAction {
   timestamp: string;
   retryCount: number;
   idempotencyKey?: string; // For ensuring unique operations by (id, final rank)
+  syncOpId?: string; // Sync X-Ray correlation ID
 }
 
 interface SyncState {
@@ -39,6 +41,11 @@ const syncSlice = createSlice({
     },
     addToQueue: (state, action: PayloadAction<Omit<SyncAction, 'id' | 'timestamp' | 'retryCount'>>) => {
       const newAction = action.payload;
+
+      // SYNC X-RAY: Record queue enqueue timing
+      if (newAction.syncOpId) {
+        recordTimingMark(newAction.syncOpId, SyncTimingMark.T1_QUEUE_ENQUEUED);
+      }
 
       // Enhanced idempotency: check for duplicate operations by idempotencyKey
       if (newAction.idempotencyKey) {

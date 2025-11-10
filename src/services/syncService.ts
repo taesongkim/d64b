@@ -11,6 +11,7 @@ import {
 } from '@/store/slices/syncSlice';
 import * as commitmentService from './commitments';
 import { addRecord } from '@/store/slices/recordsSlice';
+import { recordTimingMark, SyncTimingMark, forceCompleteOperation } from '@/utils/syncXRay';
 // import { DatabaseService } from './database'; // Disabled - using Supabase
 
 const MAX_RETRY_COUNT = 3;
@@ -143,6 +144,12 @@ export class SyncService {
           console.log(`✅ Successfully synced item ${item.id}`);
         } catch (error) {
           console.error(`❌ Failed to sync item ${item.id}:`, error);
+
+          // SYNC X-RAY: Force complete operation on error
+          if (item.syncOpId) {
+            forceCompleteOperation(item.syncOpId, `Sync error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          }
+
           store.dispatch(incrementRetryCount(item.id));
 
           // Add delay before next retry
@@ -263,12 +270,24 @@ export class SyncService {
    * Sync record with server
    */
   private static async syncRecord(item: SyncAction): Promise<void> {
+    // SYNC X-RAY: Record network request start
+    if (item.syncOpId) {
+      recordTimingMark(item.syncOpId, SyncTimingMark.T2_NET_REQUEST_START);
+    }
 
     switch (item.type) {
       case 'CREATE':
         // Use Supabase upsert for records
         const { upsertCommitmentRecord } = await import('./commitments');
         const result = await upsertCommitmentRecord(item.data);
+
+        // SYNC X-RAY: Record network response end
+        if (item.syncOpId) {
+          recordTimingMark(item.syncOpId, SyncTimingMark.T3_NET_RESPONSE_END, {
+            success: !result.error,
+            error: result.error?.message
+          });
+        }
         if (result.error) {
           throw new Error(`upsertCommitmentRecord failed: ${result.error.message}`);
         }

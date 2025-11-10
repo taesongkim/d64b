@@ -32,6 +32,7 @@ import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
 import { triggerManualSync, setSyncUserId } from '@/services/syncScheduler';
 import { since } from '@/_shared/perf';
+import { startSyncOperation, recordTimingMark, SyncTimingMark } from '@/utils/syncXRay';
 
 export default function DashboardScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
@@ -367,9 +368,16 @@ export default function DashboardScreen(): React.JSX.Element {
       return;
     }
 
+    // SYNC X-RAY: Start tracking this operation
+    const syncOpId = startSyncOperation('record_complete', `${commitmentId}_${date}`, {
+      status, hasValue: value !== undefined, hasNotes: notes !== undefined
+    });
 
     // STEP 1: Optimistic update - immediately update Redux state for instant UI feedback
     dispatch(setRecordStatus({ commitmentId, date, status, value }));
+
+    // SYNC X-RAY: Record store update timing
+    recordTimingMark(syncOpId, SyncTimingMark.T5_STORE_APPLIED);
 
     // STEP 2: Check if there's any user data worth preserving
     const hasUserData = value !== undefined || notes !== undefined;
@@ -390,7 +398,8 @@ export default function DashboardScreen(): React.JSX.Element {
         type: 'CREATE',
         entity: 'record',
         entityId: `${commitmentId}_${date}`,
-        data: recordData
+        data: recordData,
+        syncOpId // Pass the sync operation ID for correlation
       }));
     } else {
       // DELETE record - only when status is 'none' AND no user data exists
@@ -401,7 +410,8 @@ export default function DashboardScreen(): React.JSX.Element {
         data: {
           commitment_id: commitmentId,
           completed_at: `${date}T12:00:00Z`
-        }
+        },
+        syncOpId // Pass the sync operation ID for correlation
       }));
     }
 
