@@ -2,7 +2,6 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState, AppDispatch } from '../index';
 import { addToQueue } from './syncSlice';
 import { rankBetween } from '@/utils/rank';
-import { startSyncOperation, recordTimingMark } from '@/utils/syncXRay';
 
 export interface Friend {
   id: string;
@@ -144,18 +143,6 @@ export const reorderFriendBetween = (params: {
   // Calculate new rank using LexoRank
   const newRank = rankBetween(prevRank || null, nextRank || null);
 
-  // Start Sync X-Ray timing for friend reorder
-  const syncOpId = startSyncOperation('friend_reorder', id, {
-    friendId: id,
-    prevRank,
-    nextRank,
-    newRank
-  });
-
-  if (syncOpId) {
-    recordTimingMark(syncOpId, 'T1_QUEUE_ENQUEUED');
-  }
-
   // Optimistic update
   dispatch(updateFriendOrder({ id, newRank }));
 
@@ -171,7 +158,6 @@ export const reorderFriendBetween = (params: {
       order_rank: newRank,
     },
     interactive: true, // Enable Phase A fast-path (≤2s target)
-    syncOpId,
     idempotencyKey: `friend_move:${id}:${newRank}` // Coalescing key for rapid moves
   }));
 };
@@ -182,15 +168,6 @@ export const batchReorderFriends = (updates: Array<{ id: string; newRank: string
     const userId = state.auth?.user?.id;
     if (!userId) return Promise.reject(new Error('User not authenticated'));
 
-    // Start Sync X-Ray timing for batch friend reorder
-    const syncOpId = startSyncOperation('friend_reorder_batch', 'multiple', {
-      updateCount: updates.length,
-      friendIds: updates.map(u => u.id)
-    });
-
-    if (syncOpId) {
-      recordTimingMark(syncOpId, 'T1_QUEUE_ENQUEUED');
-    }
 
     // Optimistic update
     dispatch(batchUpdateFriendOrder(updates));
@@ -208,7 +185,6 @@ export const batchReorderFriends = (updates: Array<{ id: string; newRank: string
           order_rank: newRank,
         },
         interactive: true, // Enable Phase A fast-path
-        syncOpId,
         idempotencyKey: `friend_move:${id}:${newRank}`
       }));
     });

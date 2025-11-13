@@ -25,10 +25,6 @@ jest.mock('@/utils/rank', () => ({
   rankBetween: jest.fn(),
 }));
 
-jest.mock('@/utils/syncXRay', () => ({
-  startSyncOperation: jest.fn(() => 'mock-sync-op-id'),
-  recordTimingMark: jest.fn(),
-}));
 
 const mockRankBetween = rankBetween as jest.MockedFunction<typeof rankBetween>;
 
