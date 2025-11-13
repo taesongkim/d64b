@@ -21,7 +21,7 @@ export async function seedFriendOrderRanksOnce(userId: string): Promise<void> {
   const state = store.getState();
 
   // Exit if already seeded for this user
-  if (state.settings.friendOrderSeedDoneByUser[userId] === true) {
+  if (state.settings?.friendOrderSeedDoneByUser?.[userId] === true) {
     return;
   }
 

@@ -36,8 +36,12 @@ export interface OrderedFriend {
  */
 export const selectFriendsOrdered = createSelector(
   [selectAllFriends],
-  (friends): OrderedFriend[] =>
-    friends
+  (friends): OrderedFriend[] => {
+    if (!friends || !Array.isArray(friends)) {
+      return [];
+    }
+
+    return friends
       .filter(f => !f.blocked) // Only show non-blocked friends
       .sort((a, b) => {
         // Primary sort: order_rank (with null safety)
@@ -47,12 +51,15 @@ export const selectFriendsOrdered = createSelector(
         if (rankCompare !== 0) return rankCompare;
 
         // Fallback sort by name for stability
-        const nameCompare = a.name.localeCompare(b.name);
+        const nameA = a.name || a.username || '';
+        const nameB = b.name || b.username || '';
+        const nameCompare = nameA.localeCompare(nameB);
         if (nameCompare !== 0) return nameCompare;
 
         // Final tie-breaker by id
         return a.id.localeCompare(b.id);
-      })
+      });
+  }
 );
 
 /**
