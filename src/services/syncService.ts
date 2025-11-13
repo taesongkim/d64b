@@ -174,6 +174,8 @@ export class SyncService {
         return this.syncRecord(item);
       case 'layout_item':
         return this.syncLayoutItem(item);
+      case 'friend_order':
+        return this.syncFriendOrder(item);
       default:
         throw new Error(`Unknown entity type: ${item.entity}`);
     }
@@ -455,6 +457,52 @@ export class SyncService {
         const { deleteLayoutItem } = await import('./layoutItems');
         await deleteLayoutItem(item.entityId, item.data.user_id || item.data.userId);
         console.log(`Synced DELETE for layout item ${item.entityId}`);
+        break;
+    }
+  }
+
+  /**
+   * Sync friend order with server
+   */
+  private static async syncFriendOrder(item: SyncAction): Promise<void> {
+    console.log('📡 [Sync Service] Syncing friend order:', {
+      type: item.type,
+      entityId: item.entityId,
+      data: item.data
+    });
+
+    switch (item.type) {
+      case 'UPDATE':
+        const data = item.data;
+        if (item.idempotencyKey?.startsWith('friend_move:')) {
+          // Handle friend reordering
+          const { updateFriendOrderRank } = await import('./friends');
+          console.log('📡 [Sync Service] Calling updateFriendOrderRank:', {
+            userId: data.user_id,
+            friendUserId: data.friend_user_id,
+            orderRank: data.order_rank,
+            groupName: data.group_name || 'all'
+          });
+
+          const result = await updateFriendOrderRank(
+            data.user_id,
+            data.friend_user_id,
+            data.order_rank,
+            data.group_name || 'all'
+          );
+          if (result.error) {
+            console.error('📡 [Sync Service] updateFriendOrderRank failed:', result.error);
+            throw new Error(`updateFriendOrderRank failed: ${result.error.message}`);
+          }
+          console.log('📡 [Sync Service] Friend order sync successful:', result.data);
+        } else {
+          console.log('No matching idempotency pattern for friend_order UPDATE');
+        }
+        break;
+
+      case 'CREATE':
+      case 'DELETE':
+        console.log(`Friend order ${item.type} operations not implemented yet`);
         break;
     }
   }

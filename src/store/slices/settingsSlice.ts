@@ -100,6 +100,10 @@ const settingsSlice = createSlice({
     },
     setFriendOrderSeedDoneForUser: (state, action: PayloadAction<{ userId: string; done: boolean }>) => {
       const { userId, done } = action.payload;
+      // Ensure the object exists before setting properties
+      if (!state.friendOrderSeedDoneByUser) {
+        state.friendOrderSeedDoneByUser = {};
+      }
       state.friendOrderSeedDoneByUser[userId] = done;
     },
     resetSettings: (state) => {

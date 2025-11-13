@@ -14,7 +14,7 @@ import {
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { selectFriendsOrdered } from '@/store/selectors/friendsOrder';
-import { batchReorderFriends } from '@/store/slices/socialSlice';
+import { batchReorderRosterFriends } from '@/store/slices/socialSlice';
 import { rankBetween } from '@/utils/rank';
 import { useAuth } from '@/contexts/AuthContext';
 import { designTokens } from '@/constants/designTokens';
@@ -26,6 +26,7 @@ import { AnimalType, ColorType } from '@/utils/avatarUtils';
 interface FriendOrderingModalR2Props {
   visible: boolean;
   onClose: () => void;
+  friendsCharts?: any[]; // Optional to maintain backward compatibility
 }
 
 interface DragState {
@@ -46,7 +47,7 @@ export default function FriendOrderingModalR2({
   const dispatch = useAppDispatch();
   const { user } = useAuth();
 
-  // Get current friends from Redux
+  // Always use Redux roster as source of truth for optimistic updates
   const currentFriends = useAppSelector(selectFriendsOrdered);
   const syncState = useAppSelector((state) => state.sync);
 
@@ -82,13 +83,15 @@ export default function FriendOrderingModalR2({
   const touchStartY = useRef<number>(0);
   const scrollViewLayoutY = useRef<number>(0);
   const scrollViewLayoutReady = useRef<boolean>(false);
+  const modalInitialized = useRef<boolean>(false);
 
-  // Initialize local state when modal opens
+  // Initialize local state when modal opens (but not during save or when Redux state changes)
   useEffect(() => {
-    if (visible) {
+    if (visible && !isSaving && !modalInitialized.current) {
+      console.log('🔄 [Modal Open] Setting initial friends order:', currentFriends.map(f => ({ id: f.id, name: f.name, order_rank: f.order_rank })));
       setLocalFriends([...currentFriends]);
       setHasChanges(false);
-      setIsSaving(false);
+      modalInitialized.current = true;
       // Reset drag state
       setDragState({
         isDragging: false,
@@ -97,53 +100,17 @@ export default function FriendOrderingModalR2({
         placeholderIndex: null,
         initialItemY: 0,
       });
+    } else if (!visible) {
+      // Reset initialized flag when modal closes
+      modalInitialized.current = false;
     }
-  }, [visible, currentFriends]);
+  }, [visible, isSaving]);
 
   // Sync refs with local state
   useEffect(() => {
     localFriendsRef.current = localFriends;
   }, [localFriends]);
 
-  const startDrag = useCallback((index: number, gestureY: number) => {
-    if (isDraggingRef.current) return;
-
-    isDraggingRef.current = true;
-    draggedIndexRef.current = index;
-    placeholderIndexRef.current = index;
-
-    // Calculate initial item position
-    const itemY = index * ROW_HEIGHT;
-    initialItemYRef.current = itemY;
-
-    setDragState(prev => ({
-      ...prev,
-      isDragging: true,
-      draggedIndex: index,
-      placeholderIndex: index,
-      initialItemY: itemY,
-    }));
-
-    // Animate lift effect using design tokens
-    Animated.parallel([
-      Animated.timing(draggedItemScale, {
-        toValue: designTokens.dnd.lift.scale,
-        duration: designTokens.animation.fast,
-        useNativeDriver: false,
-      }),
-      Animated.timing(draggedItemOpacity, {
-        toValue: designTokens.dnd.lift.opacity,
-        duration: designTokens.animation.fast,
-        useNativeDriver: false,
-      }),
-    ]).start();
-
-    // Auto-reset if no movement after 5 seconds
-    dragTimeoutRef.current = setTimeout(() => {
-      endDrag();
-    }, 5000);
-
-  }, [draggedItemScale, draggedItemOpacity]);
 
   const updateDragPosition = useCallback((gestureY: number) => {
     if (!isDraggingRef.current || draggedIndexRef.current === null) return;
@@ -204,10 +171,19 @@ export default function FriendOrderingModalR2({
         return;
       }
 
+      console.log('🔄 [Modal Drag] Reordering friend:', {
+        draggedFriend: draggedFriend.name,
+        fromIndex: sourceIndex,
+        toIndex: targetIndex,
+        beforeReorder: currentFriends.map(f => f.name),
+      });
+
       // Remove from source
       newFriends.splice(sourceIndex, 1);
       // Insert at target
       newFriends.splice(targetIndex, 0, draggedFriend);
+
+      console.log('🔄 [Modal Drag] New order after drag:', newFriends.map(f => f.name));
 
       setLocalFriends(newFriends);
       setHasChanges(true);
@@ -218,6 +194,11 @@ export default function FriendOrderingModalR2({
     draggedIndexRef.current = null;
     placeholderIndexRef.current = null;
     initialItemYRef.current = 0;
+
+    // Re-enable ScrollView scrolling
+    if (scrollViewRef.current) {
+      scrollViewRef.current.setNativeProps({ scrollEnabled: true });
+    }
 
     // Reset drag state
     setDragState({
@@ -249,91 +230,140 @@ export default function FriendOrderingModalR2({
 
   }, [draggedItemY, draggedItemScale, draggedItemOpacity]);
 
+  // Start drag operation
+  const startDrag = useCallback((index: number, initialRelativeY: number) => {
+    const friend = localFriendsRef.current[index];
+    if (!friend) return;
+
+    console.log('🐾 Starting friend drag:', friend.name, 'at index:', index);
+
+    // Calculate initial position
+    const initialItemY = index * ROW_HEIGHT;
+
+    // Disable ScrollView scrolling during drag to prevent accidental scrolling
+    if (scrollViewRef.current) {
+      scrollViewRef.current.setNativeProps({ scrollEnabled: false });
+    }
+
+    // Update refs synchronously for PanResponder FIRST
+    isDraggingRef.current = true;
+    draggedIndexRef.current = index;
+    placeholderIndexRef.current = index;
+    initialItemYRef.current = initialItemY;
+
+    // Set drag state
+    setDragState({
+      isDragging: true,
+      draggedIndex: index,
+      initialItemY,
+      placeholder: null,
+    });
+
+    // Set initial drag position
+    draggedItemY.setValue(initialItemY);
+    draggedItemScale.setValue(1);
+    draggedItemOpacity.setValue(1);
+
+    // Animate scale up
+    Animated.spring(draggedItemScale, {
+      toValue: designTokens.dnd.lift.scale,
+      useNativeDriver: false,
+    }).start();
+  }, [draggedItemY, draggedItemScale, draggedItemOpacity]);
+
   const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => false,
+    onStartShouldSetPanResponder: () => true, // Need to capture for long press detection
     onMoveShouldSetPanResponder: (evt, gestureState) => {
-      // Only start dragging if we have a long press and moved enough
-      const moved = Math.abs(gestureState.dx) > designTokens.dnd.gesture.activationDistance ||
-                   Math.abs(gestureState.dy) > designTokens.dnd.gesture.activationDistance;
-      return isDraggingRef.current && moved;
+      // Only capture movement if we're already dragging
+      return isDraggingRef.current;
     },
-    onPanResponderGrant: () => {},
+    onPanResponderGrant: (evt) => {
+      // Store the initial page coordinates
+      const initialPageY = evt.nativeEvent.pageY;
+
+      // Calculate relative position within ScrollView
+      touchStartY.current = initialPageY - scrollViewLayoutY.current;
+
+      // Calculate which friend was touched
+      const touchedIndex = Math.floor(touchStartY.current / ROW_HEIGHT);
+
+      if (touchedIndex >= 0 && touchedIndex < localFriendsRef.current.length) {
+        // Start long-press timer
+        longPressTimer.current = setTimeout(() => {
+          startDrag(touchedIndex, touchStartY.current);
+        }, designTokens.dnd.gesture.longPressMs);
+      }
+    },
     onPanResponderMove: (evt, gestureState) => {
       if (isDraggingRef.current) {
         updateDragPosition(evt.nativeEvent.pageY);
       }
     },
     onPanResponderRelease: () => {
+      // Clear long press timer
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+
       if (isDraggingRef.current) {
         endDrag();
       }
     },
     onPanResponderTerminate: () => {
+      // Clear long press timer
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+
       if (isDraggingRef.current) {
         endDrag();
       }
     },
-  }), [updateDragPosition, endDrag]);
+  }), [updateDragPosition, endDrag, startDrag]);
 
-  const handleLongPress = useCallback((index: number) => {
-    return (evt: any) => {
-      const gestureY = evt.nativeEvent.pageY;
-      touchStartY.current = gestureY;
-
-      // Clear any existing timer
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-      }
-
-      // Start long press timer using design token
-      longPressTimer.current = setTimeout(() => {
-        if (scrollViewLayoutReady.current) {
-          startDrag(index, gestureY);
-        }
-      }, designTokens.dnd.gesture.longPressMs);
-    };
-  }, [startDrag]);
-
-  const handlePressOut = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
 
   const handleSave = useCallback(async () => {
     if (!hasChanges || isSaving) return;
 
+    console.log('💾 [Modal Save] Starting save operation with local friends:', localFriends.map(f => ({ id: f.id, name: f.name })));
+
     setIsSaving(true);
 
     try {
-      // Calculate new ranks for moved friends only
+      // Generate completely new ranks for ALL friends to avoid any conflicts
+      // This ensures no duplicate constraint violations
       const rankUpdates = [];
+      const timestamp = Date.now();
 
       for (let i = 0; i < localFriends.length; i++) {
         const friend = localFriends[i];
-        const originalIndex = currentFriends.findIndex(f => f.id === friend.id);
+        // Generate a unique rank using timestamp + position to guarantee uniqueness
+        const newRank = `${timestamp}_${i.toString().padStart(3, '0')}`;
 
-        // Only update ranks for friends that moved
-        if (originalIndex !== i) {
-          const prevRank = i > 0 ? localFriends[i - 1].order_rank || null : null;
-          const nextRank = i < localFriends.length - 1 ? localFriends[i + 1].order_rank || null : null;
-          const newRank = rankBetween(prevRank, nextRank);
-
-          rankUpdates.push({
-            id: friend.id,
-            newRank
-          });
-        }
+        rankUpdates.push({
+          id: friend.id,
+          newRank
+        });
       }
+
+      console.log('💾 [Modal Save] Calculated rank updates:', rankUpdates);
 
       if (rankUpdates.length > 0) {
         // Dispatch batch update with fast-path sync
-        await dispatch(batchReorderFriends(rankUpdates));
-      }
+        console.log('💾 [Modal Save] Dispatching batch reorder to Redux...');
+        await dispatch(batchReorderRosterFriends(user?.id || '', rankUpdates));
 
-      setHasChanges(false);
-      onClose();
+        // Wait a moment for sync to process before closing
+        setTimeout(() => {
+          setHasChanges(false);
+          onClose();
+        }, 100);
+      } else {
+        setHasChanges(false);
+        onClose();
+      }
     } catch (error) {
       console.error('❌ Error saving friend order:', error);
       Alert.alert('Error', 'Failed to save friend order. Please try again.');
@@ -366,9 +396,11 @@ export default function FriendOrderingModalR2({
     const rowContent = (
       <View style={rowStyle}>
         <AnimalAvatar
-          animal={(friend.avatar_animal as AnimalType) || 'bear'}
-          color={(friend.avatar_color as ColorType) || 'blue'}
+          animal={friend.avatar_animal as AnimalType}
+          color={friend.avatar_color as ColorType}
           size={40}
+          showInitials={true}
+          name={friend.name || friend.username}
         />
         <View style={styles.friendInfo}>
           <Text style={[styles.friendName, fontStyle.regular]} numberOfLines={1}>
@@ -405,21 +437,16 @@ export default function FriendOrderingModalR2({
     }
 
     return (
-      <TouchableOpacity
+      <View
         key={friend.id}
-        onPressIn={handleLongPress(index)}
-        onPressOut={handlePressOut}
         style={{ opacity: isDragged ? 0 : 1 }}
-        activeOpacity={0.8}
       >
         {rowContent}
-      </TouchableOpacity>
+      </View>
     );
   }, [
     dragState,
     fontStyle,
-    handleLongPress,
-    handlePressOut,
     draggedItemY,
     draggedItemScale,
     draggedItemOpacity
@@ -429,7 +456,7 @@ export default function FriendOrderingModalR2({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={handleCancel}
     >
       <SafeAreaView style={styles.container}>
@@ -446,14 +473,14 @@ export default function FriendOrderingModalR2({
             scrollViewLayoutY.current = event.nativeEvent.layout.y;
             scrollViewLayoutReady.current = true;
           }}
-          {...panResponder.panHandlers}
         >
           <ScrollView
             ref={scrollViewRef}
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
+            scrollEnabled={!dragState.isDragging}
           >
-            <View style={styles.friendsList}>
+            <View style={styles.friendsList} {...panResponder.panHandlers}>
               {localFriends.map((friend, index) => renderFriendRow(friend, index))}
             </View>
           </ScrollView>

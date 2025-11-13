@@ -587,11 +587,62 @@ export async function searchUsersByEmail(query: string) {
     p_email_query: query
   });
 
-  console.log('🔍 searchUsersByEmail result:', { 
+  console.log('🔍 searchUsersByEmail result:', {
     query,
-    count: data?.length || 0, 
-    error: error?.message || 'No error' 
+    count: data?.length || 0,
+    error: error?.message || 'No error'
   });
 
   return { data: data || [], error };
+}
+
+// ==============================================
+// FRIEND ORDER FUNCTIONS
+// ==============================================
+
+// Get friend order ranks for a user
+export async function getFriendOrderRanks(userId: string, groupName: string = 'all') {
+  const { data, error } = await supabase
+    .from('friend_order')
+    .select('friend_user_id, order_rank, updated_at')
+    .eq('user_id', userId)
+    .eq('group_name', groupName);
+
+  console.log('👥 [Friends Service] getFriendOrderRanks result:', {
+    userId,
+    groupName,
+    count: data?.length || 0,
+    orderRanks: data?.map(r => ({ friend_id: r.friend_user_id, order_rank: r.order_rank })),
+    error: error?.message || 'No error'
+  });
+
+  return { data, error };
+}
+
+// Update friend order rank for personal ordering
+export async function updateFriendOrderRank(userId: string, friendUserId: string, orderRank: string, groupName: string = 'all') {
+  const { data, error } = await supabase
+    .from('friend_order')
+    .upsert({
+      user_id: userId,
+      friend_user_id: friendUserId,
+      group_name: groupName,
+      order_rank: orderRank,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,group_name,friend_user_id'
+    })
+    .select()
+    .single();
+
+  console.log('👥 [Friends Service] updateFriendOrderRank result:', {
+    userId,
+    friendUserId,
+    orderRank,
+    groupName,
+    success: !error,
+    error: error?.message || 'No error'
+  });
+
+  return { data, error };
 }

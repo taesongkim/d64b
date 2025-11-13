@@ -6,8 +6,8 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../index';
 
-// Base selector for all friends from social slice
-const selectAllFriends = (state: RootState) => state.social.friends;
+// Base selector for friends roster from social slice
+const selectFriendsRoster = (state: RootState) => state.social.roster;
 
 /**
  * Enhanced friend type with order_rank for personal ordering
@@ -35,30 +35,44 @@ export interface OrderedFriend {
  * 3. id (final tie-breaker)
  */
 export const selectFriendsOrdered = createSelector(
-  [selectAllFriends],
-  (friends): OrderedFriend[] => {
-    if (!friends || !Array.isArray(friends)) {
+  [selectFriendsRoster],
+  (roster): OrderedFriend[] => {
+    if (!roster || !Array.isArray(roster)) {
+      console.log('🔍 [Selector] No roster or invalid roster:', roster);
       return [];
     }
 
-    return friends
-      .filter(f => !f.blocked) // Only show non-blocked friends
+    console.log('🔍 [Selector] Input roster before sorting:', roster.map(r => ({ id: r.id, name: r.displayName, order_rank: r.order_rank })));
+
+    const sorted = [...roster]
       .sort((a, b) => {
         // Primary sort: order_rank (with null safety)
-        const rankA = (a as any).order_rank || '';
-        const rankB = (b as any).order_rank || '';
+        const rankA = a.order_rank || '';
+        const rankB = b.order_rank || '';
         const rankCompare = rankA.localeCompare(rankB);
         if (rankCompare !== 0) return rankCompare;
 
-        // Fallback sort by name for stability
-        const nameA = a.name || a.username || '';
-        const nameB = b.name || b.username || '';
+        // Fallback sort by displayName for stability
+        const nameA = a.displayName || a.username || '';
+        const nameB = b.displayName || b.username || '';
         const nameCompare = nameA.localeCompare(nameB);
         if (nameCompare !== 0) return nameCompare;
 
         // Final tie-breaker by id
         return a.id.localeCompare(b.id);
-      });
+      })
+      .map(rosterEntry => ({
+        id: rosterEntry.id,
+        name: rosterEntry.displayName,
+        username: rosterEntry.username,
+        avatar_animal: rosterEntry.avatar_animal,
+        avatar_color: rosterEntry.avatar_color,
+        order_rank: rosterEntry.order_rank,
+        updated_at: rosterEntry.updated_at,
+      }));
+
+    console.log('🔍 [Selector] Final ordered friends:', sorted.map(f => ({ id: f.id, name: f.name, order_rank: f.order_rank })));
+    return sorted;
   }
 );
 
