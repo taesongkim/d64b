@@ -30,6 +30,9 @@ import { getUserCommitments, createCommitment, updateCommitment as updateCommitm
 import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
 import { useFriendsCharts } from '@/hooks/useFriendsCharts';
+import FriendOrderingModalR2 from '@/components/FriendOrderingModalR2';
+import { selectFriendsOrderingEnabled, selectFriendsOrdered } from '@/store/selectors/friendsOrder';
+import { seedFriendOrderRanksOnce } from '@/utils/seedFriendOrderRanks';
 import { triggerManualSync, setSyncUserId } from '@/services/syncScheduler';
 import { since } from '@/_shared/perf';
 
@@ -151,6 +154,13 @@ export default function DashboardScreen(): React.JSX.Element {
               }
             } catch (seedError) {
               console.warn('🌱 Order rank seeding failed:', seedError);
+            }
+
+            // Also seed friend order ranks
+            try {
+              await seedFriendOrderRanksOnce(user.id);
+            } catch (error) {
+              console.error('❌ Error seeding friend order ranks:', error);
             }
           }
         } else {
@@ -332,11 +342,15 @@ export default function DashboardScreen(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
   const [showOrderingModalR2, setShowOrderingModalR2] = useState(false);
+  const [showFriendOrderingModal, setShowFriendOrderingModal] = useState(false);
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
   // Use the friends charts hook for global state management
   const { friendsCharts, friendsChartsLoading } = useFriendsCharts(user?.id);
+
+  // Check if friend ordering is enabled (≥2 friends)
+  const friendsOrderingEnabled = useAppSelector(selectFriendsOrderingEnabled);
 
   // Handle pull-to-refresh
   const onRefresh = async () => {
@@ -683,7 +697,24 @@ export default function DashboardScreen(): React.JSX.Element {
           <View style={styles.divider} />
           
           <View style={styles.friendsChartsContainer}>
-            <Text style={[styles.sectionTitle, fontStyle]}>Friends' Progress</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, fontStyle]}>Friends' Progress</Text>
+              {friendsOrderingEnabled && (
+                <TouchableOpacity
+                  style={styles.reorderButton}
+                  onPress={() => setShowFriendOrderingModal(true)}
+                  accessibilityLabel="Reorder friends"
+                >
+                  <View style={styles.reorderButtonInner}>
+                    <View style={styles.hamburgerIcon}>
+                      <View style={styles.hamburgerLine} />
+                      <View style={styles.hamburgerLine} />
+                      <View style={styles.hamburgerLine} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
             {friendsChartsLoading ? (
               <View style={styles.loadingContainer}>
                 <Text style={[styles.loadingText, fontStyle]}>Loading friends' charts...</Text>
@@ -743,6 +774,10 @@ export default function DashboardScreen(): React.JSX.Element {
         onClose={() => setShowOrderingModalR2(false)}
       />
 
+      <FriendOrderingModalR2
+        visible={showFriendOrderingModal}
+        onClose={() => setShowFriendOrderingModal(false)}
+      />
 
     </SafeAreaView>
   );

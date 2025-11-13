@@ -35,6 +35,7 @@ interface SettingsState {
   privacy: PrivacySettings;
   featureFlags: FeatureFlags;
   lexorankSeedDoneByUser: Record<string, boolean>;
+  friendOrderSeedDoneByUser: Record<string, boolean>;
   isLoading: boolean;
   error: string | null;
 }
@@ -66,6 +67,7 @@ const initialState: SettingsState = {
     },
   },
   lexorankSeedDoneByUser: {},
+  friendOrderSeedDoneByUser: {},
   isLoading: false,
   error: null,
 };
@@ -96,12 +98,17 @@ const settingsSlice = createSlice({
       const { userId, done } = action.payload;
       state.lexorankSeedDoneByUser[userId] = done;
     },
+    setFriendOrderSeedDoneForUser: (state, action: PayloadAction<{ userId: string; done: boolean }>) => {
+      const { userId, done } = action.payload;
+      state.friendOrderSeedDoneByUser[userId] = done;
+    },
     resetSettings: (state) => {
       state.notifications = initialState.notifications;
       state.preferences = initialState.preferences;
       state.privacy = initialState.privacy;
       state.featureFlags = initialState.featureFlags;
       state.lexorankSeedDoneByUser = initialState.lexorankSeedDoneByUser;
+      state.friendOrderSeedDoneByUser = initialState.friendOrderSeedDoneByUser;
     },
     importSettings: (state, action: PayloadAction<Partial<SettingsState>>) => {
       const { notifications, preferences, privacy, featureFlags } = action.payload;
@@ -121,6 +128,7 @@ export const {
   updatePrivacySettings,
   updateFeatureFlags,
   setLexorankSeedDoneForUser,
+  setFriendOrderSeedDoneForUser,
   resetSettings,
   importSettings,
 } = settingsSlice.actions;

@@ -1,4 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState, AppDispatch } from '../index';
+import { addToQueue } from './syncSlice';
+import { rankBetween } from '@/utils/rank';
+import { startSyncOperation, recordTimingMark } from '@/utils/syncXRay';
 
 export interface Friend {
   id: string;
@@ -8,6 +12,17 @@ export interface Friend {
   profilePicture?: string;
   status: 'pending' | 'accepted' | 'blocked';
   createdAt: string;
+  // Extended fields for friend ordering and display
+  name?: string;
+  avatar_animal?: string;
+  avatar_color?: string;
+  mutualFriends?: number;
+  currentStreak?: number;
+  completedToday?: number;
+  totalHabits?: number;
+  blocked?: boolean;
+  order_rank?: string; // Personal ordering rank
+  updated_at?: string; // For conflict resolution
 }
 
 export interface FriendActivity {
@@ -80,6 +95,22 @@ const socialSlice = createSlice({
         state.activity = state.activity.slice(0, 100);
       }
     },
+    updateFriendOrder: (state, action: PayloadAction<{ id: string; newRank: string }>) => {
+      const { id, newRank } = action.payload;
+      const friend = state.friends.find(f => f.id === id);
+      if (friend) {
+        friend.order_rank = newRank;
+      }
+    },
+    batchUpdateFriendOrder: (state, action: PayloadAction<Array<{ id: string; newRank: string }>>) => {
+      const updates = action.payload;
+      updates.forEach(({ id, newRank }) => {
+        const friend = state.friends.find(f => f.id === id);
+        if (friend) {
+          friend.order_rank = newRank;
+        }
+      });
+    },
   },
 });
 
@@ -95,6 +126,94 @@ export const {
   acceptFriendRequest,
   declineFriendRequest,
   addActivity,
+  updateFriendOrder,
+  batchUpdateFriendOrder,
 } = socialSlice.actions;
+
+// Thunk actions for friend reordering with fast-path sync
+export const reorderFriendBetween = (params: {
+  id: string;
+  prevRank?: string | null;
+  nextRank?: string | null;
+}) => (dispatch: AppDispatch, getState: () => RootState) => {
+  const { id, prevRank, nextRank } = params;
+  const state = getState();
+  const friend = state.social.friends.find(f => f.id === id);
+  if (!friend) return;
+
+  // Calculate new rank using LexoRank
+  const newRank = rankBetween(prevRank || null, nextRank || null);
+
+  // Start Sync X-Ray timing for friend reorder
+  const syncOpId = startSyncOperation('friend_reorder', id, {
+    friendId: id,
+    prevRank,
+    nextRank,
+    newRank
+  });
+
+  if (syncOpId) {
+    recordTimingMark(syncOpId, 'T1_QUEUE_ENQUEUED');
+  }
+
+  // Optimistic update
+  dispatch(updateFriendOrder({ id, newRank }));
+
+  // Add to sync queue with fast-path and idempotency
+  dispatch(addToQueue({
+    type: 'UPDATE',
+    entity: 'friend_order' as any,
+    entityId: id,
+    data: {
+      user_id: state.auth?.user?.id || '',
+      friend_user_id: id,
+      group_name: 'all',
+      order_rank: newRank,
+    },
+    interactive: true, // Enable Phase A fast-path (≤2s target)
+    syncOpId,
+    idempotencyKey: `friend_move:${id}:${newRank}` // Coalescing key for rapid moves
+  }));
+};
+
+export const batchReorderFriends = (updates: Array<{ id: string; newRank: string }>) =>
+  (dispatch: AppDispatch, getState: () => RootState) => {
+    const state = getState();
+    const userId = state.auth?.user?.id;
+    if (!userId) return Promise.reject(new Error('User not authenticated'));
+
+    // Start Sync X-Ray timing for batch friend reorder
+    const syncOpId = startSyncOperation('friend_reorder_batch', 'multiple', {
+      updateCount: updates.length,
+      friendIds: updates.map(u => u.id)
+    });
+
+    if (syncOpId) {
+      recordTimingMark(syncOpId, 'T1_QUEUE_ENQUEUED');
+    }
+
+    // Optimistic update
+    dispatch(batchUpdateFriendOrder(updates));
+
+    // Add each update to sync queue with fast-path
+    updates.forEach(({ id, newRank }) => {
+      dispatch(addToQueue({
+        type: 'UPDATE',
+        entity: 'friend_order' as any,
+        entityId: id,
+        data: {
+          user_id: userId,
+          friend_user_id: id,
+          group_name: 'all',
+          order_rank: newRank,
+        },
+        interactive: true, // Enable Phase A fast-path
+        syncOpId,
+        idempotencyKey: `friend_move:${id}:${newRank}`
+      }));
+    });
+
+    return Promise.resolve();
+  };
 
 export default socialSlice.reducer;
