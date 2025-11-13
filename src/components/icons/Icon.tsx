@@ -16,7 +16,7 @@ export type IconName =
   // Actions
   | 'camera' | 'export' | 'friends' | 'stats' | 'trophy' | 'edit' | 'archive' | 'delete' | 'restore'
   // Interface
-  | 'heart' | 'search' | 'spacious-view' | 'compact-view'
+  | 'heart' | 'search' | 'spacious-view' | 'compact-view' | 'menu'
   // Status
   | 'completed' | 'failed' | 'skipped' | 'circle-dash'
   // Activity Status
@@ -167,6 +167,14 @@ const SVGIcons: Record<string, React.ComponentType<{ size: number; color: string
   'activity-failed': ({ size, color }) => (
     <Svg width={size} height={size} viewBox="0 0 512 512" fill={color}>
       <Path d="M256,0C114.615,0,0,114.615,0,256s114.615,256,256,256s256-114.615,256-256C511.847,114.678,397.322,0.153,256,0z    M341.333,311.189c8.669,7.979,9.229,21.475,1.25,30.144c-7.979,8.669-21.475,9.229-30.144,1.25c-0.434-0.399-0.85-0.816-1.25-1.25   L256,286.165l-55.168,55.168c-8.475,8.185-21.98,7.95-30.165-0.525c-7.984-8.267-7.984-21.373,0-29.64L225.835,256l-55.168-55.168   c-8.185-8.475-7.95-21.98,0.525-30.165c8.267-7.984,21.373-7.984,29.64,0L256,225.835l55.189-55.168   c7.979-8.669,21.475-9.229,30.144-1.25c8.669,7.979,9.229,21.475,1.25,30.144c-0.399,0.434-0.816,0.85-1.25,1.25L286.165,256   L341.333,311.189z"/>
+    </Svg>
+  ),
+
+  menu: ({ size, color }) => (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Line x1="3" y1="7" x2="21" y2="7" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <Line x1="3" y1="12" x2="21" y2="12" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <Line x1="3" y1="17" x2="21" y2="17" stroke={color} strokeWidth="2" strokeLinecap="round" />
     </Svg>
   ),
 };

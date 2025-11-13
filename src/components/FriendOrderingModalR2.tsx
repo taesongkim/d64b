@@ -380,15 +380,15 @@ export default function FriendOrderingModalR2({
 
   const renderFriendRow = useCallback((friend: OrderedFriend, index: number) => {
     const isDragged = dragState.isDragging && dragState.draggedIndex === index;
-    const isPlaceholder = dragState.isDragging && dragState.placeholderIndex === index && dragState.draggedIndex !== index;
+
+    // Calculate effective index for placeholder logic (accounts for dragged item being removed from list)
+    const effectiveIndex = dragState.isDragging && dragState.draggedIndex !== null && index > dragState.draggedIndex
+      ? index - 1  // Items below the dragged item shift up by 1
+      : index;     // Items above stay the same
+
+    const isPlaceholder = dragState.placeholderIndex === effectiveIndex && dragState.isDragging;
 
     let rowStyle = [styles.friendRow];
-    if (isPlaceholder) {
-      rowStyle.push({
-        backgroundColor: designTokens.dnd.placeholder.tint.light,
-        opacity: designTokens.dnd.placeholder.opacity,
-      });
-    }
     if (isDragged) {
       rowStyle.push(styles.draggedRow);
     }
@@ -410,7 +410,6 @@ export default function FriendOrderingModalR2({
             @{friend.username}
           </Text>
         </View>
-        <Icon name="menu" size={20} color={designTokens.colors.secondary} />
       </View>
     );
 
@@ -436,12 +435,21 @@ export default function FriendOrderingModalR2({
       );
     }
 
+    // Check if this is the last item and placeholder should go after it
+    const isLastItem = index === localFriends.length - 1;
+    const shouldShowPlaceholderAfter = dragState.isDragging &&
+      dragState.placeholderIndex === (dragState.draggedIndex !== null && dragState.draggedIndex < localFriends.length
+        ? localFriends.length - 1  // Dragged item removed, so max index is length - 1
+        : localFriends.length) &&
+      isLastItem;
+
     return (
-      <View
-        key={friend.id}
-        style={{ opacity: isDragged ? 0 : 1 }}
-      >
-        {rowContent}
+      <View key={friend.id}>
+        {isPlaceholder && <View style={styles.placeholder} />}
+        <View style={{ opacity: isDragged ? 0 : 1 }}>
+          {rowContent}
+        </View>
+        {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
       </View>
     );
   }, [
@@ -449,7 +457,8 @@ export default function FriendOrderingModalR2({
     fontStyle,
     draggedItemY,
     draggedItemScale,
-    draggedItemOpacity
+    draggedItemOpacity,
+    localFriends.length
   ]);
 
   return (
@@ -461,9 +470,38 @@ export default function FriendOrderingModalR2({
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={[styles.title, fontStyle.semibold]}>Reorder Friends</Text>
-          <Text style={[styles.subtitle, fontStyle.small]}>
-            Long press and drag to reorder
+          {/* Top row: Cancel - Title - Save */}
+          <View style={styles.headerTopRow}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancel}
+            >
+              <Text style={[styles.cancelButtonText, fontStyle]}>Cancel</Text>
+            </TouchableOpacity>
+
+            <Text style={[styles.title, fontStyle]}>Reorder Friends</Text>
+
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonActive
+              ]}
+              onPress={handleSave}
+              disabled={dragState.isDragging || isSaving}
+            >
+              <Text style={[
+                styles.saveButtonText,
+                fontStyle,
+                (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonTextActive
+              ]}>
+                {isSaving ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Description */}
+          <Text style={[styles.description, fontStyle]}>
+            Reorder your friend charts here.{"\n"}Press and hold to drag names around.
           </Text>
         </View>
 
@@ -486,28 +524,6 @@ export default function FriendOrderingModalR2({
           </ScrollView>
         </View>
 
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
-            onPress={handleCancel}
-          >
-            <Text style={[styles.cancelButtonText, fontStyle.medium]}>Cancel</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.saveButton,
-              (!hasChanges || isSaving) && styles.disabledButton
-            ]}
-            onPress={handleSave}
-            disabled={!hasChanges || isSaving}
-          >
-            <Text style={[styles.saveButtonText, fontStyle.medium]}>
-              {isSaving ? 'Saving...' : 'Save'}
-            </Text>
-          </TouchableOpacity>
-        </View>
       </SafeAreaView>
     </Modal>
   );
@@ -524,14 +540,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: designTokens.colors.border,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: designTokens.spacing.sm,
+  },
+  description: {
+    fontSize: designTokens.typography.sizes.sm,
+    color: designTokens.colors.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: designTokens.spacing.sm,
+  },
   title: {
     fontSize: designTokens.typography.sizes.xl,
     color: designTokens.colors.primary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: designTokens.typography.sizes.sm,
-    color: designTokens.colors.secondary,
+    fontWeight: designTokens.typography.weights.semibold,
+    flex: 1,
+    textAlign: 'center',
   },
   scrollContainer: {
     flex: 1,
@@ -551,6 +578,7 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.sm,
     marginHorizontal: designTokens.spacing.md,
     marginVertical: 2,
+    ...designTokens.shadow.subtle
   },
   friendInfo: {
     flex: 1,
@@ -574,35 +602,37 @@ const styles = StyleSheet.create({
     right: designTokens.spacing.md,
     zIndex: 1000,
   },
-  footer: {
-    flexDirection: 'row',
-    paddingHorizontal: designTokens.spacing.lg,
-    paddingVertical: designTokens.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: designTokens.colors.border,
-    gap: designTokens.spacing.md,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: designTokens.spacing.md,
-    borderRadius: designTokens.radius.sm,
-    alignItems: 'center',
-  },
   cancelButton: {
-    backgroundColor: designTokens.colors.border,
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
   },
   cancelButtonText: {
     color: designTokens.colors.secondary,
     fontSize: designTokens.typography.sizes.md,
   },
   saveButton: {
+    paddingHorizontal: designTokens.spacing.sm,
+    paddingVertical: designTokens.spacing.xs,
+    borderRadius: designTokens.radius.md,
+  },
+  saveButtonActive: {
     backgroundColor: designTokens.colors.primary,
   },
   saveButtonText: {
-    color: 'white',
+    color: designTokens.colors.secondary,
     fontSize: designTokens.typography.sizes.md,
   },
-  disabledButton: {
-    backgroundColor: designTokens.colors.border,
+  saveButtonTextActive: {
+    color: 'white',
+  },
+  placeholder: {
+    height: ROW_HEIGHT,
+    backgroundColor: '#D1FAE5', // Subtle green color
+    borderRadius: designTokens.radius.md,
+    borderWidth: 1,
+    borderColor: '#A7F3D0', // Slightly darker green border
+    marginHorizontal: designTokens.spacing.md, // Match friendRow horizontal margins
+    marginBottom: designTokens.spacing.xs,
+    opacity: designTokens.dnd.placeholder.opacity,
   },
 });
