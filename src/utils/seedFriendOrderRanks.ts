@@ -83,9 +83,11 @@ export async function seedFriendOrderRanksOnce(userId: string): Promise<void> {
 
     // Sort friends by name to maintain stable seeding order
     // This ensures consistent initial ordering across devices
-    const sortedFriends = friendsNeedingRanks.sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
+    const sortedFriends = friendsNeedingRanks.sort((a, b) => {
+      const nameA = a.name || a.username || a.id || '';
+      const nameB = b.name || b.username || b.id || '';
+      return nameA.localeCompare(nameB);
+    });
 
     // Assign sequential ranks using rankAfter
     let lastRank = '';
