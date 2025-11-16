@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions, Animated } from 'react-native';
 import CustomXIcon from './CustomXIcon';
 import CustomCircleDashIcon from './CustomCircleDashIcon';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
@@ -16,16 +16,50 @@ interface ReactionPopupProps {
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDismiss, position }: ReactionPopupProps) {
-  const handleSelect = (status: RecordStatus) => {
-    onSelect(status);
+  const fadeAnimation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    console.log('🔴 Modal visible prop changed to:', visible, 'at', Date.now());
+    if (visible) {
+      Animated.timing(fadeAnimation, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [visible]);
+
+  const handleModalRequestClose = () => {
+    console.log('🟠 Modal onRequestClose called at', Date.now());
     onDismiss();
+  };
+
+  const handleInstantHide = (callback: () => void) => {
+    console.log('🔵 Starting instant hide animation at', Date.now());
+    Animated.timing(fadeAnimation, {
+      toValue: 0,
+      duration: 100,
+      useNativeDriver: true,
+    }).start(() => {
+      callback();
+    });
+  };
+
+  const handleSelect = (status: RecordStatus) => {
+    console.log('🟡 ReactionPopup.handleSelect called at', Date.now());
+    // Call onSelect immediately for instant UI feedback
+    onSelect(status);
+    // Then start fade animation
+    handleInstantHide(() => {});
   };
 
   const handleOpenDetails = () => {
     if (onOpenDetails) {
-      onOpenDetails();
+      handleInstantHide(() => {
+        onOpenDetails();
+        onDismiss();
+      });
     }
-    onDismiss();
   };
 
   if (!visible) return null;
@@ -34,17 +68,26 @@ export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDism
     <Modal
       transparent
       visible={visible}
-      animationType="fade"
-      onRequestClose={onDismiss}
+      animationType="none"
+      onRequestClose={handleModalRequestClose}
     >
-      <TouchableOpacity 
-        style={styles.overlay} 
-        activeOpacity={1} 
-        onPress={onDismiss}
+      <Animated.View
+        style={[
+          styles.overlay,
+          {
+            opacity: fadeAnimation,
+          }
+        ]}
       >
-        <View style={[styles.popup, { 
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={onDismiss}
+        />
+        <Animated.View style={[styles.popup, {
           left: Math.max(10, Math.min(position.x - 60, screenWidth - 130)),
-          top: Math.max(10, position.y - 60)
+          top: Math.max(10, position.y - 60),
+          opacity: fadeAnimation,
         }]}>
           <TouchableOpacity 
             style={[styles.option, { backgroundColor: '#10B981' }]}
@@ -76,8 +119,8 @@ export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDism
               <Text style={styles.detailsIcon}>⋯</Text>
             </TouchableOpacity>
           )}
-        </View>
-      </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
     </Modal>
   );
 }

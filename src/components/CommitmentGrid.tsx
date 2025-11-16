@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useRef, useState, useEffect, useTransition } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import CustomXIcon from './CustomXIcon';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import CommitmentCellModal from './CommitmentCellModal';
+import SuccessCellAnimation from './animations/SuccessCellAnimation';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import {
@@ -219,6 +220,11 @@ export default function CommitmentGrid({
   
   // Reaction popup state
   const popupOpenRef = useRef(false);
+  const userTriggeredChangesRef = useRef<Set<string>>(new Set());
+
+  // Optimistic UI state - stores pending changes that haven't been confirmed by the database
+  const [optimisticChanges, setOptimisticChanges] = useState<Map<string, { status: RecordStatus; value?: any }>>(new Map());
+  const [isPending, startTransition] = useTransition();
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
   const [selectedCell, setSelectedCell] = useState<{ commitmentId: string; date: string } | null>(null);
@@ -375,20 +381,71 @@ export default function CommitmentGrid({
     }
   };
 
-  const handlePopupSelect = (status: RecordStatus) => {
-    if (selectedCell) {
-      // Dev-only logging to verify offline queue idempotency
-      if (__DEV__) {
-        const idempotencyKey = `${selectedCell.commitmentId}_${selectedCell.date}`;
-        console.log(`🔄 ReactionPopup → Queue enqueue: ${status} [${idempotencyKey}]`);
-      }
+  const handleOptimisticStatusUpdate = (commitmentId: string, date: string, newStatus: RecordStatus, value?: any) => {
+    const cellKey = `${commitmentId}_${date}`;
 
-      onSetRecordStatus(selectedCell.commitmentId, selectedCell.date, status);
+    // Mark as user-triggered for sparkle animation
+    userTriggeredChangesRef.current.add(cellKey);
+    setTimeout(() => {
+      userTriggeredChangesRef.current.delete(cellKey);
+    }, 1000);
+
+    // 1. IMMEDIATE optimistic UI update (high priority - urgent)
+    setOptimisticChanges(prev => {
+      const newMap = new Map(prev);
+      newMap.set(cellKey, { status: newStatus, value });
+      return newMap;
+    });
+
+    // Dev-only logging
+    if (__DEV__) {
+      const idempotencyKey = cellKey;
+      console.log(`🔄 Optimistic update: ${newStatus} [${idempotencyKey}]`);
+    }
+
+    // 2. Wrap expensive database operation as low priority (non-urgent)
+    startTransition(() => {
+      Promise.resolve(onSetRecordStatus(commitmentId, date, newStatus, value))
+        .then(() => {
+          // Success - remove from optimistic state since it's now confirmed
+          setOptimisticChanges(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(cellKey);
+            return newMap;
+          });
+        })
+        .catch((error) => {
+          console.error('❌ Database update failed, reverting optimistic change:', error);
+          // Remove failed optimistic change (reverts to original state)
+          setOptimisticChanges(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(cellKey);
+            return newMap;
+          });
+          // TODO: Show error toast to user
+        });
+    });
+  };
+
+  const handlePopupSelect = (status: RecordStatus) => {
+    console.log('🔵 handlePopupSelect called at', Date.now());
+    if (selectedCell) {
+      // Store the selection info before dismissing
+      const commitmentId = selectedCell.commitmentId;
+      const date = selectedCell.date;
+
+      // Handle the status update optimistically FIRST for instant visual feedback
+      handleOptimisticStatusUpdate(commitmentId, date, status);
+
+      // Then dismiss popup
+      console.log('🔴 About to call handlePopupDismiss at', Date.now());
+      handlePopupDismiss();
+      console.log('🟢 handlePopupDismiss completed at', Date.now());
     }
   };
 
   const handleCellModalSave = (commitmentId: string, date: string, status: RecordStatus, value?: any) => {
-    onSetRecordStatus(commitmentId, date, status, value);
+    handleOptimisticStatusUpdate(commitmentId, date, status, value);
   };
 
   const handleCellPress = (commitmentId: string, date: string, event: any) => {
@@ -434,9 +491,12 @@ export default function CommitmentGrid({
   };
 
   const handlePopupDismiss = () => {
+    console.log('🟦 handlePopupDismiss function entered at', Date.now());
     setPopupVisible(false);
+    console.log('🟨 setPopupVisible(false) called at', Date.now());
     setSelectedCell(null);
     popupOpenRef.current = false;
+    console.log('🟫 handlePopupDismiss function completed at', Date.now());
   };
 
   const handleOpenDetails = () => {
@@ -664,7 +724,15 @@ export default function CommitmentGrid({
                     <View key={c.id} style={{ flexDirection: 'row', marginBottom: getRowSpacing(viewMode) }}>
                       {dates.map((date) => {
                         const record = records.find(r => r.commitmentId === c.id && r.date === date);
-                        const status = record?.status || 'none';
+                        const cellKey = `${c.id}_${date}`;
+                        // Use optimistic state if available, otherwise use database state
+                        const optimisticChange = optimisticChanges.get(cellKey);
+                        const status = optimisticChange?.status || record?.status || 'none';
+
+                        // Debug log when cell visual state changes due to optimistic update
+                        if (optimisticChange) {
+                          console.log('🎨 Cell visual state changed at', Date.now(), 'for', cellKey, 'to', status);
+                        }
                         const isWeekendDay = isWeekend(date);
                         const isTodayDate = date === todayISO;
 
@@ -685,7 +753,9 @@ export default function CommitmentGrid({
                         const cellStyle = [dynamicStyles.cell, cellStyleOverrides];
                         // Determine if we should show values or icons
                         const shouldShowValues = c.showValues && c.commitmentType === 'measurement';
-                        const displayText = getCellDisplayText(status, record?.value, shouldShowValues);
+                        // Use optimistic value if available, otherwise use database value
+                        const value = optimisticChange?.value ?? record?.value;
+                        const displayText = getCellDisplayText(status, value, shouldShowValues);
 
                         let cellContent = null;
                         if (shouldShowValues) {
@@ -721,6 +791,15 @@ export default function CommitmentGrid({
                             onLongPress={() => handleLongPress(c.id, date)}
                             delayLongPress={400}
                           >
+                            {/* Success cell animation for completed status */}
+                            {status === 'completed' && (
+                              <SuccessCellAnimation
+                                isSuccess={status === 'completed'}
+                                cellWidth={cellSize}
+                                cellHeight={cellSize}
+                                userTriggered={userTriggeredChangesRef.current.has(`${c.id}_${date}`)}
+                              />
+                            )}
                             {cellContent}
                             <CellShimmerOverlay
                               size={cellSize}
@@ -799,9 +878,35 @@ export default function CommitmentGrid({
         onClose={() => setCellModalVisible(false)}
         commitment={selectedCommitment}
         date={selectedDate}
-        existingRecord={selectedCommitment ? records.find(r =>
-          r.commitmentId === selectedCommitment.id && r.date === selectedDate
-        ) : null}
+        existingRecord={selectedCommitment ? (() => {
+          const baseRecord = records.find(r =>
+            r.commitmentId === selectedCommitment.id && r.date === selectedDate
+          );
+          const cellKey = `${selectedCommitment.id}_${selectedDate}`;
+          const optimisticChange = optimisticChanges.get(cellKey);
+
+          if (optimisticChange && baseRecord) {
+            // Apply optimistic changes to existing record
+            return {
+              ...baseRecord,
+              status: optimisticChange.status,
+              value: optimisticChange.value ?? baseRecord.value
+            };
+          } else if (optimisticChange) {
+            // Create new record from optimistic change
+            return {
+              id: '', // Will be assigned by database
+              commitmentId: selectedCommitment.id,
+              date: selectedDate,
+              status: optimisticChange.status,
+              value: optimisticChange.value,
+              createdAt: '',
+              updatedAt: ''
+            };
+          }
+
+          return baseRecord;
+        })() : null}
         onSave={handleCellModalSave}
       />
     </View>
