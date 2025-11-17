@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 import { Commitment } from '@/store/slices/commitmentsSlice';
 import { useFontStyle } from '@/hooks/useFontStyle';
-import { MODAL_STYLES, MODAL_SIZES } from './styles/modalStyles';
+import { useSemanticColors, useThemeMode } from '@/contexts/ThemeContext';
+import { getThemeColors, createSemanticColors } from '@/constants/grayscaleTokens';
+import { getModalStyles, getModalColors, MODAL_SIZES } from './styles/modalStyles';
 
 interface AddCommitmentModalProps {
   visible: boolean;
@@ -54,6 +56,12 @@ const COMMITMENT_TYPES = [
 
 export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommitmentModalProps) {
   const fontStyle = useFontStyle();
+  const semanticColors = useSemanticColors();
+  const themeMode = useThemeMode();
+  const colors = getThemeColors(themeMode);
+  const modalColors = getModalColors(themeMode);
+  const MODAL_STYLES = getModalStyles(themeMode);
+  const styles = createStyles(themeMode);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedType, setSelectedType] = useState<'yesno' | 'multiple' | 'rating' | 'measure'>('yesno');
@@ -135,20 +143,21 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
     const commitment = {
       title: title.trim(),
       description: description.trim() || undefined,
-      color: '#111827', // Uniform near-black color
+      color: semanticColors.primaryText, // Theme-aware color
       commitmentType: selectedTypeConfig.commitmentType,
       target: selectedType === 'measure' && target ? parseInt(target) : undefined,
       unit: selectedType === 'measure' ? unit.trim() : undefined,
       requirements: selectedType === 'multiple' ? requirements.filter(req => req.trim()) : undefined,
       ratingRange: selectedType === 'rating' ? { min: parseInt(ratingMin), max: parseInt(ratingMax) } : undefined,
       // Legacy fields for backward compatibility
-      type: selectedType === 'yesno' ? 'binary' as const : 
+      type: selectedType === 'yesno' ? 'binary' as const :
             selectedType === 'multiple' ? 'binary' as const :
             selectedType === 'rating' ? 'counter' as const : 'timer' as const,
       streak: 0,
       bestStreak: 0,
       isActive: true,
       isPrivate,
+      order_rank: '0', // Will be set by the handler
     };
 
     onAdd(commitment);
@@ -179,7 +188,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
               <TextInput
                 style={[styles.input, fontStyle]}
                 placeholder="What's your commitment?"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={modalColors.placeholderText}
                 value={title}
                 onChangeText={setTitle}
                 autoFocus
@@ -192,7 +201,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
               <TextInput
                 style={[styles.input, styles.textArea, fontStyle]}
                 placeholder="Add more details..."
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={modalColors.placeholderText}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -247,7 +256,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                     <TextInput
                       style={[styles.input, styles.requirementInput, fontStyle]}
                       placeholder={`Requirement ${index + 1}`}
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={modalColors.placeholderText}
                       value={req}
                       onChangeText={(value) => updateRequirement(index, value)}
                     />
@@ -279,7 +288,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                     <TextInput
                       style={[styles.input, styles.ratingInput, fontStyle]}
                       placeholder="1"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={modalColors.placeholderText}
                       value={ratingMin}
                       onChangeText={setRatingMin}
                       keyboardType="numeric"
@@ -291,7 +300,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                     <TextInput
                       style={[styles.input, styles.ratingInput, fontStyle]}
                       placeholder="5"
-                      placeholderTextColor="#9CA3AF"
+                      placeholderTextColor={modalColors.placeholderText}
                       value={ratingMax}
                       onChangeText={setRatingMax}
                       keyboardType="numeric"
@@ -303,7 +312,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                   <TextInput
                     style={[styles.input, styles.disabledInput, fontStyle]}
                     placeholder="Target value"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={modalColors.placeholderText}
                     editable={false}
                   />
                 </View>
@@ -317,7 +326,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                 <TextInput
                   style={[styles.input, fontStyle]}
                   placeholder="minutes, pages, reps, etc."
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={modalColors.placeholderText}
                   value={unit}
                   onChangeText={setUnit}
                 />
@@ -326,7 +335,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                   <TextInput
                     style={[styles.input, styles.disabledInput, fontStyle]}
                     placeholder="Target value"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={modalColors.placeholderText}
                     editable={false}
                   />
                 </View>
@@ -349,8 +358,8 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                   onValueChange={(value) => {
                     setIsPrivate(value);
                   }}
-                  trackColor={{ false: '#E5E7EB', true: '#111827' }}
-                  thumbColor={isPrivate ? '#FFFFFF' : '#9CA3AF'}
+                  trackColor={{ false: colors.gray200, true: semanticColors.primaryText }}
+                  thumbColor={isPrivate ? semanticColors.cardBackground : colors.gray400}
                 />
               </View>
             </View>
@@ -365,7 +374,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
                 onPress={handleAdd}
                 disabled={!title.trim()}
               >
-                <Text style={[MODAL_STYLES.primaryButtonText, fontStyle]}>Add Commitment</Text>
+                <Text style={[MODAL_STYLES.primaryButtonText, fontStyle]}>Create</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -375,230 +384,203 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    width: '100%',
-    maxHeight: '90%',
-    padding: 24,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    color: '#111827',
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeText: {
-    fontSize: 18,
-    color: '#6B7280',
-  },
-  section: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    color: '#111827',
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: MODAL_SIZES.inputBorderRadius,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  typeContainer: {
-    gap: 8,
-  },
-  typeOption: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: MODAL_SIZES.inputBorderRadius,
-    padding: 16,
-    backgroundColor: '#FAFAFA',
-  },
-  selectedType: {
-    borderColor: '#111827',
-    backgroundColor: '#F9FAFB',
-  },
-  typeLabel: {
-    fontSize: 16,
-    color: '#374151',
-    marginBottom: 4,
-  },
-  selectedTypeLabel: {
-    color: '#111827',
-  },
-  typeDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  selectedTypeDescription: {
-    color: '#4B5563',
-  },
-  targetContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  targetInput: {
-    flex: 1,
-  },
-  unitInput: {
-    flex: 1,
-  },
-  colorContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  selectedColor: {
-    borderColor: '#111827',
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  switchLabel: {
-    flex: 1,
-  },
-  switchDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-  },
-  cancelText: {
-    color: '#6B7280',
-    fontSize: 16,
-  },
-  addButton: {
-    flex: 1,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: '#111827',
-    alignItems: 'center',
-  },
-  disabledButton: {
-    backgroundColor: '#9CA3AF',
-  },
-  addText: {
-    color: 'white',
-    fontSize: 16,
-  },
-  // New styles for commitment types
-  requirementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  requirementInput: {
-    flex: 1,
-  },
-  removeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: MODAL_SIZES.closeButtonBorderRadius,
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  removeButtonText: {
-    color: '#DC2626',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  addRequirementButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: MODAL_SIZES.buttonBorderRadius,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  addRequirementText: {
-    color: '#6B7280',
-    fontSize: 14,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    marginBottom: 16,
-  },
-  ratingInputContainer: {
-    flex: 1,
-  },
-  ratingLabel: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  ratingInput: {
-    textAlign: 'center',
-  },
-  ratingSeparator: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginTop: 20,
-  },
-  comingSoonContainer: {
-    marginTop: 16,
-  },
-  comingSoonText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    marginBottom: 8,
-    fontStyle: 'italic',
-  },
-  disabledInput: {
-    backgroundColor: '#F9FAFB',
-    color: '#9CA3AF',
-  },
-});
+// Create theme-aware styles function
+const createStyles = (themeMode: 'light' | 'dark') => {
+  const colors = getThemeColors(themeMode);
+  const semanticColors = createSemanticColors(themeMode);
+  const modalColors = getModalColors(themeMode);
+
+  return StyleSheet.create({
+    section: {
+      marginBottom: 20,
+    },
+    label: {
+      fontSize: 16,
+      color: semanticColors.primaryText,
+      marginBottom: 8,
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: modalColors.borderLight,
+      borderRadius: MODAL_SIZES.inputBorderRadius,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 16,
+      color: semanticColors.primaryText,
+      backgroundColor: semanticColors.cardBackground,
+    },
+    textArea: {
+      height: 80,
+      textAlignVertical: 'top',
+    },
+    typeContainer: {
+      gap: 8,
+    },
+    typeOption: {
+      borderWidth: 1,
+      borderColor: modalColors.borderLight,
+      borderRadius: MODAL_SIZES.inputBorderRadius,
+      padding: 16,
+      backgroundColor: themeMode === 'light' ? modalColors.sectionBackground : colors.gray100,
+    },
+    selectedType: {
+      borderColor: semanticColors.primaryText,
+      backgroundColor: themeMode === 'light' ? colors.gray200 : colors.gray200,
+    },
+    typeLabel: {
+      fontSize: 16,
+      color: themeMode === 'light' ? colors.gray700 : colors.gray300,
+      marginBottom: 4,
+    },
+    selectedTypeLabel: {
+      color: semanticColors.primaryText,
+    },
+    typeDescription: {
+      fontSize: 14,
+      color: semanticColors.secondaryText,
+    },
+    selectedTypeDescription: {
+      color: themeMode === 'light' ? colors.gray600 : colors.gray400,
+    },
+    targetContainer: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    targetInput: {
+      flex: 1,
+    },
+    unitInput: {
+      flex: 1,
+    },
+    colorContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    colorOption: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+    selectedColor: {
+      borderColor: semanticColors.primaryText,
+    },
+    switchContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    switchLabel: {
+      flex: 1,
+    },
+    switchDescription: {
+      fontSize: 14,
+      color: semanticColors.secondaryText,
+      marginTop: 2,
+    },
+    buttonContainer: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 8,
+    },
+    cancelButton: {
+      flex: 1,
+      paddingVertical: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: modalColors.borderLight,
+      backgroundColor: themeMode === 'light' ? semanticColors.buttonSecondary : colors.gray200,
+      alignItems: 'center',
+    },
+    cancelText: {
+      color: themeMode === 'light' ? semanticColors.secondaryText : colors.white,
+      fontSize: 16,
+    },
+    addButton: {
+      flex: 1,
+      paddingVertical: 16,
+      borderRadius: 12,
+      backgroundColor: semanticColors.primaryText,
+      alignItems: 'center',
+    },
+    disabledButton: {
+      backgroundColor: modalColors.disabledButton,
+    },
+    addText: {
+      color: semanticColors.cardBackground,
+      fontSize: 16,
+    },
+    // New styles for commitment types
+    requirementRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+      gap: 8,
+    },
+    requirementInput: {
+      flex: 1,
+    },
+    removeButton: {
+      width: 32,
+      height: 32,
+      borderRadius: MODAL_SIZES.closeButtonBorderRadius,
+      backgroundColor: themeMode === 'light' ? '#FEE2E2' : '#7F1D1D',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    removeButtonText: {
+      color: themeMode === 'light' ? '#DC2626' : '#FCA5A5',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    addRequirementButton: {
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      borderRadius: MODAL_SIZES.buttonBorderRadius,
+      backgroundColor: modalColors.closeButtonBackground,
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    addRequirementText: {
+      color: semanticColors.secondaryText,
+      fontSize: 14,
+    },
+    ratingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+      marginBottom: 16,
+    },
+    ratingInputContainer: {
+      flex: 1,
+    },
+    ratingLabel: {
+      fontSize: 14,
+      color: semanticColors.secondaryText,
+      marginBottom: 4,
+    },
+    ratingInput: {
+      textAlign: 'center',
+    },
+    ratingSeparator: {
+      fontSize: 16,
+      color: semanticColors.secondaryText,
+      marginTop: 20,
+    },
+    comingSoonContainer: {
+      marginTop: 16,
+    },
+    comingSoonText: {
+      fontSize: 14,
+      color: modalColors.placeholderText,
+      marginBottom: 8,
+      fontStyle: 'italic',
+    },
+    disabledInput: {
+      backgroundColor: modalColors.sectionBackground,
+      color: modalColors.placeholderText,
+    },
+  });
+};
