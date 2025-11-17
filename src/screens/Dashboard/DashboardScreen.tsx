@@ -31,7 +31,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getUserCommitments, createCommitment, updateCommitment as updateCommitmentService, upsertCommitmentRecord, getCommitmentRecords, deleteCommitmentRecordByDate, seedOrderRanksIfNeeded } from '@/services/commitments';
 import { type FriendChartData } from '@/services/friends';
 import FriendChart from '@/components/FriendChart';
-import { useFriendsCharts } from '@/hooks/useFriendsCharts';
+import { useFriendsChartsFromRoster } from '@/hooks/useFriendsChartsFromRoster';
+import FriendOrderingModalR2 from '@/components/FriendOrderingModalR2';
+import { selectFriendsOrdered } from '@/store/selectors/friendsOrder';
+import { loadFriendsRoster } from '@/store/slices/socialSlice';
+import { seedFriendOrderRanksOnce } from '@/utils/seedFriendOrderRanks';
 import { triggerManualSync, setSyncUserId } from '@/services/syncScheduler';
 import { since } from '@/_shared/perf';
 
@@ -336,6 +340,8 @@ export default function DashboardScreen(): React.JSX.Element {
             } catch (seedError) {
               console.warn('🌱 Order rank seeding failed:', seedError);
             }
+
+            // Friend order ranks will be seeded after roster loads
           }
         } else {
           console.log('📝 No commitments found for user');
@@ -395,7 +401,7 @@ export default function DashboardScreen(): React.JSX.Element {
             console.error('❌ Error loading records:', recordError);
           }
         }
-        
+
       } catch (error) {
         console.error('💥 Failed to load user data:', error);
       } finally {
@@ -405,8 +411,28 @@ export default function DashboardScreen(): React.JSX.Element {
     };
 
     loadUserData();
-  }, [user?.id]);
+  }, [user?.id, dispatch]);
 
+  // Separate effect for loading friends roster (ensures it always runs when user changes)
+  useEffect(() => {
+    if (user?.id) {
+      console.log('📋 Loading friends roster for user:', user.id);
+      dispatch(loadFriendsRoster(user.id));
+    }
+  }, [user?.id, dispatch]);
+
+  // Seed friend order ranks after roster is loaded
+  useEffect(() => {
+    const userId = user?.id;
+    if (!userId || rosterLoading || roster.length === 0) {
+      return;
+    }
+
+    console.log('🌱 Seeding friend order ranks after roster load...');
+    seedFriendOrderRanksOnce(userId).catch(error => {
+      console.error('❌ Error seeding friend order ranks:', error);
+    });
+  }, [user?.id, roster, rosterLoading]);
 
   // Fallback sample data for development (only if no user authenticated)
   useEffect(() => {
@@ -516,11 +542,20 @@ export default function DashboardScreen(): React.JSX.Element {
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
   const [showCommitmentDetailsModal, setShowCommitmentDetailsModal] = useState(false);
   const [showOrderingModalR2, setShowOrderingModalR2] = useState(false);
+  const [showFriendOrderingModal, setShowFriendOrderingModal] = useState(false);
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Use the friends charts hook for global state management
-  const { friendsCharts, friendsChartsLoading } = useFriendsCharts(user?.id);
+  // Use the roster-derived friends charts hook for consistent data
+  const { friendsCharts, friendsChartsLoading } = useFriendsChartsFromRoster(user?.id);
+
+  // Load and use roster for friend ordering
+  const roster = useAppSelector(state => state.social.roster);
+  const rosterLoading = useAppSelector(state => state.social.rosterLoading);
+
+  // Check if friend ordering is enabled (≥2 friends) using roster
+  const friendsDisplayedCount = roster?.length || 0;
+  const friendsOrderingEnabled = friendsDisplayedCount >= 2;
 
   // Handle pull-to-refresh
   const onRefresh = async () => {
@@ -870,7 +905,24 @@ export default function DashboardScreen(): React.JSX.Element {
           <View style={styles.divider} />
           
           <View style={styles.friendsChartsContainer}>
-            <Text style={[styles.sectionTitle, fontStyle]}>Friends' Progress</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, fontStyle]}>Friends' Progress</Text>
+              {friendsOrderingEnabled && (
+                <TouchableOpacity
+                  style={styles.reorderButton}
+                  onPress={() => setShowFriendOrderingModal(true)}
+                  accessibilityLabel="Reorder friends"
+                >
+                  <View style={styles.reorderButtonInner}>
+                    <View style={styles.hamburgerIcon}>
+                      <View style={styles.hamburgerLine} />
+                      <View style={styles.hamburgerLine} />
+                      <View style={styles.hamburgerLine} />
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
             {friendsChartsLoading ? (
               <View style={styles.loadingContainer}>
                 <Text style={[styles.loadingText, fontStyle]}>Loading friends' charts...</Text>
@@ -930,6 +982,13 @@ export default function DashboardScreen(): React.JSX.Element {
         onClose={() => setShowOrderingModalR2(false)}
       />
 
+      <FriendOrderingModalR2
+        visible={showFriendOrderingModal}
+        onClose={() => {
+          console.log('🔄 [Dashboard] Modal closed');
+          setShowFriendOrderingModal(false);
+        }}
+      />
 
     </SafeAreaView>
   );

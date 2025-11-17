@@ -1161,8 +1161,8 @@ export default function CommitmentOrderingModalR2({
     let itemBorderColor = designTokens.colors.border;
 
     if (draggedItem.type === 'spacer') {
-      itemBackgroundColor = designTokens.colors.background;
-      itemBorderColor = designTokens.colors.border;
+      itemBackgroundColor = '#E5E7EB';
+      itemBorderColor = '#D1D5DB';
     } else if (draggedItem.type === 'divider') {
       itemBackgroundColor = '#E5E7EB';
       itemBorderColor = '#D1D5DB';
@@ -1388,9 +1388,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: designTokens.spacing.lg,
     paddingVertical: designTokens.spacing.md,
     borderRadius: designTokens.radius.md,
-    backgroundColor: designTokens.colors.background,
-    borderWidth: 1,
-    borderColor: designTokens.colors.border,
+    backgroundColor: '#E5E7EB',
   },
   addSpacerButtonText: {
     color: designTokens.colors.secondary,
@@ -1401,8 +1399,6 @@ const styles = StyleSheet.create({
     paddingVertical: designTokens.spacing.md,
     borderRadius: designTokens.radius.md,
     backgroundColor: '#E5E7EB',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
   },
   addDividerButtonText: {
     color: designTokens.colors.secondary,
@@ -1446,9 +1442,8 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
-    borderWidth: 1,
-    borderColor: designTokens.colors.border,
     height: ROW_HEIGHT,
+    ...designTokens.shadow.subtle,
   },
   commitmentRowDisabled: {
     flexDirection: 'row',
@@ -1457,9 +1452,8 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
-    borderWidth: 1,
-    borderColor: designTokens.colors.border,
     height: ROW_HEIGHT,
+    ...designTokens.shadow.subtle,
   },
   commitmentInfo: {
     flexDirection: 'row',
@@ -1497,10 +1491,7 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
-    borderWidth: 1,
-    borderColor: designTokens.colors.border,
     height: ROW_HEIGHT,
-    borderStyle: 'solid',
   },
   spacerInfo: {
     position: 'absolute',
@@ -1540,8 +1531,6 @@ const styles = StyleSheet.create({
     backgroundColor: designTokens.colors.surface,
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
-    borderWidth: 1,
-    borderColor: designTokens.colors.border,
     height: ROW_HEIGHT,
     zIndex: 1000,
   },
@@ -1567,14 +1556,11 @@ const styles = StyleSheet.create({
   dividerRow: {
     position: 'relative',
     alignItems: 'center',
-    backgroundColor: '#E5E7EB',
+    backgroundColor: designTokens.colors.background,
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
     height: ROW_HEIGHT,
-    borderStyle: 'solid',
   },
   dividerInfo: {
     position: 'absolute',

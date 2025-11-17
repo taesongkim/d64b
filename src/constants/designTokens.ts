@@ -49,6 +49,17 @@ export const designTokens = {
     warning: '#F59E0B',
   },
 
+  // Subtle shadow for list items
+  shadow: {
+    subtle: {
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2,
+      elevation: 1, // Android
+    },
+  },
+
   // Spacing scale
   spacing: {
     xs: 4,

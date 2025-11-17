@@ -190,8 +190,21 @@ export const AnimalAvatar: React.FC<AnimalAvatarProps> = ({
     );
   }
 
-  const colors = AVATAR_COLORS[color];
-  const animalData = ANIMAL_DATA[animal];
+  const colors = AVATAR_COLORS[color as ColorType];
+  const animalData = ANIMAL_DATA[animal as AnimalType];
+
+  // If animal or color data is invalid, fall back to initials
+  if (!colors || !animalData) {
+    return (
+      <View style={[styles.container, { width: size, height: size }]}>
+        <View style={[styles.initialsContainer, { width: size, height: size }]}>
+          <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
+            {displayInitials}
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
