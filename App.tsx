@@ -5,6 +5,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { useFonts } from 'expo-font';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { FontProvider } from '@/contexts/FontContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import AppNavigator from '@/navigation/AppNavigator';
 import { store, persistor } from '@/store';
 import { SyncService } from '@/services/syncService';
@@ -25,6 +26,17 @@ if (sentryDsn) {
       console.warn('Sentry initialization failed - @sentry/react-native not installed:', error);
     }
   }
+}
+
+function AppContent(): React.JSX.Element {
+  const { isDark } = useTheme();
+
+  return (
+    <>
+      <AppNavigator />
+      <StatusBar style={isDark ? "light" : "dark"} />
+    </>
+  );
 }
 
 export default function App(): React.JSX.Element {
@@ -50,18 +62,19 @@ export default function App(): React.JSX.Element {
 
   // Don't render the app until fonts are loaded
   if (!fontsLoaded) {
-    return null;
+    return <></>;
   }
 
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <FontProvider>
-          <AuthProvider>
-            <AppNavigator />
-            <StatusBar style="auto" />
-          </AuthProvider>
-        </FontProvider>
+        <ThemeProvider>
+          <FontProvider>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </FontProvider>
+        </ThemeProvider>
       </PersistGate>
     </Provider>
   );

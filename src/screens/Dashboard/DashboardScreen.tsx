@@ -46,7 +46,7 @@ export default function DashboardScreen(): React.JSX.Element {
   const boldFontStyle = useFontStyle(undefined, 'bold');
   const semiBoldFontStyle = useFontStyle(undefined, 'semiBold');
 
-  const styles = useThemedStyles(({ semanticColors, mode }) => {
+  const styles = useThemedStyles(({ semanticColors, mode, colors }) => {
     const gridColors = getGridColors(mode);
     return {
     container: {
@@ -137,7 +137,7 @@ export default function DashboardScreen(): React.JSX.Element {
       gap: 6,
     },
     reorderButton: {
-      backgroundColor: gridColors.weekend,
+      backgroundColor: mode === 'light' ? colors.gray200 : gridColors.weekend,
       borderRadius: 8,
       padding: 2,
       width: 32,
@@ -146,7 +146,7 @@ export default function DashboardScreen(): React.JSX.Element {
       alignItems: 'center',
     },
     reorderButtonInner: {
-      backgroundColor: gridColors.idle,
+      backgroundColor: mode === 'light' ? colors.white : gridColors.idle,
       borderRadius: 6,
       width: 28,
       height: 28,
@@ -165,9 +165,9 @@ export default function DashboardScreen(): React.JSX.Element {
     },
     hamburgerLine: {
       height: 2,
-      backgroundColor: semanticColors.primaryText, // White in dark mode, black in light mode
+      backgroundColor: mode === 'light' ? colors.gray500 : semanticColors.primaryText,
       borderRadius: 1,
-      opacity: 0.8,
+      opacity: 1.0,
     },
     emptyState: {
       justifyContent: 'center',

@@ -11,6 +11,7 @@ import recordsReducer from './slices/recordsSlice';
 import socialReducer from './slices/socialSlice';
 import syncReducer from './slices/syncSlice';
 import settingsReducer from './slices/settingsSlice';
+import themeReducer from './slices/themeSlice';
 import { databaseMiddleware } from './middleware/databaseMiddleware';
 
 import { logoutGlobal } from './slices/authSlice';
@@ -23,6 +24,7 @@ const appReducer = combineReducers({
   social: socialReducer,
   sync: syncReducer,
   settings: settingsReducer,
+  theme: themeReducer,
 });
 
 const rootReducer = (state: any, action: any) => {
@@ -36,13 +38,13 @@ const rootReducer = (state: any, action: any) => {
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth', 'settings', 'sync'],
+  whitelist: ['auth', 'settings', 'sync', 'theme'],
   blacklist: ['commitments', 'layoutItems', 'records', 'social'],
 };
 
 // Dev-only: Guard against persist whitelist drift
 if (__DEV__) {
-  const expectedWhitelist = ['auth', 'settings', 'sync'];
+  const expectedWhitelist = ['auth', 'settings', 'sync', 'theme'];
   const actualWhitelist = persistConfig.whitelist;
 
   const whitelistMatch = expectedWhitelist.length === actualWhitelist.length &&

@@ -18,7 +18,7 @@ export function getGridColors(mode: ThemeMode) {
     completed: '#10B981',
     skipped: '#10B981',             // Intentionally same as completed per product decision
     failed: '#EF4444',
-    weekend: colors.gray100,        // One notch above background (weekend empty)
+    weekend: colors.gray300,        // One notch darker than idle for weekends
     today: colors.gray200,          // Base color for today (will have ring styling)
   } as const;
 }

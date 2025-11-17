@@ -10,6 +10,7 @@ import {
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import { useThemeMode } from '@/contexts/ThemeContext';
 import { getGridColors } from '@/components/grids/gridPalette';
+import { getThemeColors } from '@/constants/grayscaleTokens';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android') {
@@ -28,6 +29,7 @@ interface ViewToggleProps {
 export default function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps): React.JSX.Element {
   const themeMode = useThemeMode();
   const gridColors = getGridColors(themeMode);
+  const colors = getThemeColors(themeMode);
 
   // Function to animate view mode changes using LayoutAnimation
   const animateToViewMode = (newMode: ViewMode) => {
@@ -51,15 +53,15 @@ export default function ViewToggle({ viewMode, onViewModeChange }: ViewTogglePro
     onViewModeChange(newMode);
   };
 
-  // Dynamic styles using grid colors
+  // Dynamic styles using theme-aware colors - match weekday cell color
   const dynamicStyles = {
     compactToggleContainer: {
       ...styles.compactToggleContainer,
-      backgroundColor: gridColors.weekend,
+      backgroundColor: themeMode === 'light' ? colors.gray200 : gridColors.weekend,
     },
     toggleSlider: {
       ...styles.toggleSlider,
-      backgroundColor: gridColors.idle,
+      backgroundColor: themeMode === 'light' ? colors.white : gridColors.idle,
     },
   };
 

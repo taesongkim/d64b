@@ -78,7 +78,7 @@ export default function FriendChart({
             <Text style={[styles.friendName, fontStyle, { color: semanticColors.primaryText }]} numberOfLines={1}>
               {friend.full_name || friend.email}
             </Text>
-            <Text style={[styles.friendStats, fontStyle]}>
+            <Text style={[styles.friendStats, fontStyle, { color: colors.gray500 }]}>
               {commitments.length} habit{commitments.length !== 1 ? 's' : ''} • {records.filter(r => r.status === 'completed').length} completed
             </Text>
           </View>
@@ -103,8 +103,8 @@ export default function FriendChart({
           viewMode={viewMode}
         />
       ) : (
-        <View style={[styles.emptyStateContainer, { backgroundColor: gridColors.weekend }]}>
-          <Text style={[styles.emptyStateSubtext, fontStyle, { color: colors.gray300 }]}>
+        <View style={[styles.emptyStateContainer, { backgroundColor: themeMode === 'light' ? colors.gray200 : colors.gray200 }]}>
+          <Text style={[styles.emptyStateSubtext, fontStyle, { color: themeMode === 'light' ? colors.gray500 : colors.gray400 }]}>
             {friend.full_name || friend.email} hasn't added any habits yet
           </Text>
         </View>
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
   },
   friendStats: {
     fontSize: 12,
-    color: '#6B7280',
     fontFamily: 'Manrope_400Regular',
   },
   emptyStateContainer: {

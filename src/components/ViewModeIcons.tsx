@@ -14,9 +14,9 @@ interface ViewModeIconProps {
 export function SpaciousViewIcon({ size = 20, color, isActive = false, themeMode = 'light' }: ViewModeIconProps) {
   const colors = getThemeColors(themeMode);
   const semanticColors = createSemanticColors(themeMode);
-  const defaultColor = colors.gray700;  // Secondary text color
-  const activeColor = isActive ? semanticColors.primaryText : (color || defaultColor);
-  const opacity = isActive ? "0.8" : "0.3"; // Match reorder button brightness (0.8)
+  const defaultColor = themeMode === 'light' ? colors.gray500 : colors.gray700;
+  const activeColor = isActive ? (themeMode === 'light' ? colors.gray500 : semanticColors.primaryText) : (color || defaultColor);
+  const opacity = isActive ? "1.0" : "0.4";
 
   return (
     <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
@@ -33,9 +33,9 @@ export function SpaciousViewIcon({ size = 20, color, isActive = false, themeMode
 export function CompactViewIcon({ size = 20, color, isActive = false, themeMode = 'light' }: ViewModeIconProps) {
   const colors = getThemeColors(themeMode);
   const semanticColors = createSemanticColors(themeMode);
-  const defaultColor = colors.gray700;  // Secondary text color
-  const activeColor = isActive ? semanticColors.primaryText : (color || defaultColor);
-  const opacity = isActive ? "0.8" : "0.3"; // Match reorder button brightness (0.8)
+  const defaultColor = themeMode === 'light' ? colors.gray500 : colors.gray700;
+  const activeColor = isActive ? (themeMode === 'light' ? colors.gray500 : semanticColors.primaryText) : (color || defaultColor);
+  const opacity = isActive ? "1.0" : "0.4";
 
   return (
     <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>

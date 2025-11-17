@@ -24,7 +24,7 @@ export const grayscaleTokens = {
     // Medium grays - text and secondary elements
     gray500: '#9CA3AF',   // Medium gray (placeholder text, disabled text)
     gray600: '#8E8E93',   // System gray (iOS-style inactive elements)
-    gray700: '#6B7280',   // Dark medium gray (secondary text)
+    gray700: '#707070',   // Dark medium gray (secondary text) - neutral
     gray800: '#4B5563',   // Dark gray (body text)
     gray900: '#374151',   // Very dark gray (headings, important text)
 

@@ -1,17 +1,24 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import type { RootStackParamList } from './types';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import SyncIndicatorOverlay from '@/components/SyncIndicator/SyncIndicatorOverlay';
 import { useAuth } from '@/contexts/AuthContext';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 // Wrapper component for MainTabs with global overlays
 function MainTabsWithBanner(): React.JSX.Element {
+  const styles = useThemedStyles(({ semanticColors }) => ({
+    mainTabsContainer: {
+      flex: 1,
+    },
+  }));
+
   return (
     <View style={styles.mainTabsContainer}>
       <MainTabs />
@@ -23,10 +30,19 @@ function MainTabsWithBanner(): React.JSX.Element {
 export default function AppNavigator(): React.JSX.Element {
   const { user, loading } = useAuth();
 
-  console.log('🧭 AppNavigator render:', { 
-    user: user?.id || 'No user', 
+  const styles = useThemedStyles(({ semanticColors }) => ({
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: semanticColors.primaryBackground,
+    },
+  }));
+
+  console.log('🧭 AppNavigator render:', {
+    user: user?.id || 'No user',
     loading,
-    willShowMainTabs: !!user 
+    willShowMainTabs: !!user
   });
 
   // Show loading screen while checking auth state
@@ -34,7 +50,7 @@ export default function AppNavigator(): React.JSX.Element {
     console.log('⏳ Showing loading screen');
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#111827" />
+        <ActivityIndicator size="large" color="#6B7280" />
       </View>
     );
   }
@@ -59,14 +75,3 @@ export default function AppNavigator(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FAFAFA',
-  },
-  mainTabsContainer: {
-    flex: 1,
-  },
-});
