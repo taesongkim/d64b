@@ -4,6 +4,8 @@ import CustomXIcon from './CustomXIcon';
 import CustomCircleDashIcon from './CustomCircleDashIcon';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
+import { useThemeMode } from '@/contexts/ThemeContext';
+import { designTokens } from '@/constants/designTokens';
 
 interface ReactionPopupProps {
   visible: boolean;
@@ -17,6 +19,8 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDismiss, position }: ReactionPopupProps) {
   const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const themeMode = useThemeMode();
+  const cellColors = designTokens.cellColors[themeMode];
 
   useEffect(() => {
     console.log('🔴 Modal visible prop changed to:', visible, 'at', Date.now());
@@ -89,25 +93,25 @@ export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDism
           top: Math.max(10, position.y - 60),
           opacity: fadeAnimation,
         }]}>
-          <TouchableOpacity 
-            style={[styles.option, { backgroundColor: '#10B981' }]}
+          <TouchableOpacity
+            style={[styles.option, { backgroundColor: cellColors.success.background }]}
             onPress={() => handleSelect('completed')}
           >
-            <CustomCheckmarkIcon size={15.84} color="white" strokeWidth={2.2} />
+            <CustomCheckmarkIcon size={15.84} color={cellColors.success.content} strokeWidth={2.2} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.option, { backgroundColor: '#10B981' }]}
+
+          <TouchableOpacity
+            style={[styles.option, { backgroundColor: cellColors.skipped.background }]}
             onPress={() => handleSelect('skipped')}
           >
-            <CustomCircleDashIcon size={18} color="white" />
+            <CustomCircleDashIcon size={18} color={cellColors.skipped.content} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity
-            style={[styles.option, { backgroundColor: '#EF4444' }]}
+            style={[styles.option, { backgroundColor: cellColors.fail.background }]}
             onPress={() => handleSelect('failed')}
           >
-            <CustomXIcon size={14} color="white" />
+            <CustomXIcon size={14} color={cellColors.fail.content} />
           </TouchableOpacity>
 
           {onOpenDetails && (

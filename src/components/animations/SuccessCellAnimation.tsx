@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Animated } from 'react-native';
 import SuccessSparkle from './SuccessSparkle';
 import { designTokens } from '@/constants/designTokens';
+import { useThemeMode } from '@/contexts/ThemeContext';
 
 interface Sparkle {
   id: number;
@@ -35,6 +36,7 @@ export default function SuccessCellAnimation({
   onAnimationComplete,
   userTriggered = true
 }: SuccessCellAnimationProps) {
+  const themeMode = useThemeMode();
   const fillScale = useRef(new Animated.Value(0)).current;
   const sparkleAnimations = useRef<Animated.Value[]>([]).current;
   const sparkleOpacity = useRef<Animated.Value[]>([]).current;
@@ -198,7 +200,7 @@ export default function SuccessCellAnimation({
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: designTokens.colors.success,
+            backgroundColor: designTokens.cellColors[themeMode].success.background,
             borderRadius: designTokens.radius.sm,
             transform: [{ scale: fillScale }],
           }}

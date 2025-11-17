@@ -1551,7 +1551,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 16,
-    color: designTokens.colors.error,
+    color: designTokens.colors.fail,
   },
   dividerRow: {
     position: 'relative',

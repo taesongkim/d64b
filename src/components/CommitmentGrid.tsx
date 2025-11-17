@@ -29,7 +29,7 @@ import {
   isToday,
   formatDateRangeLabel
 } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState } from './grids/gridPalette';
+import { getCellVisualTreatment, getCellColors, determineCellState } from './grids/gridPalette';
 import CellShimmerOverlay from './grids/CellShimmerOverlay';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { GRID_DEBUG } from '@/_shared/debug';
@@ -743,6 +743,7 @@ export default function CommitmentGrid({
                         // Determine cell state and visual treatment using centralized palette
                         const cellState = determineCellState(status, isWeekendDay, isTodayDate);
                         const visualTreatment = getCellVisualTreatment(cellState, themeMode);
+                        const cellColors = getCellColors(cellState, themeMode);
 
                         const cellSize = getCellSize(viewMode);
                         const cellRadius = getCellBorderRadius(viewMode);
@@ -767,7 +768,7 @@ export default function CommitmentGrid({
                           if (displayText) {
                             cellContent = (
                               <Text style={{
-                                color: 'white',
+                                color: cellColors.content,
                                 fontSize: viewMode === 'daily' ? 12 : 10,
                                 fontWeight: '600',
                                 textAlign: 'center',
@@ -780,9 +781,9 @@ export default function CommitmentGrid({
                         } else {
                           // Show icons (existing behavior)
                           if (status === 'completed') {
-                            cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
+                            cellContent = <CustomCheckmarkIcon size={12.32} color={cellColors.content} strokeWidth={2.2} />;
                           } else if (status === 'failed') {
-                            cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+                            cellContent = <CustomXIcon size={10} color={cellColors.content} strokeWidth={2.5} />;
                           }
                           // skipped cells have no content (empty colored square)
                         }

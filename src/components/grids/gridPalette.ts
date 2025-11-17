@@ -6,20 +6,65 @@
  */
 
 import { createSemanticColors, getThemeColors, type ThemeMode } from '@/constants/grayscaleTokens';
+import { designTokens } from '@/constants/designTokens';
 
 export type CellState = 'completed' | 'skipped' | 'failed' | 'weekend' | 'today' | 'idle';
 
-// Core color palette for grid cells - now theme-aware
+// Cell color interface for background and content
+export interface CellColors {
+  background: string;
+  content: string;
+}
+
+// Get comprehensive cell colors for both background and content
+export function getCellColors(state: CellState, mode: ThemeMode): CellColors {
+  const grayTokens = getThemeColors(mode);
+  const cellTokens = designTokens.cellColors[mode];
+
+  // Map cell states to design token keys
+  const stateMapping = {
+    completed: 'success',
+    skipped: 'skipped',
+    failed: 'fail',
+    idle: 'idle',
+    weekend: 'weekend',
+    today: 'today',
+  } as const;
+
+  const tokenKey = stateMapping[state];
+  const baseColors = cellTokens[tokenKey];
+
+  // For gray states, use actual gray tokens instead of hardcoded values
+  if (state === 'idle' || state === 'today') {
+    return {
+      background: grayTokens.gray200,
+      content: baseColors.content,
+    };
+  }
+
+  if (state === 'weekend') {
+    return {
+      background: grayTokens.gray300,
+      content: baseColors.content,
+    };
+  }
+
+  // For success/fail states, use the design token values directly
+  return baseColors;
+}
+
+// Legacy function for backward compatibility - returns just background colors
 export function getGridColors(mode: ThemeMode) {
-  const colors = getThemeColors(mode);
+  const grayTokens = getThemeColors(mode);
+  const cellTokens = designTokens.cellColors[mode];
 
   return {
-    idle: colors.gray200,           // Two notches above background (weekday empty)
-    completed: '#10B981',
-    skipped: '#10B981',             // Intentionally same as completed per product decision
-    failed: '#EF4444',
-    weekend: colors.gray300,        // One notch darker than idle for weekends
-    today: colors.gray200,          // Base color for today (will have ring styling)
+    idle: grayTokens.gray200,
+    completed: cellTokens.success.background,
+    skipped: cellTokens.skipped.background,
+    failed: cellTokens.fail.background,
+    weekend: grayTokens.gray300,
+    today: grayTokens.gray200,
   } as const;
 }
 

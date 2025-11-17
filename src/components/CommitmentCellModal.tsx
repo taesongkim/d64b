@@ -21,6 +21,8 @@ import CustomCircleDashIcon from './CustomCircleDashIcon';
 import CustomXIcon from './CustomXIcon';
 import { parseLocalISODate } from '@/utils/timeUtils';
 import { getDisplayUnit } from '@/utils/unitUtils';
+import { useThemeMode } from '@/contexts/ThemeContext';
+import { designTokens } from '@/constants/designTokens';
 
 interface CommitmentCellModalProps {
   visible: boolean;
@@ -54,6 +56,8 @@ export default function CommitmentCellModal({
   onSave,
 }: CommitmentCellModalProps) {
   const fontStyle = useFontStyle();
+  const themeMode = useThemeMode();
+  const cellColors = designTokens.cellColors[themeMode];
   
   // State for different commitment types
   const [selectedStatus, setSelectedStatus] = useState<RecordStatus | 'none'>('completed');
@@ -221,32 +225,32 @@ export default function CommitmentCellModal({
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
-                    { backgroundColor: '#10B981' },
+                    { backgroundColor: cellColors.success.background },
                     { opacity: selectedStatus === 'completed' ? 1 : 0.3 }
                   ]}
                   onPress={() => setSelectedStatus('completed')}
                 >
-                  <CustomCheckmarkIcon size={16} color="white" strokeWidth={2.4} />
+                  <CustomCheckmarkIcon size={16} color={cellColors.success.content} strokeWidth={2.4} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
-                    { backgroundColor: '#10B981' },
+                    { backgroundColor: cellColors.skipped.background },
                     { opacity: selectedStatus === 'skipped' ? 1 : 0.3 }
                   ]}
                   onPress={() => setSelectedStatus('skipped')}
                 >
-                  <CustomCircleDashIcon size={18} color="white" />
+                  <CustomCircleDashIcon size={18} color={cellColors.skipped.content} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
-                    { backgroundColor: '#EF4444' },
+                    { backgroundColor: cellColors.fail.background },
                     { opacity: selectedStatus === 'failed' ? 1 : 0.3 }
                   ]}
                   onPress={() => setSelectedStatus('failed')}
                 >
-                  <CustomXIcon size={15} color="white" strokeWidth={2.2} />
+                  <CustomXIcon size={15} color={cellColors.fail.content} strokeWidth={2.2} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -470,8 +474,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkedCheckbox: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: designTokens.cellColors.light.success.background, // Will need dynamic theming
+    borderColor: designTokens.cellColors.light.success.background,
   },
   checkmark: {
     color: 'white',
