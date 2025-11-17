@@ -5,18 +5,23 @@
  * Note: Neutral today ring; column highlight removed by design
  */
 
-export type CellState = 'completed' | 'skipped' | 'failed' | 'weekend' | 'today' | 'idle';
-export type ColorScheme = 'light' | 'dark';
+import { createSemanticColors, getThemeColors, type ThemeMode } from '@/constants/grayscaleTokens';
 
-// Core color palette for grid cells
-export const GRID_COLORS = {
-  idle: '#F3F4F6',
-  completed: '#10B981',
-  skipped: '#10B981',    // Intentionally same as completed per product decision
-  failed: '#EF4444',
-  weekend: '#E5E7EB',
-  today: '#F3F4F6',      // Base color for today (will have ring styling)
-} as const;
+export type CellState = 'completed' | 'skipped' | 'failed' | 'weekend' | 'today' | 'idle';
+
+// Core color palette for grid cells - now theme-aware
+export function getGridColors(mode: ThemeMode) {
+  const colors = getThemeColors(mode);
+
+  return {
+    idle: colors.gray200,           // Two notches above background (weekday empty)
+    completed: '#10B981',
+    skipped: '#10B981',             // Intentionally same as completed per product decision
+    failed: '#EF4444',
+    weekend: colors.gray100,        // One notch above background (weekend empty)
+    today: colors.gray200,          // Base color for today (will have ring styling)
+  } as const;
+}
 
 
 // Visual treatment interface for cell styling
@@ -30,10 +35,12 @@ export interface CellVisualTreatment {
 /**
  * Pure helper function to resolve cell visual treatment
  * @param cellState - The current state of the cell
+ * @param mode - The current theme mode
  * @returns Visual treatment configuration for the cell
  */
-export function getCellVisualTreatment(cellState: CellState): CellVisualTreatment {
-  const backgroundColor = GRID_COLORS[cellState];
+export function getCellVisualTreatment(cellState: CellState, mode: ThemeMode): CellVisualTreatment {
+  const gridColors = getGridColors(mode);
+  const backgroundColor = gridColors[cellState];
 
   return {
     backgroundColor,

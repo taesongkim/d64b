@@ -12,6 +12,7 @@ import CustomCheckmarkIcon from '../CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { isWeekend, getTodayISO } from '@/utils/timeUtils';
 import { getCellVisualTreatment, determineCellState } from './gridPalette';
+import { useThemeMode } from '@/contexts/ThemeContext';
 import CellShimmerOverlay from './CellShimmerOverlay';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
 import { GRID_DEBUG } from '@/_shared/debug';
@@ -95,6 +96,7 @@ export default function SingleCommitmentRow({
 }: SingleCommitmentRowProps): React.JSX.Element {
   const todayISO = getTodayISO();
   const reduceMotion = useReduceMotion();
+  const themeMode = useThemeMode();
 
   // Gesture exclusivity state - prevent both press and long-press from firing
   const gestureStateRef = useRef<{
@@ -179,7 +181,7 @@ export default function SingleCommitmentRow({
 
         // Determine cell state and visual treatment using centralized palette
         const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-        const visualTreatment = getCellVisualTreatment(cellState);
+        const visualTreatment = getCellVisualTreatment(cellState, themeMode);
 
         const cellSize = getCellSize(viewMode);
         const cellRadius = getCellBorderRadius(viewMode);

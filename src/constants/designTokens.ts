@@ -97,8 +97,8 @@ export const designTokens = {
     divider: {
       thickness: 1,    // Line thickness for dividers (Phase 4)
       color: {
-        light: '#E5E7EB',   // Gray-200 for subtle dividers
-        dark: '#6B7280',    // Gray-500 for prominent dividers
+        light: '#E5E7EB',   // Gray-200 for subtle dividers (one notch darker)
+        dark: '#555555',    // Neutral gray for prominent dividers (no blue tint)
         primary: '#3B82F6', // Blue-500 for themed dividers
         secondary: '#8B5CF6', // Purple-500 for accent dividers
         muted: '#F3F4F6',   // Gray-100 for very subtle dividers

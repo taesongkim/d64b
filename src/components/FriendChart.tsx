@@ -9,6 +9,9 @@ import CommitmentGrid from './CommitmentGrid';
 import ViewToggle from './ViewToggle';
 import AnimalAvatar from './AnimalAvatar';
 import { useFontStyle } from '@/hooks/useFontStyle';
+import { useSemanticColors, useThemeMode } from '@/contexts/ThemeContext';
+import { getGridColors } from '@/components/grids/gridPalette';
+import { getThemeColors } from '@/constants/grayscaleTokens';
 import type { FriendChartData } from '@/services/friends';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { AnimalType, ColorType } from '@/utils/avatarUtils';
@@ -24,6 +27,10 @@ export default function FriendChart({
   onFriendPress
 }: FriendChartProps): React.JSX.Element {
   const fontStyle = useFontStyle();
+  const semanticColors = useSemanticColors();
+  const themeMode = useThemeMode();
+  const gridColors = getGridColors(themeMode);
+  const colors = getThemeColors(themeMode);
   const { friend, commitments, layoutItems, records } = friendChartData;
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('daily');
 
@@ -68,7 +75,7 @@ export default function FriendChart({
             />
           </View>
           <View style={styles.friendInfo}>
-            <Text style={[styles.friendName, fontStyle]} numberOfLines={1}>
+            <Text style={[styles.friendName, fontStyle, { color: semanticColors.primaryText }]} numberOfLines={1}>
               {friend.full_name || friend.email}
             </Text>
             <Text style={[styles.friendStats, fontStyle]}>
@@ -96,8 +103,8 @@ export default function FriendChart({
           viewMode={viewMode}
         />
       ) : (
-        <View style={styles.emptyStateContainer}>
-          <Text style={[styles.emptyStateSubtext, fontStyle]}>
+        <View style={[styles.emptyStateContainer, { backgroundColor: gridColors.weekend }]}>
+          <Text style={[styles.emptyStateSubtext, fontStyle, { color: colors.gray300 }]}>
             {friend.full_name || friend.email} hasn't added any habits yet
           </Text>
         </View>
@@ -144,18 +151,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 40,
-    backgroundColor: '#F3F4F6',
     borderRadius: 8,
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#9CA3AF',
     fontFamily: 'Manrope_600SemiBold',
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
     fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
   },

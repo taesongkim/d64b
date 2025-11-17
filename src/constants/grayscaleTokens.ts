@@ -2,71 +2,112 @@
  * Grayscale Color Tokens
  *
  * Complete tokenization of all grayscale colors used throughout the app.
- * Organized from lightest to darkest with semantic naming.
+ * Supports both light and dark themes with semantic relationships preserved.
  */
 
+export type ThemeMode = 'light' | 'dark';
+
 export const grayscaleTokens = {
-  // Pure white
-  white: '#FFFFFF',
+  light: {
+    // Pure white
+    white: '#FFFFFF',
 
-  // Very light grays - backgrounds
-  gray50: '#FAFAFA',    // Nearly white background (main app background)
-  gray100: '#F9FAFB',   // Light background (modal sections, disabled inputs)
-  gray200: '#F3F4F6',   // Subtle background (cards, toggles)
+    // Very light grays - backgrounds
+    gray50: '#FAFAFA',    // Nearly white background (main app background)
+    gray100: '#F9FAFB',   // Light background (modal sections, disabled inputs)
+    gray200: '#F3F4F6',   // Subtle background (cards, toggles)
 
-  // Light grays - borders and dividers
-  gray300: '#E5E7EB',   // Primary border color (inputs, cards, dividers)
-  gray400: '#D1D5DB',   // Medium-light borders (disabled states)
+    // Light grays - borders and dividers
+    gray300: '#E5E7EB',   // Primary border color (inputs, cards, dividers)
+    gray400: '#D1D5DB',   // Medium-light borders (disabled states)
 
-  // Medium grays - text and secondary elements
-  gray500: '#9CA3AF',   // Medium gray (placeholder text, disabled text)
-  gray600: '#8E8E93',   // System gray (iOS-style inactive elements)
-  gray700: '#6B7280',   // Dark medium gray (secondary text)
-  gray800: '#4B5563',   // Dark gray (body text)
-  gray900: '#374151',   // Very dark gray (headings, important text)
+    // Medium grays - text and secondary elements
+    gray500: '#9CA3AF',   // Medium gray (placeholder text, disabled text)
+    gray600: '#8E8E93',   // System gray (iOS-style inactive elements)
+    gray700: '#6B7280',   // Dark medium gray (secondary text)
+    gray800: '#4B5563',   // Dark gray (body text)
+    gray900: '#374151',   // Very dark gray (headings, important text)
 
-  // Almost black
-  black: '#111827',     // Primary text, buttons, main UI elements
+    // Almost black
+    black: '#111827',     // Primary text, buttons, main UI elements
+  },
+
+  dark: {
+    // Pure white (inverted context)
+    white: '#0F0F0F',     // Dark background (neutral dark)
+
+    // Dark backgrounds (neutral grays)
+    gray50: '#0F0F0F',    // Darkest background (main app background)
+    gray100: '#1C1C1C',   // Dark background (modal sections, disabled inputs)
+    gray200: '#2A2A2A',   // Subtle dark background (cards, toggles)
+
+    // Dark borders and dividers (neutral)
+    gray300: '#404040',   // Primary border color (inputs, cards, dividers)
+    gray400: '#5A5A5A',   // Medium borders (disabled states)
+
+    // Light grays for text on dark backgrounds (neutral)
+    gray500: '#8A8A8A',   // Medium gray (placeholder text)
+    gray600: '#D1D1D1',   // Light gray (iOS-style inactive elements)
+    gray700: '#E5E5E5',   // Light gray (secondary text)
+    gray800: '#F3F3F3',   // Very light gray (body text)
+    gray900: '#FAFAFA',   // Nearly white (headings, important text)
+
+    // Pure white for highest contrast
+    black: '#FFFFFF',     // Primary text, buttons, main UI elements
+  }
 } as const;
 
 /**
- * Semantic color mappings for common use cases
+ * Theme-aware color resolver function
  */
-export const semanticGrays = {
-  // Backgrounds
-  appBackground: grayscaleTokens.gray50,
-  cardBackground: grayscaleTokens.white,
-  modalBackground: grayscaleTokens.white,
-  sectionBackground: grayscaleTokens.gray100,
-  disabledBackground: grayscaleTokens.gray100,
+export const getThemeColors = (mode: ThemeMode) => {
+  return grayscaleTokens[mode];
+};
 
-  // Borders
-  defaultBorder: grayscaleTokens.gray300,
-  subtleBorder: grayscaleTokens.gray200,
-  strongBorder: grayscaleTokens.gray400,
+/**
+ * Semantic color mappings for common use cases
+ * These return the appropriate color based on the current theme mode
+ */
+export const createSemanticColors = (mode: ThemeMode) => {
+  const colors = getThemeColors(mode);
 
-  // Text
-  primaryText: grayscaleTokens.black,
-  secondaryText: grayscaleTokens.gray700,
-  tertiaryText: grayscaleTokens.gray500,
-  placeholderText: grayscaleTokens.gray500,
-  disabledText: grayscaleTokens.gray500,
+  return {
+    // Backgrounds
+    appBackground: colors.gray50,
+    cardBackground: colors.white,
+    modalBackground: colors.white,
+    sectionBackground: colors.gray50,
+    disabledBackground: colors.gray100,
 
-  // Interactive elements
-  buttonPrimary: grayscaleTokens.black,
-  buttonSecondary: grayscaleTokens.gray100,
-  buttonDisabled: grayscaleTokens.gray400,
+    // Borders
+    defaultBorder: colors.gray300,
+    subtleBorder: colors.gray200,
+    strongBorder: colors.gray400,
 
-  // Navigation
-  tabBarBackground: grayscaleTokens.gray100,
-  tabBarBorder: grayscaleTokens.gray300,
-  headerBackground: grayscaleTokens.gray100,
+    // Text
+    primaryText: colors.black,
+    secondaryText: colors.gray900,
+    tertiaryText: colors.gray500,
+    placeholderText: colors.gray500,
+    disabledText: colors.gray500,
 
-  // Overlays and shadows
-  overlay: 'rgba(0, 0, 0, 0.1)', // For modals
-  shadowColor: '#000000',
-} as const;
+    // Interactive elements
+    buttonPrimary: colors.black,
+    buttonSecondary: colors.gray100,
+    buttonDisabled: colors.gray400,
+
+    // Navigation
+    tabBarBackground: colors.gray100,
+    tabBarBorder: colors.gray300,
+    headerBackground: colors.gray100,
+    headerBorder: colors.gray300,
+
+    // Overlays and shadows
+    overlay: mode === 'light' ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.5)',
+    shadowColor: mode === 'light' ? '#000000' : '#000000',
+  } as const;
+};
 
 // Type exports for TypeScript usage
-export type GrayscaleToken = keyof typeof grayscaleTokens;
-export type SemanticGray = keyof typeof semanticGrays;
+export type GrayscaleToken = keyof typeof grayscaleTokens.light;
+export type SemanticColors = ReturnType<typeof createSemanticColors>;

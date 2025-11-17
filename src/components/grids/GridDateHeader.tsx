@@ -6,6 +6,8 @@ import {
 } from 'react-native';
 import { useFontStyle } from '@/hooks/useFontStyle';
 import { formatDateForDisplay, isToday } from '@/utils/timeUtils';
+import { useSemanticColors, useThemeMode } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/grayscaleTokens';
 
 export type ViewMode = 'daily' | 'weekly';
 
@@ -34,6 +36,9 @@ export default function GridDateHeader({
   dates,
   viewMode,
 }: GridDateHeaderProps): React.JSX.Element {
+  const semanticColors = useSemanticColors();
+  const themeMode = useThemeMode();
+  const colors = getThemeColors(themeMode);
   const fontStyle = useFontStyle();
   const boldFontStyle = useFontStyle(styles.todayDateText, 'semiBold');
 

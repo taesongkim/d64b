@@ -8,6 +8,8 @@ import {
   UIManager,
 } from 'react-native';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
+import { useThemeMode } from '@/contexts/ThemeContext';
+import { getGridColors } from '@/components/grids/gridPalette';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android') {
@@ -24,6 +26,9 @@ interface ViewToggleProps {
 }
 
 export default function ViewToggle({ viewMode, onViewModeChange }: ViewToggleProps): React.JSX.Element {
+  const themeMode = useThemeMode();
+  const gridColors = getGridColors(themeMode);
+
   // Function to animate view mode changes using LayoutAnimation
   const animateToViewMode = (newMode: ViewMode) => {
     // Configure LayoutAnimation for smooth transitions
@@ -46,14 +51,26 @@ export default function ViewToggle({ viewMode, onViewModeChange }: ViewTogglePro
     onViewModeChange(newMode);
   };
 
+  // Dynamic styles using grid colors
+  const dynamicStyles = {
+    compactToggleContainer: {
+      ...styles.compactToggleContainer,
+      backgroundColor: gridColors.weekend,
+    },
+    toggleSlider: {
+      ...styles.toggleSlider,
+      backgroundColor: gridColors.idle,
+    },
+  };
+
   return (
-    <View style={styles.compactToggleContainer}>
+    <View style={dynamicStyles.compactToggleContainer}>
       {/* Animated sliding background */}
-      <View 
+      <View
         style={[
-          styles.toggleSlider,
+          dynamicStyles.toggleSlider,
           viewMode === 'weekly' && styles.toggleSliderRight
-        ]} 
+        ]}
       />
       
       {/* Left icon positioned to match slider left position */}
@@ -61,15 +78,15 @@ export default function ViewToggle({ viewMode, onViewModeChange }: ViewTogglePro
         style={styles.iconButtonLeft}
         onPress={() => animateToViewMode('daily')}
       >
-        <SpaciousViewIcon size={16} isActive={viewMode === 'daily'} />
+        <SpaciousViewIcon size={16} isActive={viewMode === 'daily'} themeMode={themeMode} />
       </TouchableOpacity>
-      
+
       {/* Right icon positioned to match slider right position */}
       <TouchableOpacity
         style={styles.iconButtonRight}
         onPress={() => animateToViewMode('weekly')}
       >
-        <CompactViewIcon size={16} isActive={viewMode === 'weekly'} />
+        <CompactViewIcon size={16} isActive={viewMode === 'weekly'} themeMode={themeMode} />
       </TouchableOpacity>
     </View>
   );
@@ -81,7 +98,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginBottom: 0, // Remove bottom margin when in header
     marginRight: 0,
-    backgroundColor: '#F3F4F6',
     borderRadius: 8,
     padding: 2,
     position: 'relative',
@@ -94,7 +110,6 @@ const styles = StyleSheet.create({
     left: 2,
     width: 28, // Half of container width minus padding
     height: 28,
-    backgroundColor: 'white',
     borderRadius: 6,
     shadowColor: '#000',
     shadowOffset: {

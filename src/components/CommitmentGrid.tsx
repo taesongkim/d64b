@@ -16,6 +16,8 @@ import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { SpaciousViewIcon, CompactViewIcon } from './ViewModeIcons';
 import CommitmentCellModal from './CommitmentCellModal';
 import { useFontStyle } from '@/hooks/useFontStyle';
+import { useSemanticColors, useThemeMode } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/grayscaleTokens';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import {
   getTodayISO,
@@ -142,15 +144,15 @@ interface GridDividerProps {
   viewMode: ViewMode;
   dates: string[];
   dynamicStyles: any;
+  themeMode: string;
 }
 
-const GridDivider: React.FC<GridDividerProps> = ({ divider, viewMode, dates, dynamicStyles }) => {
+const GridDivider: React.FC<GridDividerProps> = ({ divider, viewMode, dates, dynamicStyles, themeMode }) => {
   const dividerHeight = getDividerHeight(viewMode);
 
-  // Determine divider styling from enhanced tokens
-  const dividerColor = designTokens.layoutItems.divider.color[
-    (divider as any)?.colorVariant || 'light'
-  ];
+  // Determine divider styling from enhanced tokens - theme-aware
+  const dividerColorVariant = (divider as any)?.colorVariant || (themeMode === 'dark' ? 'dark' : 'light');
+  const dividerColor = designTokens.layoutItems.divider.color[dividerColorVariant];
   const dividerOpacity = designTokens.layoutItems.divider.opacity.normal;
   const dividerThickness = designTokens.layoutItems.divider.thickness;
   const borderRadius = designTokens.layoutItems.divider.borderRadius.small;
@@ -211,6 +213,9 @@ export default function CommitmentGrid({
 }: CommitmentGridProps): React.JSX.Element {
   const fontStyle = useFontStyle();
   const boldFontStyle = useFontStyle(styles.dateTextToday, 'semiBold');
+  const semanticColors = useSemanticColors();
+  const themeMode = useThemeMode();
+  const colors = getThemeColors(themeMode);
   // const scrollRef = useRef<FlatList>(null); // Unused
   const [internalViewMode, setInternalViewMode] = useState<ViewMode>('daily');
   
@@ -472,7 +477,7 @@ export default function CommitmentGrid({
       height: getCellSize(viewMode),
       marginHorizontal: getCellMargin(viewMode),
       borderRadius: getCellBorderRadius(viewMode),
-      backgroundColor: '#F3F4F6',
+      backgroundColor: semanticColors.secondaryBackground,
       justifyContent: 'center' as const,
       alignItems: 'center' as const,
     },
@@ -501,8 +506,8 @@ export default function CommitmentGrid({
           {dates.map((date, index) => {
             const isTodayHeader = isToday(date);
             const textStyle = isTodayHeader
-              ? boldFontStyle
-              : [styles.dateText, fontStyle];
+              ? [boldFontStyle, { color: colors.black }]
+              : [styles.dateText, fontStyle, { color: semanticColors.tertiaryText }];
             return (
               <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
                 <Text style={textStyle}>
@@ -520,7 +525,7 @@ export default function CommitmentGrid({
     <View style={styles.container}>
       {/* Compact View Mode Toggle - only show if not hidden */}
       {!hideToggle && (
-        <View style={styles.compactToggleContainer}>
+        <View style={[styles.compactToggleContainer, { backgroundColor: semanticColors.secondaryBackground }]}>
           {/* Animated sliding background */}
           <View 
             style={[
@@ -571,7 +576,7 @@ export default function CommitmentGrid({
                   onPress={() => onCommitmentTitlePress?.(commitment.id)}
                   disabled={!onCommitmentTitlePress}
                 >
-                  <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>{commitment.title}</Text>
+                  <Text style={[styles.commitmentTitle, fontStyle, { color: semanticColors.secondaryText }]} numberOfLines={1}>{commitment.title}</Text>
                 </TouchableOpacity>
               );
             } else if (item.type === 'spacer') {
@@ -594,10 +599,9 @@ export default function CommitmentGrid({
               const divider = item.data as LayoutItem;
               const dividerHeight = getDividerHeight(viewMode);
 
-              // Left side divider segment
-              const dividerColor = designTokens.layoutItems.divider.color[
-                (divider as any)?.colorVariant || 'light'
-              ];
+              // Left side divider segment - theme-aware
+              const dividerColorVariant = (divider as any)?.colorVariant || (themeMode === 'dark' ? 'dark' : 'light');
+              const dividerColor = designTokens.layoutItems.divider.color[dividerColorVariant];
               const dividerOpacity = designTokens.layoutItems.divider.opacity.normal;
               const dividerThickness = designTokens.layoutItems.divider.thickness;
               const borderRadius = designTokens.layoutItems.divider.borderRadius.small;
@@ -670,7 +674,7 @@ export default function CommitmentGrid({
 
                         // Determine cell state and visual treatment using centralized palette
                         const cellState = determineCellState(status, isWeekendDay, isTodayDate);
-                        const visualTreatment = getCellVisualTreatment(cellState);
+                        const visualTreatment = getCellVisualTreatment(cellState, themeMode);
 
                         const cellSize = getCellSize(viewMode);
                         const cellRadius = getCellBorderRadius(viewMode);
@@ -774,6 +778,7 @@ export default function CommitmentGrid({
                       viewMode={viewMode}
                       dates={dates}
                       dynamicStyles={dynamicStyles}
+                      themeMode={themeMode}
                     />
                   );
                 }

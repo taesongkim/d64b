@@ -7,24 +7,29 @@ import FriendsListScreen from '@/screens/Social/FriendsListScreen';
 import ProfileStack from './ProfileStack';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabs(): React.JSX.Element {
+  const { semanticColors } = useTheme();
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
-        tabBarActiveTintColor: '#111827',
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: semanticColors.primaryText,
+        tabBarInactiveTintColor: semanticColors.secondaryText,
         tabBarStyle: {
-          backgroundColor: '#f8f9fa',
-          borderTopColor: '#e5e5e7',
+          backgroundColor: semanticColors.sectionBackground,
+          borderTopColor: semanticColors.defaultBorder,
         },
         headerStyle: {
-          backgroundColor: '#f8f9fa',
+          backgroundColor: semanticColors.sectionBackground,
+          borderBottomWidth: 1,
+          borderBottomColor: semanticColors.headerBorder,
         },
-        headerTintColor: '#333',
+        headerTintColor: semanticColors.primaryText,
         headerTitleStyle: {
           fontFamily: 'Manrope_700Bold',
         },

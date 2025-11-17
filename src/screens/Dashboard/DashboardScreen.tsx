@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
@@ -13,6 +12,7 @@ import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
 import CommitmentOrderingModalR2 from '@/components/CommitmentOrderingModalR2';
 import ViewToggle from '@/components/ViewToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
 import { selectActiveOrdered } from '@/store/selectors/commitmentsOrder';
@@ -21,7 +21,9 @@ import { toggleRecord, setRecordStatus, setRecords, loadAllRecordsThunk, type Re
 import { addToQueue } from '@/store/slices/syncSlice';
 import { loadInitialDataFromDatabase } from '@/store/middleware/databaseMiddleware';
 import { useFontStyle } from '@/hooks/useFontStyle';
+import { useThemedStyles } from '@/hooks/useThemedStyles';
 import { getTodayISO, getTodayDisplayDate, getCurrentTimestamp } from '@/utils/timeUtils';
+import { getGridColors } from '@/components/grids/gridPalette';
 import { normalizeUnit } from '@/utils/unitUtils';
 import { rankAfter } from '@/utils/rank';
 import { isFeatureEnabled } from '@/config/features';
@@ -43,6 +45,188 @@ export default function DashboardScreen(): React.JSX.Element {
   const fontStyle = useFontStyle();
   const boldFontStyle = useFontStyle(undefined, 'bold');
   const semiBoldFontStyle = useFontStyle(undefined, 'semiBold');
+
+  const styles = useThemedStyles(({ semanticColors, mode }) => {
+    const gridColors = getGridColors(mode);
+    return {
+    container: {
+      flex: 1,
+      backgroundColor: semanticColors.sectionBackground,
+    },
+    scrollContainer: {
+      flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      paddingBottom: 20,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    greeting: {
+      fontSize: 24,
+      color: semanticColors.primaryText,
+    },
+    date: {
+      fontSize: 14,
+      color: semanticColors.secondaryText,
+      marginTop: 2,
+    },
+    addButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: semanticColors.primaryText,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    addButtonText: {
+      color: semanticColors.sectionBackground,
+      fontSize: 24,
+    },
+    statsContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: 20,
+      marginBottom: 20,
+      gap: 12,
+    },
+    statCard: {
+      flex: 1,
+      backgroundColor: semanticColors.sectionBackground,
+      borderRadius: 12,
+      padding: 12,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: semanticColors.defaultBorder,
+    },
+    statNumber: {
+      fontSize: 24,
+      color: semanticColors.primaryText,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: semanticColors.secondaryText,
+      marginTop: 2,
+    },
+    gridContainer: {
+      paddingHorizontal: 20,
+      marginBottom: 20,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      color: semanticColors.primaryText,
+    },
+    headerControls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    reorderButton: {
+      backgroundColor: gridColors.weekend,
+      borderRadius: 8,
+      padding: 2,
+      width: 32,
+      height: 32,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    reorderButtonInner: {
+      backgroundColor: gridColors.idle,
+      borderRadius: 6,
+      width: 28,
+      height: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    hamburgerIcon: {
+      justifyContent: 'space-between',
+      height: 12,
+      width: 16,
+    },
+    hamburgerLine: {
+      height: 2,
+      backgroundColor: semanticColors.primaryText, // White in dark mode, black in light mode
+      borderRadius: 1,
+      opacity: 0.8,
+    },
+    emptyState: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 60,
+      minHeight: 200,
+    },
+    emptyStateText: {
+      fontSize: 16,
+      color: semanticColors.tertiaryText,
+      marginBottom: 16,
+    },
+    emptyStateButton: {
+      backgroundColor: semanticColors.primaryText,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    emptyStateButtonText: {
+      color: semanticColors.primaryBackground,
+      fontSize: 14,
+    },
+    comingSoonCard: {
+      paddingVertical: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 100,
+    },
+    comingSoonText: {
+      color: semanticColors.secondaryText,
+      fontSize: 14,
+      textAlign: 'center',
+      fontStyle: 'italic',
+    },
+    activityContainer: {
+      marginHorizontal: 20,
+      marginBottom: 20,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: semanticColors.defaultBorder,
+      marginVertical: 20,
+      marginHorizontal: 0,
+    },
+    friendsChartsContainer: {
+      paddingHorizontal: 20,
+      marginBottom: 20,
+    },
+    loadingContainer: {
+      padding: 20,
+      alignItems: 'center',
+    },
+    loadingText: {
+      color: semanticColors.secondaryText,
+      fontSize: 14,
+      fontStyle: 'italic',
+    },
+  };
+  });
   
   // Use ref to prevent multiple simultaneous loads
   const isLoadingRef = useRef(false);
@@ -619,12 +803,15 @@ export default function DashboardScreen(): React.JSX.Element {
               {commitments.length} habit{commitments.length !== 1 ? 's' : ''} • {records.filter(r => r.date === getTodayISO() && r.status === 'completed').length} completed
             </Text>
           </View>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Text style={[styles.addButtonText, fontStyle]}>+</Text>
-          </TouchableOpacity>
+          <View style={styles.headerRight}>
+            <ThemeToggle />
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowAddModal(true)}
+            >
+              <Text style={[styles.addButtonText, fontStyle]}>+</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         
         <View style={styles.gridContainer}>
@@ -748,176 +935,3 @@ export default function DashboardScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
-  scrollContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  greeting: {
-    fontSize: 24,
-    color: '#111827',
-  },
-  date: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#111827',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: 'white',
-    fontSize: 24,
-  },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    marginBottom: 20,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  statNumber: {
-    fontSize: 24,
-    color: '#111827',
-  },
-  statLabel: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  gridContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    color: '#111827',
-  },
-  headerControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  reorderButton: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-    padding: 2,
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  reorderButtonInner: {
-    backgroundColor: 'white',
-    borderRadius: 6,
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  hamburgerIcon: {
-    justifyContent: 'space-between',
-    height: 12,
-    width: 16,
-  },
-  hamburgerLine: {
-    height: 2,
-    backgroundColor: '#111827',
-    borderRadius: 1,
-    opacity: 0.3,
-  },
-  emptyState: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    minHeight: 200,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#9CA3AF',
-    marginBottom: 16,
-  },
-  emptyStateButton: {
-    backgroundColor: '#111827',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  emptyStateButtonText: {
-    color: 'white',
-    fontSize: 14,
-  },
-  comingSoonCard: {
-    paddingVertical: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 100,
-  },
-  comingSoonText: {
-    color: '#6B7280',
-    fontSize: 14,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  activityContainer: {
-    marginHorizontal: 20,
-    marginBottom: 20,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 20,
-    marginHorizontal: 0,
-  },
-  friendsChartsContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  loadingContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#6B7280',
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-});
