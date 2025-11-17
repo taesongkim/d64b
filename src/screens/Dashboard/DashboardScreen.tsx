@@ -12,7 +12,6 @@ import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
 import CommitmentOrderingModalR2 from '@/components/CommitmentOrderingModalR2';
 import ViewToggle from '@/components/ViewToggle';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { addCommitment, setCommitments, updateCommitment, selectActiveCommitments, archiveCommitmentThunk, restoreCommitmentThunk, softDeleteCommitmentThunk, permanentDeleteCommitmentThunk, type Commitment } from '@/store/slices/commitmentsSlice';
 import { selectActiveOrdered } from '@/store/selectors/commitmentsOrder';
@@ -839,7 +838,6 @@ export default function DashboardScreen(): React.JSX.Element {
             </Text>
           </View>
           <View style={styles.headerRight}>
-            <ThemeToggle />
             <TouchableOpacity
               style={styles.addButton}
               onPress={() => setShowAddModal(true)}

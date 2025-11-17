@@ -8,6 +8,7 @@ import ProfileStack from './ProfileStack';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/contexts/ThemeContext';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -35,13 +36,14 @@ export default function MainTabs(): React.JSX.Element {
         },
       }}
     >
-      <Tab.Screen 
-        name="Home" 
+      <Tab.Screen
+        name="Home"
         component={DashboardScreen}
         options={{
           title: 'Dashboard',
           tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => <Icon name="home" size={20} color={color} />,
+          headerRight: () => <ThemeToggle />,
         }}
       />
       {/* MVP-HIDDEN: Analytics Tab - Enable in v1.1 */}
