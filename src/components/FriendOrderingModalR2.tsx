@@ -18,6 +18,8 @@ import { batchReorderRosterFriends } from '@/store/slices/socialSlice';
 import { rankBetween } from '@/utils/rank';
 import { useAuth } from '@/contexts/AuthContext';
 import { designTokens } from '@/constants/designTokens';
+import { createReorderModalStyles } from './styles/reorderModalStyles';
+import { useThemeMode } from '@/contexts/ThemeContext';
 import Icon from './icons/Icon';
 import AnimalAvatar from './AnimalAvatar';
 import type { OrderedFriend } from '@/store/selectors/friendsOrder';
@@ -46,6 +48,8 @@ export default function FriendOrderingModalR2({
   const fontStyle = useFontStyle();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
+  const themeMode = useThemeMode();
+  const sharedStyles = createReorderModalStyles(themeMode);
 
   // Always use Redux roster as source of truth for optimistic updates
   const currentFriends = useAppSelector(selectFriendsOrdered);
@@ -388,7 +392,7 @@ export default function FriendOrderingModalR2({
 
     const isPlaceholder = dragState.placeholderIndex === effectiveIndex && dragState.isDragging;
 
-    let rowStyle = [styles.friendRow];
+    let rowStyle = [sharedStyles.baseRow, sharedStyles.friendRow];
     if (isDragged) {
       rowStyle.push(styles.draggedRow);
     }
@@ -402,11 +406,11 @@ export default function FriendOrderingModalR2({
           showInitials={true}
           name={friend.name || friend.username}
         />
-        <View style={styles.friendInfo}>
-          <Text style={[styles.friendName, fontStyle.regular]} numberOfLines={1}>
+        <View style={sharedStyles.friendInfo}>
+          <Text style={[sharedStyles.friendName, fontStyle.regular]} numberOfLines={1}>
             {friend.name}
           </Text>
-          <Text style={[styles.friendUsername, fontStyle.small]} numberOfLines={1}>
+          <Text style={[sharedStyles.friendUsername, fontStyle.small]} numberOfLines={1}>
             @{friend.username}
           </Text>
         </View>
@@ -445,11 +449,11 @@ export default function FriendOrderingModalR2({
 
     return (
       <View key={friend.id}>
-        {isPlaceholder && <View style={styles.placeholder} />}
+        {isPlaceholder && <View style={[sharedStyles.placeholder, sharedStyles.placeholderFriend]} />}
         <View style={{ opacity: isDragged ? 0 : 1 }}>
           {rowContent}
         </View>
-        {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
+        {shouldShowPlaceholderAfter && <View style={[sharedStyles.placeholder, sharedStyles.placeholderFriend]} />}
       </View>
     );
   }, [
@@ -468,31 +472,31 @@ export default function FriendOrderingModalR2({
       presentationStyle="fullScreen"
       onRequestClose={handleCancel}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={sharedStyles.container}>
+        <View style={sharedStyles.header}>
           {/* Top row: Cancel - Title - Save */}
-          <View style={styles.headerTopRow}>
+          <View style={sharedStyles.headerTopRow}>
             <TouchableOpacity
-              style={styles.cancelButton}
+              style={sharedStyles.cancelButton}
               onPress={handleCancel}
             >
-              <Text style={[styles.cancelButtonText, fontStyle]}>Cancel</Text>
+              <Text style={[sharedStyles.cancelButtonText, fontStyle]}>Cancel</Text>
             </TouchableOpacity>
 
-            <Text style={[styles.title, fontStyle]}>Reorder Friends</Text>
+            <Text style={[sharedStyles.title, fontStyle]}>Reorder Friends</Text>
 
             <TouchableOpacity
               style={[
-                styles.saveButton,
-                (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonActive
+                sharedStyles.saveButton,
+                (hasChanges && !dragState.isDragging && !isSaving) && sharedStyles.saveButtonActive
               ]}
               onPress={handleSave}
               disabled={dragState.isDragging || isSaving}
             >
               <Text style={[
-                styles.saveButtonText,
+                sharedStyles.saveButtonText,
                 fontStyle,
-                (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonTextActive
+                (hasChanges && !dragState.isDragging && !isSaving) && sharedStyles.saveButtonTextActive
               ]}>
                 {isSaving ? 'Saving...' : 'Save'}
               </Text>
@@ -514,7 +518,7 @@ export default function FriendOrderingModalR2({
         >
           <ScrollView
             ref={scrollViewRef}
-            style={styles.scrollView}
+            style={[sharedStyles.scrollView, styles.scrollView]}
             showsVerticalScrollIndicator={false}
             scrollEnabled={!dragState.isDragging}
           >
@@ -533,18 +537,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: designTokens.colors.background,
-  },
-  header: {
-    paddingHorizontal: designTokens.spacing.lg,
-    paddingVertical: designTokens.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: designTokens.colors.border,
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: designTokens.spacing.sm,
   },
   description: {
     fontSize: designTokens.typography.sizes.sm,
@@ -594,7 +586,7 @@ const styles = StyleSheet.create({
     color: designTokens.colors.secondary,
   },
   draggedRow: {
-    backgroundColor: designTokens.colors.surface,
+    // No background override - let baseRow background show through with drag opacity
   },
   draggedContainer: {
     position: 'absolute',

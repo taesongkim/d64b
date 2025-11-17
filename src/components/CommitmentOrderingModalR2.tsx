@@ -24,6 +24,8 @@ import type { LayoutItem as LayoutItemData } from '@/store/slices/layoutItemsSli
 import { createDefaultSpacer, createLayoutItemAtPosition } from '@/services/layoutItems';
 import { designTokens } from '@/constants/designTokens';
 import Icon from './icons/Icon';
+import { createReorderModalStyles } from './styles/reorderModalStyles';
+import { useThemeMode } from '@/contexts/ThemeContext';
 import {
   validateReorderLayout,
   isDropPositionValid,
@@ -60,6 +62,8 @@ export default function CommitmentOrderingModalR2({
   const fontStyle = useFontStyle();
   const dispatch = useAppDispatch();
   const { user } = useAuth();
+  const themeMode = useThemeMode();
+  const sharedStyles = createReorderModalStyles(themeMode);
 
   // Get current commitments and layout items from Redux
   const currentCommitments = useAppSelector(selectActiveOrdered);
@@ -1020,18 +1024,18 @@ export default function CommitmentOrderingModalR2({
 
     return (
       <View key={commitment.id}>
-        {isPlaceholder && <View style={styles.placeholder} />}
-        <View style={styles.commitmentRow}>
-          <View style={styles.commitmentInfo}>
-            <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
+        {isPlaceholder && <View style={sharedStyles.placeholder} />}
+        <View style={[sharedStyles.baseRow, sharedStyles.commitmentRow]}>
+          <View style={sharedStyles.itemInfo}>
+            <Text style={[sharedStyles.itemTitle, fontStyle]} numberOfLines={1}>
               {commitment.title}
             </Text>
             {commitment.isPrivate && (
-              <Text style={[styles.privateIndicator, fontStyle]}>🔒</Text>
+              <Text style={[sharedStyles.privateIndicator, fontStyle]}>🔒</Text>
             )}
           </View>
         </View>
-        {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
+        {shouldShowPlaceholderAfter && <View style={sharedStyles.placeholder} />}
       </View>
     );
   }, [dragState, fontStyle, localItems.length]);
@@ -1062,20 +1066,20 @@ export default function CommitmentOrderingModalR2({
 
     return (
       <View key={spacer.id}>
-        {isPlaceholder && <View style={styles.placeholder} />}
-        <View style={styles.spacerRow}>
-          <View style={styles.spacerInfo}>
-            <Text style={[styles.spacerLabel, fontStyle]}>Spacer</Text>
+        {isPlaceholder && <View style={sharedStyles.placeholder} />}
+        <View style={[sharedStyles.baseRow, sharedStyles.layoutItemRow]}>
+          <View style={sharedStyles.layoutItemInfo}>
+            <Text style={[sharedStyles.itemLabel, fontStyle]}>Spacer</Text>
           </View>
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={sharedStyles.deleteButton}
             onPress={() => handleDeleteSpacer(spacer.id)}
             disabled={dragState.isDragging}
           >
-            <Icon name="delete" size={16} color="#6B7280" />
+            <Icon name="delete" size={16} color={designTokens.colors.secondary} />
           </TouchableOpacity>
         </View>
-        {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
+        {shouldShowPlaceholderAfter && <View style={sharedStyles.placeholder} />}
       </View>
     );
   }, [dragState, fontStyle, localItems.length, handleDeleteSpacer]);
@@ -1106,20 +1110,20 @@ export default function CommitmentOrderingModalR2({
 
     return (
       <View key={divider.id}>
-        {isPlaceholder && <View style={styles.placeholder} />}
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerInfo}>
-            <Text style={[styles.dividerLabel, fontStyle]}>— Divider —</Text>
+        {isPlaceholder && <View style={sharedStyles.placeholder} />}
+        <View style={[sharedStyles.baseRow, sharedStyles.layoutItemRow]}>
+          <View style={sharedStyles.layoutItemInfo}>
+            <Text style={[sharedStyles.itemLabel, fontStyle]}>— Divider —</Text>
           </View>
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={sharedStyles.deleteButton}
             onPress={() => handleDeleteDivider(divider.id)}
             disabled={dragState.isDragging}
           >
-            <Icon name="delete" size={16} color="#6B7280" />
+            <Icon name="delete" size={16} color={designTokens.colors.secondary} />
           </TouchableOpacity>
         </View>
-        {shouldShowPlaceholderAfter && <View style={styles.placeholder} />}
+        {shouldShowPlaceholderAfter && <View style={sharedStyles.placeholder} />}
       </View>
     );
   }, [dragState, fontStyle, localItems.length, handleDeleteDivider]);
@@ -1156,22 +1160,24 @@ export default function CommitmentOrderingModalR2({
     }
 
 
-    // Get the appropriate background and border color based on item type
-    let itemBackgroundColor = designTokens.colors.surface;
-    let itemBorderColor = designTokens.colors.border;
+    // Get the appropriate background color based on item type to match resting state
+    let itemBackgroundColor;
 
-    if (draggedItem.type === 'spacer') {
-      itemBackgroundColor = '#E5E7EB';
-      itemBorderColor = '#D1D5DB';
-    } else if (draggedItem.type === 'divider') {
-      itemBackgroundColor = '#E5E7EB';
-      itemBorderColor = '#D1D5DB';
+    if (draggedItem.type === 'commitment') {
+      // Commitment rows use baseRow background (white in light mode, gray200 in dark mode)
+      itemBackgroundColor = themeMode === 'light' ? '#FFFFFF' : '#2A2A2A';
+    } else if (draggedItem.type === 'spacer' || draggedItem.type === 'divider') {
+      // Layout items use layoutItemRow background (gray50 in both modes)
+      itemBackgroundColor = themeMode === 'light' ? '#FAFAFA' : '#0F0F0F';
+    } else {
+      // Fallback to baseRow background
+      itemBackgroundColor = themeMode === 'light' ? '#FFFFFF' : '#2A2A2A';
     }
 
     return (
       <Animated.View
         style={[
-          styles.draggedItem,
+          sharedStyles.draggedItem,
           {
             top: scrollViewLayoutY.current + dragState.initialItemY, // Position relative to modal container
             transform: [
@@ -1179,29 +1185,27 @@ export default function CommitmentOrderingModalR2({
               { scale: draggedItemScale },
             ],
             opacity: draggedItemOpacity,
-            ...designTokens.dnd.lift.shadow,
             backgroundColor: itemBackgroundColor,
-            borderColor: itemBorderColor,
           },
         ]}
         pointerEvents="none"
       >
         {draggedItem.type === 'commitment' ? (
-          <View style={styles.commitmentInfo}>
-            <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
+          <View style={sharedStyles.itemInfo}>
+            <Text style={[sharedStyles.itemTitle, fontStyle]} numberOfLines={1}>
               {draggedItem.data.title}
             </Text>
             {draggedItem.data.isPrivate && (
-              <Text style={[styles.privateIndicator, fontStyle]}>🔒</Text>
+              <Text style={[sharedStyles.privateIndicator, fontStyle]}>🔒</Text>
             )}
           </View>
         ) : draggedItem.type === 'spacer' ? (
-          <View style={styles.spacerInfo}>
-            <Text style={[styles.spacerLabel, fontStyle]}>Spacer</Text>
+          <View style={sharedStyles.layoutItemInfo}>
+            <Text style={[sharedStyles.itemLabel, fontStyle]}>Spacer</Text>
           </View>
         ) : (
-          <View style={styles.dividerInfo}>
-            <Text style={[styles.dividerLabel, fontStyle]}>— Divider —</Text>
+          <View style={sharedStyles.layoutItemInfo}>
+            <Text style={[sharedStyles.itemLabel, fontStyle]}>— Divider —</Text>
           </View>
         )}
       </Animated.View>
@@ -1217,31 +1221,31 @@ export default function CommitmentOrderingModalR2({
       presentationStyle="fullScreen"
       onRequestClose={handleCancel}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={sharedStyles.container}>
+        <View style={sharedStyles.header}>
           {/* Top row: Cancel - Title - Save */}
-          <View style={styles.headerTopRow}>
+          <View style={sharedStyles.headerTopRow}>
             <TouchableOpacity
-              style={styles.cancelButton}
+              style={sharedStyles.cancelButton}
               onPress={handleCancel}
             >
-              <Text style={[styles.cancelButtonText, fontStyle]}>Cancel</Text>
+              <Text style={[sharedStyles.cancelButtonText, fontStyle]}>Cancel</Text>
             </TouchableOpacity>
 
-            <Text style={[styles.title, fontStyle]}>Formatting</Text>
+            <Text style={[sharedStyles.title, sharedStyles.titleLarge, fontStyle]}>Formatting</Text>
 
             <TouchableOpacity
               style={[
-                styles.saveButton,
-                (hasChanges && !dragState.isDragging && !isSaving && !syncState.isSyncing) && styles.saveButtonActive
+                sharedStyles.saveButton,
+                (hasChanges && !dragState.isDragging && !isSaving && !syncState.isSyncing) && sharedStyles.saveButtonActive
               ]}
               onPress={debouncedHandleSave}
               disabled={dragState.isDragging || isSaving || syncState.isSyncing}
             >
               <Text style={[
-                styles.saveButtonText,
+                sharedStyles.saveButtonText,
                 fontStyle,
-                (hasChanges && !dragState.isDragging && !isSaving) && styles.saveButtonTextActive
+                (hasChanges && !dragState.isDragging && !isSaving) && sharedStyles.saveButtonTextActive
               ]}>
                 {isSaving ? 'Saving...' : syncState.isSyncing ? 'Syncing...' : 'Save'}
               </Text>
@@ -1249,33 +1253,33 @@ export default function CommitmentOrderingModalR2({
           </View>
 
           {/* Description */}
-          <Text style={[styles.description, fontStyle]}>
+          <Text style={[sharedStyles.description, fontStyle]}>
             Customize your grid layout here.{'\n'}Press and hold to drag items around.
           </Text>
 
           {/* Bottom row: Add buttons side by side */}
-          <View style={styles.headerBottomRow}>
+          <View style={sharedStyles.headerBottomRow}>
             <TouchableOpacity
-              style={styles.addSpacerButton}
+              style={sharedStyles.addItemButton}
               onPress={handleAddSpacer}
               disabled={dragState.isDragging || isSaving}
             >
-              <Text style={[styles.addSpacerButtonText, fontStyle]}>+ Spacer</Text>
+              <Text style={[sharedStyles.addItemButtonText, fontStyle]}>+ Spacer</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.addDividerButton}
+              style={sharedStyles.addItemButton}
               onPress={handleAddDivider}
               disabled={dragState.isDragging || isSaving}
             >
-              <Text style={[styles.addDividerButtonText, fontStyle]}>+ Divider</Text>
+              <Text style={[sharedStyles.addItemButtonText, fontStyle]}>+ Divider</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <ScrollView
           ref={scrollViewRef}
-          style={styles.content}
+          style={[sharedStyles.scrollView, styles.content]}
           showsVerticalScrollIndicator={false}
           onLayout={(event) => {
             scrollViewLayoutY.current = event.nativeEvent.layout.y;
@@ -1295,13 +1299,13 @@ export default function CommitmentOrderingModalR2({
                 You need at least 2 commitments to reorder
               </Text>
               {localCommitments.map((commitment) => (
-                <View key={commitment.id} style={styles.commitmentRowDisabled}>
-                  <View style={styles.commitmentInfo}>
-                            <Text style={[styles.commitmentTitle, fontStyle]} numberOfLines={1}>
+                <View key={commitment.id} style={[sharedStyles.baseRow, sharedStyles.commitmentRow, sharedStyles.disabledRow]}>
+                  <View style={sharedStyles.itemInfo}>
+                            <Text style={[sharedStyles.itemTitle, fontStyle]} numberOfLines={1}>
                       {commitment.title}
                     </Text>
                     {commitment.isPrivate && (
-                      <Text style={[styles.privateIndicator, fontStyle]}>🔒</Text>
+                      <Text style={[sharedStyles.privateIndicator, fontStyle]}>🔒</Text>
                     )}
                   </View>
                 </View>
@@ -1327,26 +1331,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: designTokens.colors.background,
-  },
-  header: {
-    paddingHorizontal: designTokens.spacing.lg,
-    paddingVertical: designTokens.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: designTokens.colors.border,
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: designTokens.spacing.sm,
-  },
-  headerBottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: designTokens.spacing.md,
-    marginTop: designTokens.spacing.xl,
-    marginBottom: designTokens.spacing.lg,
   },
   description: {
     fontSize: designTokens.typography.sizes.sm,
@@ -1551,7 +1535,7 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 16,
-    color: designTokens.colors.error,
+    color: designTokens.colors.fail,
   },
   dividerRow: {
     position: 'relative',

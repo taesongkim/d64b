@@ -11,7 +11,7 @@ import CustomXIcon from '../CustomXIcon';
 import CustomCheckmarkIcon from '../CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { isWeekend, getTodayISO } from '@/utils/timeUtils';
-import { getCellVisualTreatment, determineCellState } from './gridPalette';
+import { getCellVisualTreatment, getCellColors, determineCellState } from './gridPalette';
 import { useThemeMode } from '@/contexts/ThemeContext';
 import CellShimmerOverlay from './CellShimmerOverlay';
 import { useReduceMotion } from '@/hooks/useReduceMotion';
@@ -182,6 +182,7 @@ export default function SingleCommitmentRow({
         // Determine cell state and visual treatment using centralized palette
         const cellState = determineCellState(status, isWeekendDay, isTodayDate);
         const visualTreatment = getCellVisualTreatment(cellState, themeMode);
+        const cellColors = getCellColors(cellState, themeMode);
 
         const cellSize = getCellSize(viewMode);
         const cellRadius = getCellBorderRadius(viewMode);
@@ -211,7 +212,7 @@ export default function SingleCommitmentRow({
           if (displayText) {
             cellContent = (
               <Text style={{
-                color: 'white',
+                color: cellColors.content,
                 fontSize: viewMode === 'daily' ? 12 : 10,
                 fontWeight: '600',
                 textAlign: 'center',
@@ -224,9 +225,9 @@ export default function SingleCommitmentRow({
         } else {
           // Show icons (existing behavior)
           if (status === 'completed') {
-            cellContent = <CustomCheckmarkIcon size={12.32} color="white" strokeWidth={2.2} />;
+            cellContent = <CustomCheckmarkIcon size={12.32} color={cellColors.content} strokeWidth={2.2} />;
           } else if (status === 'failed') {
-            cellContent = <CustomXIcon size={10} color="white" strokeWidth={2.5} />;
+            cellContent = <CustomXIcon size={10} color={cellColors.content} strokeWidth={2.5} />;
           }
         }
 

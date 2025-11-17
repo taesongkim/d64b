@@ -44,9 +44,65 @@ export const designTokens = {
     background: '#FAFAFA',
     surface: 'white',
     border: '#E5E7EB',
-    error: '#EF4444',
+    fail: '#EF4444',
     success: '#10B981',
     warning: '#F59E0B',
+  },
+
+  // Cell color system for grid states
+  cellColors: {
+    light: {
+      success: {
+        background: '#59CF92',
+        content: '#308F6D',
+      },
+      skipped: {
+        background: '#59CF9280', // 50% opacity of #59CF92
+        content: '#308F6D',
+      },
+      fail: {
+        background: '#F47887',
+        content: '#BD3747',
+      },
+      idle: {
+        background: '#F3F4F6', // Will use gray200 token
+        content: '#6B7280',
+      },
+      weekend: {
+        background: '#E5E7EB', // Will use gray300 token
+        content: '#6B7280',
+      },
+      today: {
+        background: '#F3F4F6', // Will use gray200 token
+        content: '#6B7280',
+      },
+    },
+    dark: {
+      success: {
+        background: '#279F74',
+        content: '#0E6848',
+      },
+      skipped: {
+        background: '#279F7480', // 50% opacity of #279F74
+        content: '#0E6848',
+      },
+      fail: {
+        background: '#B43746',
+        content: '#7B2C36',
+      },
+      idle: {
+        background: '#2A2A2A', // Will use gray200 token
+        content: '#8A8A8A',
+      },
+      weekend: {
+        background: '#404040', // Will use gray300 token
+        content: '#8A8A8A',
+      },
+      today: {
+        background: '#2A2A2A', // Will use gray200 token
+        content: '#8A8A8A',
+      },
+    },
   },
 
   // Subtle shadow for list items

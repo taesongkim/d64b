@@ -13,7 +13,7 @@ export const getModalColors = (themeMode: ThemeMode) => {
 
   return {
     // Overlay
-    overlayBackground: 'rgba(0, 0, 0, 0.5)',
+    overlayBackground: themeMode === 'light' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.9)',
 
     // Content backgrounds
     contentBackground: semanticColors.modalBackground,

@@ -21,6 +21,10 @@ import CustomCircleDashIcon from './CustomCircleDashIcon';
 import CustomXIcon from './CustomXIcon';
 import { parseLocalISODate } from '@/utils/timeUtils';
 import { getDisplayUnit } from '@/utils/unitUtils';
+import { useThemeMode } from '@/contexts/ThemeContext';
+import { designTokens } from '@/constants/designTokens';
+import { getThemeColors } from '@/constants/grayscaleTokens';
+import { getModalColors } from './styles/modalStyles';
 
 interface CommitmentCellModalProps {
   visible: boolean;
@@ -54,6 +58,11 @@ export default function CommitmentCellModal({
   onSave,
 }: CommitmentCellModalProps) {
   const fontStyle = useFontStyle();
+  const themeMode = useThemeMode();
+  const cellColors = designTokens.cellColors[themeMode];
+  const themeColors = getThemeColors(themeMode);
+  const modalColors = getModalColors(themeMode);
+
   
   // State for different commitment types
   const [selectedStatus, setSelectedStatus] = useState<RecordStatus | 'none'>('completed');
@@ -171,24 +180,24 @@ export default function CommitmentCellModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <View style={MODAL_STYLES.overlay}>
-          <View style={MODAL_STYLES.modalContent}>
+        <View style={[MODAL_STYLES.overlay, { backgroundColor: modalColors.overlayBackground }]}>
+          <View style={[MODAL_STYLES.modalContent, { backgroundColor: modalColors.contentBackground }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Header with date/title group on left, close button on right */}
               <View style={styles.headerContainer}>
                 <View style={styles.leftHeaderContent}>
                   {/* Date Subheader - left aligned */}
-                  <Text style={[styles.dateSubheader, fontStyle]}>{formatDate(date)}</Text>
+                  <Text style={[styles.dateSubheader, { color: modalColors.secondaryText }, fontStyle]}>{formatDate(date)}</Text>
                   {/* Title */}
-                  <Text style={[MODAL_STYLES.title, styles.titleInHeader, fontStyle]}>{commitment.title}</Text>
+                  <Text style={[MODAL_STYLES.title, styles.titleInHeader, { color: modalColors.primaryText }, fontStyle]}>{commitment.title}</Text>
                   {/* Status Text or Rating Summary */}
                   <Text style={[
                     styles.statusText,
                     {
-                      color: selectedStatus === 'none' ? '#6B7280' :
-                             selectedStatus === 'completed' ? '#10B981' :
-                             selectedStatus === 'skipped' ? '#10B981' :
-                             selectedStatus === 'failed' ? '#EF4444' : '#6B7280'
+                      color: selectedStatus === 'none' ? modalColors.secondaryText :
+                             selectedStatus === 'completed' ? cellColors.success.background :
+                             selectedStatus === 'skipped' ? cellColors.success.background :
+                             selectedStatus === 'failed' ? cellColors.fail.background : modalColors.secondaryText
                     },
                     fontStyle
                   ]}>
@@ -210,8 +219,8 @@ export default function CommitmentCellModal({
                     }
                   </Text>
                 </View>
-                <TouchableOpacity onPress={onClose} style={MODAL_STYLES.closeButton}>
-                  <Text style={[MODAL_STYLES.closeText, fontStyle]}>✕</Text>
+                <TouchableOpacity onPress={onClose} style={[MODAL_STYLES.closeButton, { backgroundColor: themeColors.gray300 }]}>
+                  <Text style={[MODAL_STYLES.closeText, { color: modalColors.secondaryText }, fontStyle]}>✕</Text>
                 </TouchableOpacity>
               </View>
 
@@ -221,37 +230,37 @@ export default function CommitmentCellModal({
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
-                    { backgroundColor: '#10B981' },
+                    { backgroundColor: cellColors.success.background },
                     { opacity: selectedStatus === 'completed' ? 1 : 0.3 }
                   ]}
                   onPress={() => setSelectedStatus('completed')}
                 >
-                  <CustomCheckmarkIcon size={16} color="white" strokeWidth={2.4} />
+                  <CustomCheckmarkIcon size={16} color={cellColors.success.content} strokeWidth={2.4} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
-                    { backgroundColor: '#10B981' },
+                    { backgroundColor: cellColors.skipped.background },
                     { opacity: selectedStatus === 'skipped' ? 1 : 0.3 }
                   ]}
                   onPress={() => setSelectedStatus('skipped')}
                 >
-                  <CustomCircleDashIcon size={18} color="white" />
+                  <CustomCircleDashIcon size={18} color={cellColors.skipped.content} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
-                    { backgroundColor: '#EF4444' },
+                    { backgroundColor: cellColors.fail.background },
                     { opacity: selectedStatus === 'failed' ? 1 : 0.3 }
                   ]}
                   onPress={() => setSelectedStatus('failed')}
                 >
-                  <CustomXIcon size={15} color="white" strokeWidth={2.2} />
+                  <CustomXIcon size={15} color={cellColors.fail.content} strokeWidth={2.2} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.circularStatusButton,
-                    { backgroundColor: '#E5E7EB' },
+                    { backgroundColor: themeColors.gray300 },
                     { opacity: selectedStatus === 'none' ? 1 : 0.3 }
                   ]}
                   onPress={() => setSelectedStatus('none')}
@@ -260,17 +269,17 @@ export default function CommitmentCellModal({
                 </View>
                 {/* Triangle indicator below active button */}
                 <View style={styles.triangleContainer}>
-                  {selectedStatus === 'completed' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 16 }]} />}
-                  {selectedStatus === 'skipped' && <View style={[styles.triangleUp, styles.triangleGreen, { marginLeft: 62 }]} />}
-                  {selectedStatus === 'failed' && <View style={[styles.triangleUp, styles.triangleRed, { marginLeft: 108 }]} />}
-                  {selectedStatus === 'none' && <View style={[styles.triangleUp, styles.triangleGray, { marginLeft: 154 }]} />}
+                  {selectedStatus === 'completed' && <View style={[styles.triangleUp, { borderBottomColor: cellColors.success.background, marginLeft: 16 }]} />}
+                  {selectedStatus === 'skipped' && <View style={[styles.triangleUp, { borderBottomColor: cellColors.success.background, marginLeft: 62 }]} />}
+                  {selectedStatus === 'failed' && <View style={[styles.triangleUp, { borderBottomColor: cellColors.fail.background, marginLeft: 108 }]} />}
+                  {selectedStatus === 'none' && <View style={[styles.triangleUp, { borderBottomColor: themeColors.gray500, marginLeft: 154 }]} />}
                 </View>
               </View>
 
               {/* Multiple Requirements */}
               {commitment.commitmentType === 'checkbox' && commitment.requirements && (
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, fontStyle]}>Requirements</Text>
+                  <Text style={[styles.sectionTitle, { color: modalColors.primaryText }, fontStyle]}>Requirements</Text>
                   {commitment.requirements.map((requirement, index) => (
                     <TouchableOpacity
                       key={index}
@@ -279,15 +288,22 @@ export default function CommitmentCellModal({
                     >
                       <View style={[
                         styles.checkbox,
-                        requirementsChecked[index] && styles.checkedCheckbox
+                        { backgroundColor: themeColors.gray300 },
+                        requirementsChecked[index] && {
+                          backgroundColor: cellColors.success.background,
+                          borderColor: cellColors.success.background
+                        }
                       ]}>
                         {requirementsChecked[index] && (
-                          <CustomCheckmarkIcon size={10} color="white" strokeWidth={2.2} />
+                          <CustomCheckmarkIcon size={10} color={cellColors.success.content} strokeWidth={2.2} />
                         )}
                       </View>
                       <Text style={[
                         styles.requirementText,
-                        requirementsChecked[index] && styles.checkedRequirementText,
+                        { color: modalColors.secondaryText },
+                        requirementsChecked[index] && {
+                          color: cellColors.success.background
+                        },
                         fontStyle
                       ]}>{requirement}</Text>
                     </TouchableOpacity>
@@ -298,14 +314,18 @@ export default function CommitmentCellModal({
               {/* Rating Input */}
               {commitment.commitmentType === 'measurement' && commitment.ratingRange && (
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, fontStyle]}>Rating</Text>
-                  <Text style={[styles.ratingRangeText, fontStyle]}>
+                  <Text style={[styles.sectionTitle, { color: modalColors.primaryText }, fontStyle]}>Rating</Text>
+                  <Text style={[styles.ratingRangeText, { color: modalColors.secondaryText }, fontStyle]}>
                     Enter a value between {commitment.ratingRange.min} and {commitment.ratingRange.max}
                   </Text>
                   <TextInput
-                    style={[styles.input, fontStyle]}
+                    style={[styles.input, {
+                      borderColor: themeColors.gray300,
+                      backgroundColor: modalColors.contentBackground,
+                      color: modalColors.primaryText
+                    }, fontStyle]}
                     placeholder={`${commitment.ratingRange.min}-${commitment.ratingRange.max}`}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={themeColors.gray500}
                     value={ratingValue}
                     onChangeText={setRatingValue}
                     keyboardType="numeric"
@@ -316,13 +336,17 @@ export default function CommitmentCellModal({
               {/* Measure Input */}
               {commitment.commitmentType === 'measurement' && !commitment.ratingRange && (
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, fontStyle]}>
+                  <Text style={[styles.sectionTitle, { color: modalColors.primaryText }, fontStyle]}>
                     Value (in {getDisplayUnit(commitment.unit || 'unit', 2)})
                   </Text>
                   <TextInput
-                    style={[styles.input, fontStyle]}
+                    style={[styles.input, {
+                      borderColor: themeColors.gray300,
+                      backgroundColor: modalColors.contentBackground,
+                      color: modalColors.primaryText
+                    }, fontStyle]}
                     placeholder="Enter value"
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={themeColors.gray500}
                     value={measureValue}
                     onChangeText={setMeasureValue}
                     keyboardType="numeric"
@@ -332,11 +356,14 @@ export default function CommitmentCellModal({
 
               {/* Action Buttons */}
               <View style={MODAL_STYLES.buttonContainer}>
-                <TouchableOpacity style={MODAL_STYLES.secondaryButton} onPress={onClose}>
-                  <Text style={[MODAL_STYLES.secondaryButtonText, fontStyle]}>Cancel</Text>
+                <TouchableOpacity style={[MODAL_STYLES.secondaryButton, {
+                  borderColor: themeColors.gray300,
+                  backgroundColor: modalColors.contentBackground
+                }]} onPress={onClose}>
+                  <Text style={[MODAL_STYLES.secondaryButtonText, { color: modalColors.secondaryText }, fontStyle]}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={MODAL_STYLES.primaryButton} onPress={handleSave}>
-                  <Text style={[MODAL_STYLES.primaryButtonText, fontStyle]}>Save</Text>
+                <TouchableOpacity style={[MODAL_STYLES.primaryButton, { backgroundColor: modalColors.primaryButton }]} onPress={handleSave}>
+                  <Text style={[MODAL_STYLES.primaryButtonText, { color: modalColors.primaryButtonText }, fontStyle]}>Save</Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -346,6 +373,7 @@ export default function CommitmentCellModal({
     </Modal>
   );
 }
+
 
 const styles = StyleSheet.create({
   keyboardAvoidingView: {
@@ -470,8 +498,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkedCheckbox: {
-    backgroundColor: '#10B981',
-    borderColor: '#10B981',
+    backgroundColor: designTokens.cellColors.light.success.background,
+    borderColor: designTokens.cellColors.light.success.background,
   },
   checkmark: {
     color: 'white',

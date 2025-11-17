@@ -172,7 +172,7 @@ export default function AddCommitmentModal({ visible, onClose, onAdd }: AddCommi
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={MODAL_STYLES.overlay}>
+      <View style={[MODAL_STYLES.overlay, { backgroundColor: modalColors.overlayBackground }]}>
         <View style={MODAL_STYLES.modalContent}>
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={MODAL_STYLES.header}>

@@ -4,6 +4,9 @@ import CustomXIcon from './CustomXIcon';
 import CustomCircleDashIcon from './CustomCircleDashIcon';
 import CustomCheckmarkIcon from './CustomCheckmarkIcon';
 import { RecordStatus } from '@/store/slices/recordsSlice';
+import { useThemeMode } from '@/contexts/ThemeContext';
+import { designTokens } from '@/constants/designTokens';
+import { getThemeColors } from '@/constants/grayscaleTokens';
 
 interface ReactionPopupProps {
   visible: boolean;
@@ -17,6 +20,14 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDismiss, position }: ReactionPopupProps) {
   const fadeAnimation = useRef(new Animated.Value(0)).current;
+  const themeMode = useThemeMode();
+  const cellColors = designTokens.cellColors[themeMode];
+  const themeColors = getThemeColors(themeMode);
+
+  // Special darker green for skip icon in popup context on dark mode
+  const skipIconColor = themeMode === 'dark'
+    ? '#083D2C' // Much darker green for better contrast on gray background
+    : cellColors.skipped.content;
 
   useEffect(() => {
     console.log('🔴 Modal visible prop changed to:', visible, 'at', Date.now());
@@ -88,31 +99,32 @@ export default function ReactionPopup({ visible, onSelect, onOpenDetails, onDism
           left: Math.max(10, Math.min(position.x - 60, screenWidth - 130)),
           top: Math.max(10, position.y - 60),
           opacity: fadeAnimation,
+          backgroundColor: themeMode === 'light' ? themeColors.white : themeColors.gray200,
         }]}>
-          <TouchableOpacity 
-            style={[styles.option, { backgroundColor: '#10B981' }]}
+          <TouchableOpacity
+            style={[styles.option, { backgroundColor: cellColors.success.background }]}
             onPress={() => handleSelect('completed')}
           >
-            <CustomCheckmarkIcon size={15.84} color="white" strokeWidth={2.2} />
+            <CustomCheckmarkIcon size={15.84} color={cellColors.success.content} strokeWidth={2.2} />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={[styles.option, { backgroundColor: '#10B981' }]}
+
+          <TouchableOpacity
+            style={[styles.option, { backgroundColor: cellColors.skipped.background }]}
             onPress={() => handleSelect('skipped')}
           >
-            <CustomCircleDashIcon size={18} color="white" />
+            <CustomCircleDashIcon size={18} color={skipIconColor} />
           </TouchableOpacity>
-          
+
           <TouchableOpacity
-            style={[styles.option, { backgroundColor: '#EF4444' }]}
+            style={[styles.option, { backgroundColor: cellColors.fail.background }]}
             onPress={() => handleSelect('failed')}
           >
-            <CustomXIcon size={14} color="white" />
+            <CustomXIcon size={14} color={cellColors.fail.content} />
           </TouchableOpacity>
 
           {onOpenDetails && (
             <TouchableOpacity
-              style={[styles.option, { backgroundColor: '#9CA3AF' }]}
+              style={[styles.option, { backgroundColor: themeColors.gray500 }]}
               onPress={handleOpenDetails}
               accessibilityLabel="Open details"
             >
@@ -133,10 +145,9 @@ const styles = StyleSheet.create({
   popup: {
     position: 'absolute',
     flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 25,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    borderRadius: 28,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -145,8 +156,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   option: {
     width: 40,
@@ -155,6 +164,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 4,
+    marginVertical: 4,
     backgroundColor: '#F9FAFB',
   },
   skipIcon: {
