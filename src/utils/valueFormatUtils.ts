@@ -154,14 +154,19 @@ export function getCellDisplayText(
     return '';
   }
 
+  // Special case: skipped cells should show no content (empty)
+  if (status === 'skipped') {
+    return '';
+  }
+
   // Check if we should display anything at all
   if (!shouldDisplayValue(status, value)) {
     return '';
   }
 
-  // If there's a status but no value, show 0
+  // If there's a status but no value, show -
   if ((value === null || value === undefined) && status && status !== 'none') {
-    return '0';
+    return '-';
   }
 
   // Format and return the value
