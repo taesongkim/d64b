@@ -62,9 +62,12 @@ export default function GridDateHeader({
       <View style={styles.dateRow}>
         {dates.map((date, index) => {
           const isTodayDate = isToday(date);
+          const dateColor = isTodayDate
+            ? semanticColors.primaryText
+            : (themeMode === 'light' ? colors.gray700 : colors.gray500);
           const textStyle = isTodayDate
-            ? boldFontStyle
-            : [styles.dateText, fontStyle];
+            ? [styles.todayDateText, boldFontStyle, { color: dateColor }]
+            : [styles.dateText, fontStyle, { color: dateColor }];
           return (
             <View key={`header-${date}-${index}`} style={dynamicStyles.dateCell}>
               <Text style={textStyle}>
@@ -90,12 +93,10 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 12,
-    color: '#6B7280',
     lineHeight: 16,
   },
   todayDateText: {
     fontSize: 12,
-    color: '#111827',
     lineHeight: 16,
   },
 });

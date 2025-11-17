@@ -22,6 +22,9 @@ import ReactionPopup from './ReactionPopup';
 import CommitmentCellModal from './CommitmentCellModal';
 import { useGridDates } from '@/hooks/useGridDates';
 import { useGridVisibleRange, type ViewMode } from '@/hooks/useGridVisibleRange';
+import { useSemanticColors, useThemeMode } from '@/contexts/ThemeContext';
+import { getThemeColors, createSemanticColors } from '@/constants/grayscaleTokens';
+import { getModalColors, createSharedButtonStyles } from './styles/modalStyles';
 
 interface DayRecord {
   date: string;
@@ -67,6 +70,13 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   const commitment = useAppSelector(state =>
     commitmentId ? selectCommitmentById(state, commitmentId) : null
   );
+
+  // Theme hooks
+  const semanticColors = useSemanticColors();
+  const themeMode = useThemeMode();
+  const colors = getThemeColors(themeMode);
+  const modalColors = getModalColors(themeMode);
+  const styles = createStyles(themeMode);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
@@ -435,9 +445,9 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
                 <Switch
                   value={commitment.showValues || false}
                   onValueChange={handleToggleShowValues}
-                  trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                  thumbColor={commitment.showValues ? '#ffffff' : '#ffffff'}
-                  ios_backgroundColor="#E5E7EB"
+                  trackColor={{ false: colors.gray200, true: '#10B981' }}
+                  thumbColor={semanticColors.modalBackground}
+                  ios_backgroundColor={colors.gray200}
                 />
               </View>
             </View>
@@ -452,15 +462,15 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
               {!isEditing && isActive && (
                 <View style={styles.horizontalActions}>
                   <TouchableOpacity style={styles.horizontalActionButton} onPress={handleEdit}>
-                    <Icon name="edit" size={16} color="#374151" style={styles.actionIcon} />
+                    <Icon name="edit" size={16} color={modalColors.actionButtonIcon} style={styles.actionIcon} />
                     <Text style={styles.horizontalActionText}>Edit</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.horizontalActionButton} onPress={handleArchive}>
-                    <Icon name="archive" size={16} color="#374151" style={styles.actionIcon} />
+                    <Icon name="archive" size={16} color={modalColors.actionButtonIcon} style={styles.actionIcon} />
                     <Text style={styles.horizontalActionText}>Archive</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.horizontalActionButton} onPress={handleSoftDelete}>
-                    <Icon name="delete" size={16} color="#374151" style={styles.actionIcon} />
+                    <Icon name="delete" size={16} color={modalColors.actionButtonIcon} style={styles.actionIcon} />
                     <Text style={styles.horizontalActionText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
@@ -473,7 +483,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
                     <Text style={[styles.horizontalActionText, styles.restoreText]}>Restore</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.horizontalActionButton} onPress={handleSoftDelete}>
-                    <Icon name="delete" size={16} color="#374151" style={styles.actionIcon} />
+                    <Icon name="delete" size={16} color={modalColors.actionButtonIcon} style={styles.actionIcon} />
                     <Text style={styles.horizontalActionText}>Delete</Text>
                   </TouchableOpacity>
                 </View>
@@ -486,7 +496,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
                     <Text style={[styles.horizontalActionText, styles.restoreText]}>Undelete</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.horizontalActionButton} onPress={handlePermanentDelete}>
-                    <Icon name="delete" size={16} color="#374151" style={styles.actionIcon} />
+                    <Icon name="delete" size={16} color={modalColors.actionButtonIcon} style={styles.actionIcon} />
                     <Text style={styles.horizontalActionText}>Delete Permanently</Text>
                   </TouchableOpacity>
                 </View>
@@ -519,34 +529,40 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  fullScreenContainer: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    fontSize: 20,
-    color: '#111827',
-    fontWeight: '400',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
+// Create theme-aware styles function
+const createStyles = (themeMode: 'light' | 'dark') => {
+  const colors = getThemeColors(themeMode);
+  const semanticColors = createSemanticColors(themeMode);
+  const modalColors = getModalColors(themeMode);
+
+  return StyleSheet.create({
+    fullScreenContainer: {
+      flex: 1,
+      backgroundColor: semanticColors.appBackground,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      backgroundColor: semanticColors.modalBackground,
+      borderBottomWidth: 1,
+      borderBottomColor: modalColors.borderLight,
+    },
+    backButton: {
+      padding: 8,
+    },
+    backButtonText: {
+      fontSize: 20,
+      color: semanticColors.primaryText,
+      fontWeight: '400',
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: semanticColors.primaryText,
+    },
   headerSpacer: {
     width: 40,
   },
@@ -561,22 +577,22 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
 
-  // Primary Typography - Title (H1-ish)
-  primaryTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-    lineHeight: 36,
-    marginBottom: 8,
-  },
+    // Primary Typography - Title (H1-ish)
+    primaryTitle: {
+      fontSize: 28,
+      fontWeight: '700',
+      color: semanticColors.primaryText,
+      lineHeight: 36,
+      marginBottom: 8,
+    },
 
-  // Secondary Typography - Description (body)
-  secondaryDescription: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#6B7280',
-    lineHeight: 24,
-  },
+    // Secondary Typography - Description (body)
+    secondaryDescription: {
+      fontSize: 16,
+      fontWeight: '400',
+      color: semanticColors.secondaryText,
+      lineHeight: 24,
+    },
 
   // Edit Mode
   editActionsContainer: {
@@ -585,61 +601,65 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 12,
   },
-  cancelButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 8,
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
-  },
-  saveButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#111827',
-    borderRadius: 8,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#D1D5DB',
-  },
-  saveButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  saveButtonTextDisabled: {
-    color: '#9CA3AF',
-  },
-  titleInput: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-    lineHeight: 36,
-    marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    minHeight: 72,
-  },
-  descriptionInput: {
-    fontSize: 16,
-    fontWeight: '400',
-    color: '#6B7280',
-    lineHeight: 24,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    minHeight: 100,
-  },
+    cancelButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: modalColors.secondaryButton,
+      borderColor: modalColors.borderLight,
+      borderWidth: 1,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    cancelButtonText: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: modalColors.secondaryButtonText,
+    },
+    saveButton: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      backgroundColor: modalColors.primaryButton,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    saveButtonDisabled: {
+      backgroundColor: modalColors.disabledButton,
+    },
+    saveButtonText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: modalColors.primaryButtonText,
+    },
+    saveButtonTextDisabled: {
+      color: modalColors.placeholderText,
+    },
+    titleInput: {
+      fontSize: 28,
+      fontWeight: '700',
+      lineHeight: 36,
+      marginBottom: 16,
+      backgroundColor: modalColors.contentCard,
+      borderColor: modalColors.borderLight,
+      color: modalColors.primaryText,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderWidth: 2,
+      minHeight: 72,
+    },
+    descriptionInput: {
+      fontSize: 16,
+      fontWeight: '400',
+      lineHeight: 24,
+      backgroundColor: modalColors.contentCard,
+      borderColor: modalColors.borderLight,
+      color: modalColors.primaryText,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderWidth: 2,
+      minHeight: 100,
+    },
 
   // Grid Section
   gridSection: {
@@ -654,7 +674,7 @@ const styles = StyleSheet.create({
   metaLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: themeMode === 'light' ? colors.gray400 : colors.gray500,
     letterSpacing: 1.5,
     textTransform: 'uppercase',
     marginBottom: 4,
@@ -662,7 +682,7 @@ const styles = StyleSheet.create({
   metaValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: semanticColors.primaryText,
   },
 
   // Legacy sections maintained
@@ -672,48 +692,48 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: semanticColors.primaryText,
     marginBottom: 8,
   },
-  viewContainer: {
-    padding: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  requirementText: {
-    fontSize: 16,
-    color: '#111827',
-    marginBottom: 4,
-  },
-  notesContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    padding: 12,
-  },
+    viewContainer: {
+      padding: 12,
+      backgroundColor: modalColors.contentCard,
+      borderColor: modalColors.contentCardBorder,
+      borderWidth: 1,
+      borderRadius: 8,
+    },
+    requirementText: {
+      fontSize: 16,
+      color: semanticColors.primaryText,
+      marginBottom: 4,
+    },
+    notesContainer: {
+      padding: 12,
+      backgroundColor: modalColors.contentCard,
+      borderColor: modalColors.contentCardBorder,
+      borderWidth: 1,
+      borderRadius: 8,
+    },
   noteItem: {
     marginBottom: 12,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: modalColors.borderLight,
   },
   noteDate: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: semanticColors.secondaryText,
     marginBottom: 4,
   },
   noteText: {
     fontSize: 16,
-    color: '#111827',
+    color: semanticColors.primaryText,
     lineHeight: 22,
   },
   emptyText: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: modalColors.placeholderText,
     fontStyle: 'italic',
   },
   actionsSection: {
@@ -723,25 +743,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  horizontalActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
+    horizontalActionButton: {
+      backgroundColor: modalColors.actionButton,
+      borderColor: modalColors.actionButtonBorder,
+      borderWidth: 1,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+      padding: 12,
+    },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: modalColors.actionButton,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: modalColors.actionButtonBorder,
   },
   actionIcon: {
     marginRight: 8,
@@ -749,13 +769,13 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#374151',
+    color: modalColors.actionButtonText,
   },
-  horizontalActionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-  },
+    horizontalActionText: {
+      color: modalColors.actionButtonText,
+      fontSize: 14,
+      fontWeight: '500',
+    },
   destructiveText: {
     color: '#EF4444',
   },
@@ -777,17 +797,18 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 16,
   },
-  toggleLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  toggleDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 18,
-  },
-});
+    toggleLabel: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: semanticColors.primaryText,
+      marginBottom: 2,
+    },
+    toggleDescription: {
+      fontSize: 14,
+      color: semanticColors.secondaryText,
+      lineHeight: 18,
+    },
+  });
+};
 
 export default CommitmentDetailsModal;

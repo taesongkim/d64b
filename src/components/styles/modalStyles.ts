@@ -31,9 +31,19 @@ export const getModalColors = (themeMode: ThemeMode) => {
     // Button colors
     primaryButton: semanticColors.primaryText,
     primaryButtonText: semanticColors.modalBackground,
-    secondaryButton: themeMode === 'light' ? '#F9FAFB' : colors.gray800,
+    secondaryButton: themeMode === 'light' ? colors.gray100 : colors.gray200,
     secondaryButtonText: semanticColors.secondaryText,
     disabledButton: themeMode === 'light' ? colors.gray400 : colors.gray600,
+
+    // Action button colors (secondary style with icons)
+    actionButton: themeMode === 'light' ? semanticColors.modalBackground : colors.gray100,
+    actionButtonBorder: themeMode === 'light' ? colors.gray200 : colors.gray700,
+    actionButtonText: semanticColors.secondaryText,
+    actionButtonIcon: semanticColors.secondaryText,
+
+    // Content container colors
+    contentCard: semanticColors.modalBackground,
+    contentCardBorder: themeMode === 'light' ? colors.gray200 : colors.gray700,
 
     // Close button
     closeButtonBackground: themeMode === 'light' ? colors.gray100 : colors.gray200,
@@ -228,6 +238,80 @@ export const createModalStyles = (themeMode: ThemeMode = 'light') => {
       backgroundColor: modalColors.disabledButton,
     } as ViewStyle,
   });
+};
+
+// Shared component style generators
+export const createSharedButtonStyles = (themeMode: ThemeMode) => {
+  const modalColors = getModalColors(themeMode);
+
+  return {
+    // Base input styles (shared properties only)
+    baseInput: {
+      backgroundColor: modalColors.contentCard,
+      borderColor: modalColors.borderLight,
+      color: modalColors.primaryText,
+      borderRadius: MODAL_SIZES.inputBorderRadius,
+      borderWidth: 1,
+    },
+
+    // Primary button (Create/Save)
+    primaryButton: {
+      backgroundColor: modalColors.primaryButton,
+      borderRadius: MODAL_SIZES.buttonBorderRadius,
+      alignItems: 'center',
+    },
+    primaryButtonText: {
+      color: modalColors.primaryButtonText,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+
+    // Secondary button (Cancel)
+    secondaryButton: {
+      backgroundColor: modalColors.secondaryButton,
+      borderColor: modalColors.borderLight,
+      borderWidth: 1,
+      borderRadius: MODAL_SIZES.buttonBorderRadius,
+      alignItems: 'center',
+    },
+    secondaryButtonText: {
+      color: modalColors.secondaryButtonText,
+      fontSize: 16,
+      fontWeight: '500',
+    },
+
+    // Action button (Edit/Archive/Delete with icons)
+    actionButton: {
+      backgroundColor: modalColors.actionButton,
+      borderColor: modalColors.actionButtonBorder,
+      borderWidth: 1,
+      borderRadius: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    actionButtonText: {
+      color: modalColors.actionButtonText,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+
+    // Content containers (white cards with borders)
+    contentCard: {
+      backgroundColor: modalColors.contentCard,
+      borderColor: modalColors.contentCardBorder,
+      borderWidth: 1,
+      borderRadius: 8,
+    },
+
+    // Disabled states
+    disabledButton: {
+      backgroundColor: modalColors.disabledButton,
+    },
+    disabledButtonText: {
+      color: modalColors.placeholderText,
+    },
+  };
 };
 
 // Export the base styles for light mode (backwards compatibility)
