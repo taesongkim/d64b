@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import CustomXIcon from '../CustomXIcon';
 import CustomCheckmarkIcon from '../CustomCheckmarkIcon';
+import SuccessCellAnimation from '../animations/SuccessCellAnimation';
 import { RecordStatus } from '@/store/slices/recordsSlice';
 import { isWeekend, getTodayISO } from '@/utils/timeUtils';
 import { getCellVisualTreatment, getCellColors, determineCellState } from './gridPalette';
@@ -50,6 +51,7 @@ interface SingleCommitmentRowProps {
   onCellPress: (commitmentId: string, date: string, event: any) => void;
   onLongPress: (commitmentId: string, date: string) => void;
   gridContext?: 'home' | 'modal';
+  userTriggeredChangesRef?: React.MutableRefObject<Set<string>>;
 }
 
 const getCellSize = (mode: ViewMode) => {
@@ -93,6 +95,7 @@ export default function SingleCommitmentRow({
   onCellPress,
   onLongPress,
   gridContext = 'home',
+  userTriggeredChangesRef,
 }: SingleCommitmentRowProps): React.JSX.Element {
   const todayISO = getTodayISO();
   const reduceMotion = useReduceMotion();
@@ -187,6 +190,8 @@ export default function SingleCommitmentRow({
         const cellSize = getCellSize(viewMode);
         const cellRadius = getCellBorderRadius(viewMode);
 
+        // Check if this cell is animating (for modal grid elevation)
+        const isAnimating = status === 'completed' && userTriggeredChangesRef?.current.has(`${commitment.id}_${date}`);
         const dynamicCellStyle: ViewStyle = {
           width: cellSize,
           height: cellSize,
@@ -197,6 +202,11 @@ export default function SingleCommitmentRow({
           alignItems: 'center',
           borderWidth: visualTreatment.borderWidth,
           borderColor: visualTreatment.borderColor,
+          // Elevate animating cells so sparkles appear above neighboring cells
+          ...(isAnimating && {
+            zIndex: 1000,
+            elevation: 10, // Android shadow elevation
+          }),
         };
 
         const cellStyle: StyleProp<ViewStyle> = StyleSheet.compose(styles.cell, dynamicCellStyle);
@@ -241,6 +251,15 @@ export default function SingleCommitmentRow({
             onPressOut={handlePressOut}
             delayLongPress={400}
           >
+            {/* Success cell animation for completed status */}
+            {status === 'completed' && (
+              <SuccessCellAnimation
+                isSuccess={status === 'completed'}
+                cellWidth={cellSize}
+                cellHeight={cellSize}
+                userTriggered={userTriggeredChangesRef?.current.has(`${commitment.id}_${date}`) ?? false}
+              />
+            )}
             {cellContent}
             <CellShimmerOverlay
               size={cellSize}

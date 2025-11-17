@@ -749,10 +749,16 @@ export default function CommitmentGrid({
                         const cellRadius = getCellBorderRadius(viewMode);
 
                         // Create dynamic cell style
+                        const isAnimating = status === 'completed' && userTriggeredChangesRef.current.has(`${c.id}_${date}`);
                         const cellStyleOverrides = {
                           backgroundColor: visualTreatment.backgroundColor,
                           borderWidth: visualTreatment.borderWidth,
                           borderColor: visualTreatment.borderColor,
+                          // Elevate animating cells so sparkles appear above neighboring cells
+                          ...(isAnimating && {
+                            zIndex: 1000,
+                            elevation: 10, // Android shadow elevation
+                          }),
                         };
 
                         const cellStyle = [dynamicStyles.cell, cellStyleOverrides];

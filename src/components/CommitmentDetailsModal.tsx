@@ -85,6 +85,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
   const [viewMode] = useState<ViewMode>('daily'); // Fixed to daily for modal
   const [scrollX, setScrollX] = useState(0);
   const gridScrollRef = useRef<ScrollView>(null);
+  const userTriggeredChangesRef = useRef<Set<string>>(new Set());
 
   // Popup state for grid interactions
   const [popupVisible, setPopupVisible] = useState(false);
@@ -221,6 +222,17 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
         console.log(`🔄 ReactionPopup → Queue enqueue: ${status} [${idempotencyKey}]`);
       }
 
+      // Track user-triggered change for animation
+      if (status === 'completed') {
+        const changeKey = `${selectedCell.commitmentId}_${selectedCell.date}`;
+        userTriggeredChangesRef.current.add(changeKey);
+
+        // Clear tracking after animation duration
+        setTimeout(() => {
+          userTriggeredChangesRef.current.delete(changeKey);
+        }, 1000);
+      }
+
       onSetRecordStatus(selectedCell.commitmentId, selectedCell.date, status);
     }
     setPopupVisible(false);
@@ -234,7 +246,29 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
     popupOpenRef.current = false;
   }, []);
 
+  const handleOpenDetails = useCallback(() => {
+    if (selectedCell && commitment) {
+      setSelectedCommitmentForCell(commitment);
+      setSelectedDate(selectedCell.date);
+      setCellModalVisible(true);
+      setPopupVisible(false);
+      setSelectedCell(null);
+      popupOpenRef.current = false;
+    }
+  }, [selectedCell, commitment]);
+
   const handleCellModalSave = useCallback((commitmentId: string, date: string, status: RecordStatus, value?: any) => {
+    // Track user-triggered change for animation
+    if (status === 'completed') {
+      const changeKey = `${commitmentId}_${date}`;
+      userTriggeredChangesRef.current.add(changeKey);
+
+      // Clear tracking after animation duration
+      setTimeout(() => {
+        userTriggeredChangesRef.current.delete(changeKey);
+      }, 1000);
+    }
+
     onSetRecordStatus(commitmentId, date, status, value);
     setCellModalVisible(false);
   }, [onSetRecordStatus]);
@@ -382,6 +416,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
                     onCellPress={handleGridCellPress}
                     onLongPress={handleGridLongPress}
                     gridContext="modal"
+                    userTriggeredChangesRef={userTriggeredChangesRef}
                   />
                 </View>
               </ScrollView>
@@ -510,6 +545,7 @@ const CommitmentDetailsModal: React.FC<CommitmentDetailsModalProps> = ({
       <ReactionPopup
         visible={popupVisible}
         onSelect={handlePopupSelect}
+        onOpenDetails={handleOpenDetails}
         onDismiss={handlePopupDismiss}
         position={popupPosition}
       />

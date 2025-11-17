@@ -190,8 +190,15 @@ export default function SuccessCellAnimation({
   }, [isSuccess]);
 
   return (
-    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
-      {/* Success fill background */}
+    <View style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      // Remove zIndex to allow cell content to appear on top
+    }}>
+      {/* Success fill background - behind cell content */}
       {isSuccess && (
         <Animated.View
           style={{
@@ -203,6 +210,7 @@ export default function SuccessCellAnimation({
             backgroundColor: designTokens.cellColors[themeMode].success.background,
             borderRadius: designTokens.radius.sm,
             transform: [{ scale: fillScale }],
+            zIndex: -1, // Ensure fill stays behind cell content
           }}
         />
       )}
@@ -216,7 +224,8 @@ export default function SuccessCellAnimation({
           width: cellWidth + 32,
           height: cellHeight + 32,
           pointerEvents: 'none',
-          zIndex: 1000, // Ensure sparkles appear above neighboring cells
+          zIndex: 1001, // Higher than parent container
+          elevation: 15, // Android elevation for sparkles
         }}
       >
         {sparkles.map((sparkle, index) => {
