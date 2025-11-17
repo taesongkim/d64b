@@ -128,25 +128,37 @@ export default function CommitmentCellModal({
     if (commitment.commitmentType === 'measurement') {
       if (commitment.ratingRange) {
         // Rating type
-        const rating = parseFloat(ratingValue.trim());
-        if (isNaN(rating)) {
-          Alert.alert('Error', 'Please enter a valid rating value.');
-          return;
+        const ratingInput = ratingValue.trim();
+        if (ratingInput === '') {
+          // Allow empty values - will show "-" in display
+          value = undefined;
+        } else {
+          const rating = parseFloat(ratingInput);
+          if (isNaN(rating)) {
+            Alert.alert('Error', 'Please enter a valid rating value.');
+            return;
+          }
+          if (rating < commitment.ratingRange.min || rating > commitment.ratingRange.max) {
+            Alert.alert('Error', `Rating must be between ${commitment.ratingRange.min} and ${commitment.ratingRange.max}.`);
+            return;
+          }
+          value = rating;
         }
-        if (rating < commitment.ratingRange.min || rating > commitment.ratingRange.max) {
-          Alert.alert('Error', `Rating must be between ${commitment.ratingRange.min} and ${commitment.ratingRange.max}.`);
-          return;
-        }
-        value = rating;
         console.log('💾 [Modal] Rating value prepared:', value);
       } else {
         // Measure type
-        const measure = parseFloat(measureValue.trim());
-        if (isNaN(measure)) {
-          Alert.alert('Error', 'Please enter a valid measurement value.');
-          return;
+        const measureInput = measureValue.trim();
+        if (measureInput === '') {
+          // Allow empty values - will show "-" in display
+          value = undefined;
+        } else {
+          const measure = parseFloat(measureInput);
+          if (isNaN(measure)) {
+            Alert.alert('Error', 'Please enter a valid measurement value.');
+            return;
+          }
+          value = measure;
         }
-        value = measure;
         console.log('💾 [Modal] Measure value prepared:', value, 'from input:', measureValue);
       }
     } else if (commitment.commitmentType === 'checkbox' && commitment.requirements) {
