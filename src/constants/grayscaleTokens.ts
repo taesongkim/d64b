@@ -12,24 +12,24 @@ export const grayscaleTokens = {
     // Pure white
     white: '#FFFFFF',
 
-    // Very light grays - backgrounds
+    // Very light grays - backgrounds (neutral)
     gray50: '#FAFAFA',    // Nearly white background (main app background)
-    gray100: '#F9FAFB',   // Light background (modal sections, disabled inputs)
-    gray200: '#F3F4F6',   // Subtle background (cards, toggles)
+    gray100: '#F5F5F5',   // Light background (modal sections, disabled inputs) - neutral
+    gray200: '#EEEEEE',   // Subtle background (cards, toggles) - neutral
 
-    // Light grays - borders and dividers
-    gray300: '#E5E7EB',   // Primary border color (inputs, cards, dividers)
-    gray400: '#D1D5DB',   // Medium-light borders (disabled states)
+    // Light grays - borders and dividers (neutral)
+    gray300: '#E0E0E0',   // Primary border color (inputs, cards, dividers) - neutral
+    gray400: '#BDBDBD',   // Medium-light borders (disabled states) - neutral
 
-    // Medium grays - text and secondary elements
-    gray500: '#9CA3AF',   // Medium gray (placeholder text, disabled text)
-    gray600: '#8E8E93',   // System gray (iOS-style inactive elements)
+    // Medium grays - text and secondary elements (neutral)
+    gray500: '#9E9E9E',   // Medium gray (placeholder text, disabled text) - neutral
+    gray600: '#8E8E8E',   // Medium gray (inactive elements) - neutral
     gray700: '#707070',   // Dark medium gray (secondary text) - neutral
-    gray800: '#4B5563',   // Dark gray (body text)
-    gray900: '#374151',   // Very dark gray (headings, important text)
+    gray800: '#424242',   // Dark gray (body text) - neutral
+    gray900: '#212121',   // Very dark gray (headings, important text) - neutral
 
-    // Almost black
-    black: '#111827',     // Primary text, buttons, main UI elements
+    // Almost black (neutral)
+    black: '#1C1C1C',     // Primary text, buttons, main UI elements - neutral
   },
 
   dark: {

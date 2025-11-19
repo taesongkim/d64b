@@ -2,68 +2,78 @@
 
 ## Complete Grayscale Color System
 
-| Token Name | Hex Value | RGB Values | Usage Description | Key Locations |
-|------------|-----------|------------|-------------------|---------------|
-| **white** | `#FFFFFF` | 255,255,255 | Pure white for text on dark backgrounds, card surfaces | Button text, modal backgrounds, card content |
-| **gray50** | `#FAFAFA` | 250,250,250 | Nearly white - main app background | App container, screen backgrounds |
-| **gray100** | `#F9FAFB` | 249,250,251 | Light background for sections and disabled states | Modal sections, disabled inputs, tab bars, header backgrounds |
-| **gray200** | `#F3F4F6` | 243,244,246 | Subtle background for cards and UI elements | Toggle backgrounds, subtle cards, view toggles |
-| **gray300** | `#E5E7EB` | 229,231,235 | **Primary border color** - most common border/divider | Input borders, card borders, dividers, switches, grid lines |
-| **gray400** | `#D1D5DB` | 209,213,219 | Medium borders and disabled button states | Disabled buttons, secondary borders |
-| **gray500** | `#9CA3AF` | 156,163,175 | Medium gray for placeholder text and tertiary elements | Placeholder text, disabled text, inactive elements, tertiary UI |
-| **gray600** | `#8E8E93` | 142,142,147 | System gray for inactive navigation elements | Inactive tab text, iOS-style secondary elements |
-| **gray700** | `#6B7280` | 107,114,128 | **Secondary text color** - readable secondary content | Secondary text, captions, helper text, form labels |
-| **gray800** | `#4B5563` | 75,85,99 | Dark gray for important secondary content | Important secondary text, form field text |
-| **gray900** | `#374151` | 55,65,81 | Very dark gray for headings and emphasis | Headings, emphasized text, important UI elements |
-| **black** | `#111827` | 17,24,39 | **Primary text/UI color** - highest contrast | Primary text, buttons, icons, main UI elements |
+| Token Name | Light Mode | Dark Mode | Usage Description | Key Locations |
+|------------|------------|-----------|-------------------|---------------|
+| **white** | `#FFFFFF` | `#0F0F0F` | Background surfaces, card content | Modal backgrounds, card content, input backgrounds |
+| **gray50** | `#FAFAFA` | `#0F0F0F` | Main app background | App container, screen backgrounds |
+| **gray100** | `#F5F5F5` | `#1C1C1C` | Light background for sections | Modal sections, disabled inputs, tab bars, headers |
+| **gray200** | `#EEEEEE` | `#2A2A2A` | Subtle background for UI elements | Toggle backgrounds, subtle cards, view toggles |
+| **gray300** | `#E0E0E0` | `#404040` | **Primary border color** | Input borders, card borders, dividers, grid lines |
+| **gray400** | `#BDBDBD` | `#5A5A5A` | Medium borders and disabled states | Disabled buttons, secondary borders |
+| **gray500** | `#9E9E9E` | `#8A8A8A` | Placeholder text and tertiary elements | Placeholder text, disabled text, inactive elements |
+| **gray600** | `#8E8E8E` | `#D1D1D1` | Medium gray for inactive elements | Inactive tab text, secondary UI elements |
+| **gray700** | `#707070` | `#E5E5E5` | Secondary text color | Secondary text, captions, helper text, form labels |
+| **gray800** | `#424242` | `#F3F3F3` | Important secondary content | Important secondary text, form field text |
+| **gray900** | `#212121` | `#FAFAFA` | Headings and emphasis | Headings, emphasized text, important UI elements |
+| **black** | `#1C1C1C` | `#FFFFFF` | **Primary text/UI color** | Primary text, buttons, icons, main UI elements |
 
-## Semantic Mappings
+## Semantic Mappings (Theme-Aware)
 
 ### Backgrounds
-- **App Background**: `gray50` (#FAFAFA) - Main screen background
-- **Card Background**: `white` (#FFFFFF) - Cards, modals, elevated surfaces
-- **Section Background**: `gray100` (#F9FAFB) - Form sections, grouped content
-- **Disabled Background**: `gray100` (#F9FAFB) - Disabled inputs, inactive states
+- **App Background**: `gray50` - Main screen background
+- **Card Background**: `white` - Cards, modals, elevated surfaces
+- **Section Background**: `gray50` - Form sections, grouped content
+- **Disabled Background**: `gray100` - Disabled inputs, inactive states
 
 ### Borders & Dividers
-- **Default Border**: `gray300` (#E5E7EB) - Primary border for all inputs, cards
-- **Subtle Border**: `gray200` (#F3F4F6) - Very light dividers
-- **Strong Border**: `gray400` (#D1D5DB) - Emphasized borders
+- **Default Border**: `gray300` - Primary border for all inputs, cards
+- **Subtle Border**: `gray200` - Very light dividers
+- **Strong Border**: `gray400` - Emphasized borders
 
 ### Text Hierarchy
-- **Primary Text**: `black` (#111827) - Main content, headings, button text
-- **Secondary Text**: `gray700` (#6B7280) - Supporting content, captions
-- **Tertiary Text**: `gray500` (#9CA3AF) - Helper text, placeholders
-- **Disabled Text**: `gray500` (#9CA3AF) - Inactive text elements
+- **Primary Text**: `black` - Main content, headings, button text
+- **Secondary Text**: `gray900` - Supporting content, captions
+- **Tertiary Text**: `gray500` - Helper text, placeholders
+- **Disabled Text**: `gray500` - Inactive text elements
 
 ### Interactive Elements
-- **Button Primary**: `black` (#111827) - Main action buttons
-- **Button Secondary**: `gray100` (#F9FAFB) - Secondary action buttons
-- **Button Disabled**: `gray400` (#D1D5DB) - Inactive buttons
+- **Button Primary**: `black` - Main action buttons
+- **Button Secondary**: `gray100` - Secondary action buttons
+- **Button Disabled**: `gray400` - Inactive buttons
 
-## Usage Statistics
+## Current Token Usage in Codebase
 
-### Most Frequently Used Colors
-1. **`#E5E7EB` (gray300)** - 47+ occurrences - Primary border color
-2. **`#F9FAFB` (gray100)** - 15+ occurrences - Section backgrounds
-3. **`#111827` (black)** - 25+ occurrences - Primary text/UI elements
-4. **`#6B7280` (gray700)** - 20+ occurrences - Secondary text
-5. **`#9CA3AF` (gray500)** - 18+ occurrences - Placeholder/tertiary text
+### Most Frequently Used Tokens
+1. **`gray300`** - Primary border color (inputs, cards, dividers)
+2. **`gray100`** - Section backgrounds (modals, disabled inputs, headers)
+3. **`black`** - Primary text and UI elements
+4. **`gray900`** - Secondary text content
+5. **`gray500`** - Placeholder and tertiary text
 
 ### Screen Distribution
-- **Dashboard**: Uses full spectrum - primary text, secondary text, borders, backgrounds
-- **Modals** (Add/Edit): Heavy use of borders, section backgrounds, form elements
-- **Navigation**: Light backgrounds, borders, text hierarchy
+- **Dashboard**: Full spectrum usage - text hierarchy, borders, backgrounds
+- **Modals** (Add/Edit): Borders, section backgrounds, form elements
+- **Navigation**: Backgrounds, borders, text hierarchy
 - **Social/Friends**: Cards, borders, text hierarchy, state indicators
 - **Analytics**: Chart backgrounds, text hierarchy, card styling
 
-## Consolidations Made
-- `#FFFFFF` + `#ffffff` → `white`
-- `#F9FAFB` + `#f8f9fa` → `gray100`
-- `#E5E7EB` + `#e5e5e7` → `gray300`
+## Theme System Implementation
 
-## Notes for Dark Mode Implementation
-- Each gray level will need a corresponding dark mode value
-- Text hierarchy relationships should be preserved (contrast ratios)
-- Border visibility may need adjustment in dark mode
-- Background layering system is well-established for dark mode adaptation
+### Access Patterns
+```typescript
+// Raw tokens (theme-aware)
+const { colors } = useTheme();
+colors.gray300  // Auto-switches: #E5E7EB → #404040
+
+// Semantic colors (recommended)
+const { semanticColors } = useTheme();
+semanticColors.defaultBorder  // Maps to gray300
+semanticColors.primaryText    // Maps to black
+```
+
+### Border Removal Impact
+Removing `borderWidth` and `borderColor` from TextInput fields will rely on:
+- **Light Mode**: Background contrast (`white` #FFFFFF on `gray50` #FAFAFA)
+- **Dark Mode**: Background contrast (`white` #0F0F0F on `gray50` #0F0F0F)
+
+**Note**: In dark mode, TextInput and container backgrounds are identical (#0F0F0F), so visual separation will depend on focus states, shadows, or padding.

@@ -5,6 +5,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useFontStyle } from '@/hooks/useFontStyle';
+import { useSemanticColors } from '@/contexts/ThemeContext';
 
 interface GridMonthHeaderProps {
   monthLabel: string;
@@ -14,10 +15,11 @@ export default function GridMonthHeader({
   monthLabel,
 }: GridMonthHeaderProps): React.JSX.Element {
   const fontStyle = useFontStyle();
+  const semanticColors = useSemanticColors();
 
   return (
     <View style={styles.monthHeader}>
-      <Text style={[styles.monthText, fontStyle]}>
+      <Text style={[styles.monthText, fontStyle, { color: semanticColors.tertiaryText }]}>
         {monthLabel}
       </Text>
     </View>
@@ -31,7 +33,6 @@ const styles = StyleSheet.create({
   },
   monthText: {
     fontSize: 11,
-    color: '#9CA3AF',
     fontFamily: 'Manrope_600SemiBold',
     textTransform: 'uppercase',
   },

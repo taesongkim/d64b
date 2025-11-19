@@ -136,7 +136,6 @@ export function createReorderModalStyles(mode: ThemeMode) {
       backgroundColor: mode === 'light' ? themeColors.white : themeColors.gray200, // Light: white, Dark: 2 notches lighter
       borderRadius: designTokens.radius.md,
       marginBottom: designTokens.spacing.xs,
-      ...designTokens.shadow.subtle,
     },
 
     // Commitment Row (used in CommitmentOrderingModalR2)
@@ -144,6 +143,7 @@ export function createReorderModalStyles(mode: ThemeMode) {
       justifyContent: 'space-between',
       padding: designTokens.spacing.md,
       height: 48, // ROW_HEIGHT from modal
+      ...designTokens.shadow.level1,
     },
 
     // Friend Row (used in FriendOrderingModalR2)
@@ -154,6 +154,7 @@ export function createReorderModalStyles(mode: ThemeMode) {
       marginHorizontal: designTokens.spacing.md,
       marginVertical: 2,
       height: 56, // ROW_HEIGHT from friend modal
+      ...designTokens.shadow.level1,
     },
 
     // Spacer/Divider Rows (used in CommitmentOrderingModalR2)
@@ -163,6 +164,7 @@ export function createReorderModalStyles(mode: ThemeMode) {
       backgroundColor: themeColors.gray50, // Slightly different background
       padding: designTokens.spacing.md,
       height: 48, // ROW_HEIGHT from modal
+      ...designTokens.shadow.level1,
     },
 
     // Disabled Row State

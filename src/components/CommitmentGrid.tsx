@@ -986,7 +986,6 @@ const styles = StyleSheet.create({
   },
   monthText: {
     fontSize: 11,
-    color: '#9CA3AF',
     fontFamily: 'Manrope_600SemiBold',
     textTransform: 'uppercase',
   },

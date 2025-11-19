@@ -8,13 +8,7 @@ export const designTokens = {
   dnd: {
     lift: {
       scale: 1.03,
-      shadow: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 8, // Android
-      },
+      // Use level2 shadow for dragging items
       opacity: 0.95,
     },
     placeholder: {
@@ -105,14 +99,21 @@ export const designTokens = {
     },
   },
 
-  // Subtle shadow for list items
+  // Shadow system for consistent elevation
   shadow: {
-    subtle: {
+    level1: {
       shadowColor: '#000000',
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1, // Android
+      shadowOpacity: 0.07,
+      shadowRadius: 3,
+      elevation: 2, // Android
+    },
+    level2: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 10, // Android
     },
   },
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { AnimalType, ColorType, AVATAR_COLORS, getInitials } from '@/utils/avatarUtils';
+import { useSemanticColors } from '@/contexts/ThemeContext';
 
 interface AnimalAvatarProps {
   animal?: AnimalType;
@@ -175,14 +176,22 @@ export const AnimalAvatar: React.FC<AnimalAvatarProps> = ({
   initials,
   name
 }) => {
+  const semanticColors = useSemanticColors();
   const displayInitials = initials || (name ? getInitials(name) : '?');
   
   // If no animal/color selected, show initials
   if (!animal || !color) {
     return (
       <View style={[styles.container, { width: size, height: size }]}>
-        <View style={[styles.initialsContainer, { width: size, height: size }]}>
-          <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
+        <View style={[styles.initialsContainer, {
+          width: size,
+          height: size,
+          backgroundColor: semanticColors.subtleBorder
+        }]}>
+          <Text style={[styles.initials, {
+            fontSize: size * 0.4,
+            color: semanticColors.secondaryText
+          }]}>
             {displayInitials}
           </Text>
         </View>
@@ -197,8 +206,15 @@ export const AnimalAvatar: React.FC<AnimalAvatarProps> = ({
   if (!colors || !animalData) {
     return (
       <View style={[styles.container, { width: size, height: size }]}>
-        <View style={[styles.initialsContainer, { width: size, height: size }]}>
-          <Text style={[styles.initials, { fontSize: size * 0.4 }]}>
+        <View style={[styles.initialsContainer, {
+          width: size,
+          height: size,
+          backgroundColor: semanticColors.subtleBorder
+        }]}>
+          <Text style={[styles.initials, {
+            fontSize: size * 0.4,
+            color: semanticColors.secondaryText
+          }]}>
             {displayInitials}
           </Text>
         </View>
@@ -237,14 +253,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   initialsContainer: {
-    backgroundColor: '#E5E7EB',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 50,
   },
   initials: {
     fontWeight: '600',
-    color: '#374151',
     textAlign: 'center',
   },
 });

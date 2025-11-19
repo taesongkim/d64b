@@ -36,8 +36,8 @@ export const AVATAR_COLORS = {
     animal: '#460008'
   },
   Neutral: {
-    background: '#E5E7EB',
-    animal: '#374151'
+    background: '#E0E0E0', // Light neutral gray (tokenized gray300 light)
+    animal: '#424242'      // Dark neutral gray (tokenized gray800 light) - doesn't invert
   }
 } as const;
 
