@@ -22,8 +22,14 @@ export default function MainTabs(): React.JSX.Element {
         tabBarActiveTintColor: semanticColors.primaryText,
         tabBarInactiveTintColor: semanticColors.secondaryText,
         tabBarStyle: {
-          backgroundColor: semanticColors.sectionBackground,
+          backgroundColor: semanticColors.sectionBackground + 'CC', // Semi-transparent background (80% opacity)
           borderTopColor: semanticColors.defaultBorder,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 81, // Default (~49px) + 32px extra height
+          paddingTop: 12, // Increased padding to move buttons down (was 4px)
         },
         headerStyle: {
           backgroundColor: semanticColors.sectionBackground,

@@ -7,6 +7,7 @@ import {
   ScrollView,
   RefreshControl
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CommitmentGrid from '@/components/CommitmentGrid';
 import AddCommitmentModal from '@/components/AddCommitmentModal';
 import CommitmentDetailsModal from '@/components/CommitmentDetailsModal';
@@ -44,7 +45,8 @@ export default function DashboardScreen(): React.JSX.Element {
   const layoutItems = useAppSelector(selectActiveLayoutItemsOrdered);
   const records = useAppSelector(state => state.records.records);
   const { user } = useAuth();
-  
+  const insets = useSafeAreaInsets();
+
   const fontStyle = useFontStyle();
   const boldFontStyle = useFontStyle(undefined, 'bold');
   const semiBoldFontStyle = useFontStyle(undefined, 'semiBold');
@@ -61,7 +63,7 @@ export default function DashboardScreen(): React.JSX.Element {
     },
     scrollContent: {
       flexGrow: 1,
-      paddingBottom: 20,
+      paddingBottom: insets.bottom + 49 + 20, // tab bar height (~49px) + safe area bottom + original padding
     },
     header: {
       flexDirection: 'row',
@@ -817,7 +819,7 @@ export default function DashboardScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
@@ -988,7 +990,7 @@ export default function DashboardScreen(): React.JSX.Element {
         }}
       />
 
-    </SafeAreaView>
+    </View>
   );
 }
 

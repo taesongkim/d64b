@@ -11,6 +11,7 @@ import {
   Image,
   Share
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
@@ -52,8 +53,10 @@ interface ProfileScreenProps {
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps): React.JSX.Element {
   const { user, signOut } = useAuth();
+  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const { notifications, preferences, privacy, featureFlags } = useAppSelector(state => state.settings);
+  const styles = createStyles(insets);
   
   // UI state
   const [showSettings, setShowSettings] = useState(false);
@@ -613,8 +616,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.profileInfo}>
@@ -691,11 +697,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps): React
         currentName={userProfile?.full_name || ''}
         currentEmail={userProfile?.email || user?.email || ''}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (insets: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
@@ -1003,5 +1009,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
+  },
+  scrollContent: {
+    paddingBottom: insets.bottom + 49 + 20, // tab bar height (~49px) + safe area bottom + padding
   },
 });

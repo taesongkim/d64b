@@ -13,6 +13,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isFeatureEnabled } from '@/config/features';
 import { Icon } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,9 +57,10 @@ interface Friend {
 
 export default function FriendsListScreen(): React.JSX.Element {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const themeMode = useThemeMode();
   const themeColors = getThemeColors(themeMode);
-  const styles = createStyles(themeColors, themeMode);
+  const styles = createStyles(themeColors, themeMode, insets);
   
   // Real friend data
   const [friends, setFriends] = useState<FriendProfile[]>([]);
@@ -450,7 +452,7 @@ export default function FriendsListScreen(): React.JSX.Element {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
         {/* Toggle between Friends and Friend Requests */}
         <View style={styles.toggleContainer}>
@@ -735,12 +737,12 @@ export default function FriendsListScreen(): React.JSX.Element {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 // Dynamic styles function for theme support
-const createStyles = (themeColors: ReturnType<typeof getThemeColors>, themeMode: 'light' | 'dark') => StyleSheet.create({
+const createStyles = (themeColors: ReturnType<typeof getThemeColors>, themeMode: 'light' | 'dark', insets: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: themeColors.gray50,
@@ -816,7 +818,7 @@ const createStyles = (themeColors: ReturnType<typeof getThemeColors>, themeMode:
   },
   listContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: insets.bottom + 49 + 20, // tab bar height (~49px) + safe area bottom + original padding
   },
   friendCard: {
     backgroundColor: themeColors.white,
