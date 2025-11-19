@@ -22,7 +22,7 @@ export function ThemeToggle() {
           height: 32,
           justifyContent: 'center',
           alignItems: 'center',
-          marginRight: 16, // Add spacing when used in navigation header
+          marginRight: 20, // Match dashboard content paddingHorizontal
         },
         toggleButtonInner: {
           backgroundColor: mode === 'light' ? colors.white : gridColors.idle,
