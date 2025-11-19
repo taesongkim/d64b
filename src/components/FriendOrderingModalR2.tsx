@@ -430,7 +430,7 @@ export default function FriendOrderingModalR2({
                 { scale: draggedItemScale }
               ],
               opacity: draggedItemOpacity,
-              ...designTokens.dnd.lift.shadow,
+              ...designTokens.shadow.level2,
             }
           ]}
         >
@@ -570,7 +570,7 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.sm,
     marginHorizontal: designTokens.spacing.md,
     marginVertical: 2,
-    ...designTokens.shadow.subtle
+    ...designTokens.shadow.level1
   },
   friendInfo: {
     flex: 1,

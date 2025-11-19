@@ -32,6 +32,9 @@ import {
 import { triggerFriendsChartsRefresh } from '@/hooks/useFriendsCharts';
 import AnimalAvatar from '@/components/AnimalAvatar';
 import { AnimalType, ColorType } from '@/utils/avatarUtils';
+import { designTokens } from '@/constants/designTokens';
+import { useThemeMode } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/grayscaleTokens';
 
 interface Friend {
   id: string;
@@ -53,6 +56,9 @@ interface Friend {
 
 export default function FriendsListScreen(): React.JSX.Element {
   const { user } = useAuth();
+  const themeMode = useThemeMode();
+  const themeColors = getThemeColors(themeMode);
+  const styles = createStyles(themeColors, themeMode);
   
   // Real friend data
   const [friends, setFriends] = useState<FriendProfile[]>([]);
@@ -114,6 +120,7 @@ export default function FriendsListScreen(): React.JSX.Element {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newFriendEmail, setNewFriendEmail] = useState('');
   const [selectedTab, setSelectedTab] = useState<'friends' | 'discover'>('friends');
+  const [showFriendRequests, setShowFriendRequests] = useState(false);
 
   // Load friends and requests on mount
   useEffect(() => {
@@ -350,27 +357,6 @@ export default function FriendsListScreen(): React.JSX.Element {
     );
   };
 
-  const renderMiniHabitGrid = (friend: Friend) => {
-    // Show last 7 days mini grid
-    const days = Array(7).fill(0).map((_, i) => {
-      const randomComplete = Math.random() > 0.3;
-      return randomComplete;
-    });
-
-    return (
-      <View style={styles.miniGrid}>
-        {days.map((completed, index) => (
-          <View
-            key={index}
-            style={[
-              styles.miniGridCell,
-              completed && styles.miniGridCellCompleted,
-            ]}
-          />
-        ))}
-      </View>
-    );
-  };
 
   const renderFriendCard = ({ item }: { item: Friend | FriendProfile }) => {
     // Check if it's a real friend or mock friend
@@ -389,66 +375,51 @@ export default function FriendsListScreen(): React.JSX.Element {
     } : item as Friend;
 
     return (
-    <TouchableOpacity style={styles.friendCard}>
+    <View style={styles.friendCard}>
       <View style={styles.friendHeader}>
         <View style={styles.avatarContainer}>
           <AnimalAvatar
             animal={friend.avatar_animal as AnimalType}
             color={friend.avatar_color as ColorType}
-            size={48}
+            size={36}
             showInitials={true}
             name={friend.name}
           />
         </View>
-        
+
         <View style={styles.friendInfo}>
           <Text style={styles.friendName}>{friend.name}</Text>
           <Text style={styles.friendUsername}>{friend.username}</Text>
         </View>
 
-        <View style={styles.friendStats}>
-          <View style={styles.statLine}>
-            <Text style={styles.statLabel}>streak:</Text>
-            <Text style={styles.statValue}>{friend.currentStreak}</Text>
-          </View>
-          <View style={styles.statLine}>
-            <Text style={styles.statLabel}>today:</Text>
-            <Text style={styles.statValue}>{friend.completedToday}/{friend.totalHabits}</Text>
-          </View>
+        <View style={styles.lastActiveContainer}>
+          <Text style={styles.lastActiveText}>Last Active: Unknown</Text>
         </View>
       </View>
 
-      <View style={styles.activitySection}>
-        <Text style={styles.activityTitle}>Recent Activity</Text>
-        <View style={styles.recentItems}>
-          {(friend.recentActivity || []).slice(0, 2).map((activity, index) => (
-            <View key={index} style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Icon 
-                  name={activity.completed ? 'activity-completed' : 'activity-failed'} 
-                  size={16} 
-                  color={activity.completed ? '#10B981' : '#EF4444'} 
-                />
-              </View>
-              <Text style={styles.activityText} numberOfLines={1}>
-                {activity.habitName}
-              </Text>
-              <Text style={styles.activityDate}>{activity.date}</Text>
-            </View>
-          ))}
-        </View>
-        
-        {/* Remove friend button for real friends */}
+      {/* Horizontal Divider */}
+      <View style={styles.friendDivider} />
+
+      {/* Action Buttons Section */}
+      <View style={styles.friendActions}>
+        <TouchableOpacity style={styles.actionButton}>
+          <Text style={styles.actionButtonText}>Profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.actionButton}>
+          <Text style={styles.actionButtonText}>Message</Text>
+        </TouchableOpacity>
+
         {isRealFriend && (
           <TouchableOpacity
-            style={styles.removeFriendButton}
+            style={styles.actionButtonRemove}
             onPress={() => handleRemoveFriend(item.id, friend.name)}
           >
-            <Text style={styles.removeFriendText}>Remove</Text>
+            <Text style={styles.actionButtonRemoveText}>Remove</Text>
           </TouchableOpacity>
         )}
       </View>
-    </TouchableOpacity>
+    </View>
     );
   };
 
@@ -481,165 +452,189 @@ export default function FriendsListScreen(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Social</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => setShowAddModal(true)}
-        >
-          <Text style={styles.headerButtonText}>+ Add Friend</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tab Selector */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'friends' && styles.tabActive]}
-          onPress={() => setSelectedTab('friends')}
-        >
-          <Text style={[styles.tabText, selectedTab === 'friends' && styles.tabTextActive]}>
-            Friends ({friends.length})
-          </Text>
-        </TouchableOpacity>
-        {/* MVP-HIDDEN: Discover Tab - Enable in v1.1 */}
-        {isFeatureEnabled('FRIEND_GROUPS') && (
+        {/* Toggle between Friends and Friend Requests */}
+        <View style={styles.toggleContainer}>
           <TouchableOpacity
-            style={[styles.tab, selectedTab === 'discover' && styles.tabActive]}
-            onPress={() => setSelectedTab('discover')}
+            style={[styles.toggleButton, !showFriendRequests && styles.toggleButtonActive]}
+            onPress={() => setShowFriendRequests(false)}
           >
-            <Text style={[styles.tabText, selectedTab === 'discover' && styles.tabTextActive]}>
-              Discover
+            <Text style={[styles.toggleText, !showFriendRequests && styles.toggleTextActive]}>
+              Friends
             </Text>
           </TouchableOpacity>
-        )}
+          <TouchableOpacity
+            style={[styles.toggleButton, showFriendRequests && styles.toggleButtonActive]}
+            onPress={() => setShowFriendRequests(true)}
+          >
+            <Text style={[styles.toggleText, showFriendRequests && styles.toggleTextActive]}>
+              Friend Requests{pendingRequests.length > 0 ? ` (${pendingRequests.length})` : ''}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={16} color="#9CA3AF" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search friends..."
-          placeholderTextColor="#9CA3AF"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
-      {/* Pending Friend Requests */}
-      {pendingRequests.length > 0 && (
-        <View style={styles.pendingRequestsSection}>
-          <Text style={styles.pendingRequestsTitle}>
-            Friend Requests ({pendingRequests.length})
-          </Text>
-          {pendingRequests.map((request) => (
-            <View key={request.id} style={styles.pendingRequestCard}>
-              <View style={styles.pendingRequestLeft}>
-                <View style={styles.pendingRequestAvatar}>
-                  <Text style={styles.pendingRequestAvatarText}>
-                    {(request.sender_profile?.username || request.sender_profile?.email)?.charAt(0).toUpperCase() || 'U'}
-                  </Text>
-                </View>
-                <View style={styles.pendingRequestInfo}>
-                  <Text style={styles.pendingRequestName}>
-                    {request.sender_profile?.full_name || 
-                     request.sender_profile?.username || 
-                     request.sender_profile?.email?.split('@')[0] || 
-                     'Loading...'}
-                  </Text>
-                  <Text style={styles.pendingRequestUsername}>
-                    @{request.sender_profile?.username || 'loading...'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.pendingRequestActions}>
-                <TouchableOpacity
-                  style={styles.acceptButton}
-                  onPress={() => handleAcceptRequest(request.id)}
-                >
-                  <Text style={styles.acceptButtonText}>Accept</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.declineButton}
-                  onPress={() => handleDeclineRequest(request.id)}
-                >
-                  <Text style={styles.declineButtonText}>Decline</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Sent Friend Requests */}
-      {sentRequests.length > 0 && (
-        <View style={styles.sentRequestsSection}>
-          <Text style={styles.sentRequestsTitle}>
-            Sent Requests ({sentRequests.length})
-          </Text>
-          {sentRequests.map((request) => (
-            <View key={request.id} style={styles.sentRequestCard}>
-              <View style={styles.sentRequestLeft}>
-                <View style={styles.sentRequestAvatar}>
-                  <Text style={styles.sentRequestAvatarText}>
-                    {(request.receiver_profile?.username || request.receiver_profile?.email)?.charAt(0).toUpperCase() || 'U'}
-                  </Text>
-                </View>
-                <View style={styles.sentRequestInfo}>
-                  <Text style={styles.sentRequestName}>
-                    {request.receiver_profile?.full_name || 
-                     request.receiver_profile?.username || 
-                     request.receiver_profile?.email?.split('@')[0] || 
-                     'Loading...'}
-                  </Text>
-                  <Text style={styles.sentRequestUsername}>
-                    @{request.receiver_profile?.username || 'loading...'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.sentRequestActions}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={() => handleCancelRequest(request.id, request.receiver_profile?.username || 'user')}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Loading indicator */}
-      {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#111827" />
-          <Text style={styles.loadingText}>Loading friends...</Text>
-        </View>
-      )}
-
-      {/* MVP: Only show friends tab, hide discover for now */}
-      <FlatList
-        data={displayFriends}
-        renderItem={renderFriendCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Icon name="social" size={48} color="#9CA3AF" style={styles.emptyStateIcon} />
-              <Text style={styles.emptyStateTitle}>No friends yet</Text>
-              <Text style={styles.emptyStateText}>
-                Add friends to see their progress and stay motivated together
+      {/* Content based on toggle */}
+      {showFriendRequests ? (
+        // Friend Requests Tab
+        <>
+          {/* Pending Friend Requests */}
+          {pendingRequests.length > 0 ? (
+            <View style={styles.requestsContainer}>
+              <Text style={styles.requestsSectionTitle}>
+                Incoming Friend Requests
               </Text>
-              <TouchableOpacity
-                style={styles.emptyStateButton}
-                onPress={() => setShowAddModal(true)}
-              >
-                <Text style={styles.emptyStateButtonText}>Find Friends</Text>
-              </TouchableOpacity>
+              {pendingRequests.map((request) => (
+                <View key={request.id} style={styles.requestCard}>
+                  <View style={styles.requestLeft}>
+                    <View style={styles.requestAvatar}>
+                      <Text style={styles.requestAvatarText}>
+                        {(request.sender_profile?.username || request.sender_profile?.email)?.charAt(0).toUpperCase() || 'U'}
+                      </Text>
+                    </View>
+                    <View style={styles.requestInfo}>
+                      <Text style={styles.requestName}>
+                        {request.sender_profile?.full_name ||
+                         request.sender_profile?.username ||
+                         request.sender_profile?.email?.split('@')[0] ||
+                         'Loading...'}
+                      </Text>
+                      <Text style={styles.requestUsername}>
+                        @{request.sender_profile?.username || 'loading...'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.requestActions}>
+                    <TouchableOpacity
+                      style={styles.acceptButton}
+                      onPress={() => handleAcceptRequest(request.id)}
+                    >
+                      <Text style={styles.acceptButtonText}>Accept</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.declineButton}
+                      onPress={() => handleDeclineRequest(request.id)}
+                    >
+                      <Text style={styles.declineButtonText}>Decline</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
             </View>
-          }
-      />
+          ) : (
+            <View style={styles.emptyState}>
+              <Icon name="social" size={48} color={themeColors.gray500} style={styles.emptyStateIcon} />
+              <Text style={styles.emptyStateTitle}>No friend requests</Text>
+              <Text style={styles.emptyStateText}>
+                You don't have any pending friend requests
+              </Text>
+            </View>
+          )}
+
+          {/* Sent Friend Requests */}
+          {sentRequests.length > 0 && (
+            <View style={styles.requestsContainer}>
+              <Text style={styles.requestsSectionTitle}>
+                Sent Requests
+              </Text>
+              {sentRequests.map((request) => (
+                <View key={request.id} style={styles.requestCard}>
+                  <View style={styles.requestLeft}>
+                    <View style={styles.requestAvatar}>
+                      <Text style={styles.requestAvatarText}>
+                        {(request.receiver_profile?.username || request.receiver_profile?.email)?.charAt(0).toUpperCase() || 'U'}
+                      </Text>
+                    </View>
+                    <View style={styles.requestInfo}>
+                      <Text style={styles.requestName}>
+                        {request.receiver_profile?.full_name ||
+                         request.receiver_profile?.username ||
+                         request.receiver_profile?.email?.split('@')[0] ||
+                         'Loading...'}
+                      </Text>
+                      <Text style={styles.requestUsername}>
+                        @{request.receiver_profile?.username || 'loading...'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.requestActions}>
+                    <TouchableOpacity
+                      style={styles.cancelButton}
+                      onPress={() => handleCancelRequest(request.id, request.receiver_profile?.username || 'user')}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Loading indicator */}
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={themeColors.black} />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
+          )}
+        </>
+      ) : (
+        // Friends Tab
+        <>
+          {/* Add Friend Button */}
+          <View style={styles.addFriendContainer}>
+            <TouchableOpacity
+              style={styles.addFriendButton}
+              onPress={() => setShowAddModal(true)}
+            >
+              <Text style={styles.addFriendButtonText}>+ Add Friend</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <Icon name="search" size={16} color={themeColors.gray500} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search friends..."
+              placeholderTextColor={themeColors.gray500}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+
+          {/* Loading indicator */}
+          {loading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={themeColors.black} />
+              <Text style={styles.loadingText}>Loading friends...</Text>
+            </View>
+          )}
+
+          {/* Friends List */}
+          <FlatList
+            data={displayFriends}
+            renderItem={renderFriendCard}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Icon name="social" size={48} color={themeColors.gray500} style={styles.emptyStateIcon} />
+                <Text style={styles.emptyStateTitle}>No friends yet</Text>
+                <Text style={styles.emptyStateText}>
+                  Add friends to see their progress and stay motivated together
+                </Text>
+                <TouchableOpacity
+                  style={styles.emptyStateButton}
+                  onPress={() => setShowAddModal(true)}
+                >
+                  <Text style={styles.emptyStateButtonText}>Find Friends</Text>
+                </TouchableOpacity>
+              </View>
+            }
+          />
+        </>
+      )}
 
       {/* Add Friend Modal with Search */}
       <Modal
@@ -663,7 +658,7 @@ export default function FriendsListScreen(): React.JSX.Element {
             <TextInput
               style={styles.modalInput}
               placeholder="Enter username or email"
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={themeColors.gray500}
               value={newFriendEmail}
               onChangeText={(text) => {
                 setNewFriendEmail(text);
@@ -676,7 +671,7 @@ export default function FriendsListScreen(): React.JSX.Element {
             {/* Search Results */}
             {searchLoading && (
               <View style={styles.searchLoading}>
-                <ActivityIndicator size="small" color="#111827" />
+                <ActivityIndicator size="small" color={themeColors.black} />
                 <Text style={styles.searchLoadingText}>Searching...</Text>
               </View>
             )}
@@ -714,7 +709,7 @@ export default function FriendsListScreen(): React.JSX.Element {
                             <Text style={styles.alreadyFriendsText}>Already Friends</Text>
                           </View>
                         ) : (
-                          <Icon name="add" size={20} color="#111827" />
+                          <Icon name="add" size={20} color={themeColors.black} />
                         )}
                       </TouchableOpacity>
                     );
@@ -744,71 +739,72 @@ export default function FriendsListScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
+// Dynamic styles function for theme support
+const createStyles = (themeColors: ReturnType<typeof getThemeColors>, themeMode: 'light' | 'dark') => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: themeColors.gray50,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
   title: {
     fontSize: 28,
     fontFamily: 'Manrope_700Bold',
-    color: '#111827',
+    color: themeColors.black,
   },
-  headerButton: {
-    backgroundColor: '#111827',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  headerButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontFamily: 'Manrope_600SemiBold',
-  },
-  tabContainer: {
+  toggleContainer: {
     flexDirection: 'row',
-    marginHorizontal: 20,
-    marginBottom: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: themeColors.gray100,
     borderRadius: 8,
     padding: 2,
   },
-  tab: {
+  toggleButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 8,
     alignItems: 'center',
     borderRadius: 6,
   },
-  tabActive: {
-    backgroundColor: 'white',
+  toggleButtonActive: {
+    backgroundColor: themeColors.white,
   },
-  tabText: {
+  toggleText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: themeColors.gray700,
     fontFamily: 'Manrope_500Medium',
   },
-  tabTextActive: {
-    color: '#111827',
+  toggleTextActive: {
+    color: themeColors.black,
+    fontFamily: 'Manrope_600SemiBold',
+  },
+  addFriendContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  addFriendButton: {
+    backgroundColor: themeMode === 'light' ? themeColors.gray300 : themeColors.gray500,
+    paddingHorizontal: 16, // designTokens.spacing.lg
+    paddingVertical: 12,   // designTokens.spacing.md
+    borderRadius: 8,       // designTokens.radius.md
+    alignItems: 'center',
+  },
+  addFriendButtonText: {
+    color: themeColors.gray900, // Use gray900 instead of gray700 for better contrast
+    fontSize: 16,             // designTokens.typography.sizes.md
     fontFamily: 'Manrope_600SemiBold',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: themeColors.white,
     marginHorizontal: 20,
     marginBottom: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderRadius: 12,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: themeColors.gray300,
   },
   searchIcon: {
     marginRight: 8,
@@ -816,24 +812,58 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#111827',
+    color: themeColors.black,
   },
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
   friendCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
+    backgroundColor: themeColors.white,
+    borderRadius: 8,
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    ...designTokens.shadow.level1,
   },
   friendHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  friendDivider: {
+    height: 1,
+    backgroundColor: themeColors.gray300,
+    marginBottom: 12,
+  },
+  friendActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: themeColors.gray100,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontFamily: 'Manrope_500Medium',
+    color: themeColors.gray800,
+  },
+  actionButtonRemove: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: themeMode === 'light' ? '#F47887' : '#7B2C36',
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  actionButtonRemoveText: {
+    fontSize: 14,
+    fontFamily: 'Manrope_500Medium',
+    color: themeMode === 'light' ? '#BD3747' : '#F47887',
   },
   avatarContainer: {
     position: 'relative',
@@ -848,7 +878,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#111827',
+    backgroundColor: themeColors.black,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -860,97 +890,37 @@ const styles = StyleSheet.create({
   friendInfo: {
     flex: 1,
   },
+  lastActiveContainer: {
+    alignItems: 'flex-end',
+    alignSelf: 'flex-start',
+  },
+  lastActiveText: {
+    fontSize: 12,
+    color: themeColors.gray500,
+    fontFamily: 'Manrope_400Regular',
+  },
   friendName: {
     fontSize: 16,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
   },
   friendUsername: {
     fontSize: 14,
-    color: '#6B7280',
+    color: themeColors.gray700,
     marginTop: 1,
   },
   mutualFriends: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: themeColors.gray500,
     marginTop: 2,
   },
-  friendStats: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    height: 48, // Match avatar height to align bottom edges
-  },
-  statLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-    width: 60, // Reduced width for more compact spacing
-  },
-  statValue: {
-    fontSize: 14, // Slightly smaller for better fit
-    fontFamily: 'Manrope_700Bold',
-    color: '#111827',
-  },
-  statLabel: {
-    fontSize: 9, // Smaller label for compactness
-    color: '#9CA3AF',
-    textTransform: 'uppercase',
-  },
-  activitySection: {
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 12,
-  },
-  activityTitle: {
-    fontSize: 12,
-    fontFamily: 'Manrope_600SemiBold',
-    color: '#6B7280',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  miniGrid: {
-    flexDirection: 'row',
-    gap: 3,
-    marginBottom: 8,
-  },
-  miniGridCell: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    backgroundColor: '#F3F4F6',
-  },
-  miniGridCellCompleted: {
-    backgroundColor: '#10B981',
-  },
-  recentItems: {
-    gap: 4,
-  },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  activityIcon: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  activityText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#374151',
-  },
-  activityDate: {
-    fontSize: 11,
-    color: '#9CA3AF',
-  },
   discoverCard: {
-    backgroundColor: 'white',
+    backgroundColor: themeColors.white,
     borderRadius: 12,
     padding: 16,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: themeColors.gray300,
   },
   discoverHeader: {
     flexDirection: 'row',
@@ -962,19 +932,19 @@ const styles = StyleSheet.create({
   },
   discoverReason: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: themeColors.gray500,
     marginTop: 2,
   },
   addButton: {
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: themeColors.gray100,
   },
   addButtonText: {
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
   },
   emptyState: {
     alignItems: 'center',
@@ -986,18 +956,18 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: themeColors.gray700,
     textAlign: 'center',
     marginBottom: 24,
     paddingHorizontal: 40,
   },
   emptyStateButton: {
-    backgroundColor: '#111827',
+    backgroundColor: themeColors.black,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
@@ -1014,7 +984,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: themeColors.white,
     borderRadius: 16,
     padding: 24,
     width: '85%',
@@ -1024,22 +994,22 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontFamily: 'Manrope_700Bold',
-    color: '#111827',
+    color: themeColors.black,
     marginBottom: 8,
   },
   modalDescription: {
     fontSize: 14,
-    color: '#6B7280',
+    color: themeColors.gray700,
     marginBottom: 16,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: themeColors.gray300,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
-    color: '#111827',
+    color: themeColors.black,
     marginBottom: 20,
   },
   modalButtons: {
@@ -1051,11 +1021,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: themeColors.gray300,
     alignItems: 'center',
   },
   modalCancelText: {
-    color: '#6B7280',
+    color: themeColors.gray700,
     fontSize: 16,
     fontFamily: 'Manrope_500Medium',
   },
@@ -1063,7 +1033,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#111827',
+    backgroundColor: themeColors.black,
     alignItems: 'center',
   },
   modalAddText: {
@@ -1081,7 +1051,7 @@ const styles = StyleSheet.create({
   searchLoadingText: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#6B7280',
+    color: themeColors.gray700,
   },
   searchResultsContainer: {
     marginVertical: 16,
@@ -1098,7 +1068,7 @@ const styles = StyleSheet.create({
   searchResultsTitle: {
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
     marginBottom: 8,
   },
   searchResultItem: {
@@ -1106,7 +1076,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: themeColors.gray100,
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -1114,7 +1084,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#111827',
+    backgroundColor: themeColors.black,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1130,17 +1100,21 @@ const styles = StyleSheet.create({
   searchResultName: {
     fontSize: 16,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
   },
   searchResultEmail: {
     fontSize: 14,
-    color: '#6B7280',
+    color: themeColors.gray700,
+  },
+  searchResultUsername: {
+    fontSize: 14,
+    color: themeColors.gray700,
   },
   searchResultItemDisabled: {
     opacity: 0.6,
   },
   alreadyFriendsButton: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: themeColors.gray300,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -1148,19 +1122,19 @@ const styles = StyleSheet.create({
   alreadyFriendsText: {
     fontSize: 12,
     fontFamily: 'Manrope_500Medium',
-    color: '#6B7280',
+    color: themeColors.gray700,
   },
   // Pending requests styles
   pendingSection: {
     marginVertical: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: themeColors.gray300,
   },
   pendingSectionTitle: {
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
     marginBottom: 8,
   },
   pendingRequestItem: {
@@ -1178,50 +1152,36 @@ const styles = StyleSheet.create({
   pendingRequestName: {
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
   },
   pendingRequestUsername: {
     fontSize: 12,
-    color: '#6B7280',
+    color: themeColors.gray700,
   },
   pendingRequestButtons: {
     flexDirection: 'row',
   },
   acceptButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: themeMode === 'light' ? '#59CF92' : '#0E6848',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
     marginRight: 8,
   },
   acceptButtonText: {
-    color: 'white',
+    color: themeMode === 'light' ? '#308F6D' : '#59CF92',
     fontSize: 12,
     fontFamily: 'Manrope_600SemiBold',
   },
   declineButton: {
-    backgroundColor: '#EF4444',
+    backgroundColor: themeMode === 'light' ? '#F47887' : '#7B2C36',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
   },
   declineButtonText: {
-    color: 'white',
+    color: themeMode === 'light' ? '#BD3747' : '#F47887',
     fontSize: 12,
-    fontFamily: 'Manrope_600SemiBold',
-  },
-  removeFriendButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  removeFriendText: {
-    color: 'white',
-    fontSize: 10,
     fontFamily: 'Manrope_600SemiBold',
   },
   loadingContainer: {
@@ -1233,7 +1193,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#6B7280',
+    color: themeColors.gray700,
   },
   // Main page pending requests styles
   pendingRequestsSection: {
@@ -1254,7 +1214,7 @@ const styles = StyleSheet.create({
   pendingRequestCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: themeColors.white,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -1268,7 +1228,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#111827',
+    backgroundColor: themeColors.black,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1300,7 +1260,7 @@ const styles = StyleSheet.create({
   sentRequestCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: themeColors.white,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
@@ -1314,7 +1274,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#111827',
+    backgroundColor: themeColors.black,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1330,17 +1290,17 @@ const styles = StyleSheet.create({
   sentRequestName: {
     fontSize: 14,
     fontFamily: 'Manrope_600SemiBold',
-    color: '#111827',
+    color: themeColors.black,
   },
   sentRequestUsername: {
     fontSize: 12,
-    color: '#6B7280',
+    color: themeColors.gray700,
   },
   sentRequestActions: {
     flexDirection: 'row',
   },
   cancelButton: {
-    backgroundColor: '#6B7280',
+    backgroundColor: themeColors.gray700,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -1349,5 +1309,60 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontFamily: 'Manrope_600SemiBold',
+  },
+  // Friend Requests tab styles
+  requestsContainer: {
+    marginHorizontal: 20,
+    marginBottom: 16,
+  },
+  requestsSectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+    color: themeColors.black,
+    marginBottom: 12,
+  },
+  requestCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: themeColors.white,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 8,
+    ...designTokens.shadow.level1,
+  },
+  requestLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  requestAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: themeColors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  requestAvatarText: {
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+    color: 'white',
+  },
+  requestInfo: {
+    flex: 1,
+  },
+  requestName: {
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+    color: themeColors.black,
+  },
+  requestUsername: {
+    fontSize: 14,
+    color: themeColors.gray700,
+    marginTop: 1,
+  },
+  requestActions: {
+    flexDirection: 'row',
   },
 });

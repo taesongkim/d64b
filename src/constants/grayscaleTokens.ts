@@ -34,7 +34,7 @@ export const grayscaleTokens = {
 
   dark: {
     // Pure white (inverted context)
-    white: '#0F0F0F',     // Dark background (neutral dark)
+    white: '#161616',     // Dark background (neutral dark)
 
     // Dark backgrounds (neutral grays)
     gray50: '#0F0F0F',    // Darkest background (main app background)

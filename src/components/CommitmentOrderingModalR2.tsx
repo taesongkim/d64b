@@ -1186,6 +1186,7 @@ export default function CommitmentOrderingModalR2({
             ],
             opacity: draggedItemOpacity,
             backgroundColor: itemBackgroundColor,
+            ...designTokens.shadow.level2,
           },
         ]}
         pointerEvents="none"
@@ -1427,7 +1428,7 @@ const styles = StyleSheet.create({
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
     height: ROW_HEIGHT,
-    ...designTokens.shadow.subtle,
+    ...designTokens.shadow.level1,
   },
   commitmentRowDisabled: {
     flexDirection: 'row',
@@ -1437,7 +1438,7 @@ const styles = StyleSheet.create({
     padding: designTokens.spacing.md,
     marginBottom: designTokens.spacing.xs,
     height: ROW_HEIGHT,
-    ...designTokens.shadow.subtle,
+    ...designTokens.shadow.level1,
   },
   commitmentInfo: {
     flexDirection: 'row',
@@ -1516,6 +1517,7 @@ const styles = StyleSheet.create({
     borderRadius: designTokens.radius.md,
     padding: designTokens.spacing.md,
     height: ROW_HEIGHT,
+    ...designTokens.shadow.level2,
     zIndex: 1000,
   },
   spacerActions: {
