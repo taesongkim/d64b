@@ -23,6 +23,9 @@ export const FEATURES = {
   ACTIVITY_FEED: false,
   FRIEND_GROUPS: false,
   PROFILE_STATS: false,
+
+  // UI Features
+  BOTTOM_NAV_BLUR: true,
 };
 
 // Helper to check if feature is enabled
@@ -34,4 +37,11 @@ export const isFeatureEnabled = (feature: keyof typeof FEATURES): boolean => {
 export const showComingSoonAlert = (feature: string) => {
   // This will be used in components that need to show coming soon alerts
   return `${feature} will be available in a future update.`;
+};
+
+// Helper to check if blur is available on the current platform
+export const isBlurAvailable = (): boolean => {
+  // expo-blur shows "Unimplemented component" in Expo Go and some simulators
+  // Disable blur for now until proper native build environment is available
+  return false; // Disabled due to simulator limitations
 };

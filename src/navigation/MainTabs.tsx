@@ -5,15 +5,37 @@ import DashboardScreen from '@/screens/Dashboard/DashboardScreen';
 import AnalyticsScreen from '@/screens/Analytics/AnalyticsScreen';
 import FriendsListScreen from '@/screens/Social/FriendsListScreen';
 import ProfileStack from './ProfileStack';
-import { isFeatureEnabled } from '@/config/features';
+import { isFeatureEnabled, isBlurAvailable } from '@/config/features';
 import { Icon } from '@/components/icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { BlurView } from 'expo-blur';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabs(): React.JSX.Element {
   const { semanticColors } = useTheme();
+
+  const shouldUseBlur = isFeatureEnabled('BOTTOM_NAV_BLUR') && isBlurAvailable();
+
+  const tabBarBackground = () => {
+    if (shouldUseBlur) {
+      return (
+        <BlurView
+          intensity={20}
+          tint="default"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        />
+      );
+    }
+    return undefined;
+  };
 
   return (
     <Tab.Navigator
@@ -21,8 +43,11 @@ export default function MainTabs(): React.JSX.Element {
       screenOptions={{
         tabBarActiveTintColor: semanticColors.primaryText,
         tabBarInactiveTintColor: semanticColors.secondaryText,
+        tabBarBackground: shouldUseBlur ? tabBarBackground : undefined,
         tabBarStyle: {
-          backgroundColor: semanticColors.sectionBackground + 'CC', // Semi-transparent background (80% opacity)
+          backgroundColor: shouldUseBlur
+            ? 'transparent'
+            : semanticColors.sectionBackground + 'CC', // Semi-transparent background (80% opacity)
           borderTopColor: semanticColors.defaultBorder,
           position: 'absolute',
           bottom: 0,
